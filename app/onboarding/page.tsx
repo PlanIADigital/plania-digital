@@ -43,13 +43,14 @@ export default function OnboardingPage() {
     if (!session) { router.push('/auth/login'); return }
 
     const { error: err } = await supabase
-      .from('users')
-      .update({
-        cct_primary: form.cct.toUpperCase(),
-        shift_primary: form.turno,
-        profile_completed: true
-      })
-      .eq('auth_uid', session.user.id)
+  .from('users')
+  .update({
+    cct_primary: form.cct.toUpperCase(),
+    shift_primary: form.turno,
+    grado: form.grado,
+    profile_completed: true
+  })
+  .eq('auth_uid', session.user.id)
 
     if (err) { setError(err.message); setLoading(false); return }
     router.push('/dashboard')
