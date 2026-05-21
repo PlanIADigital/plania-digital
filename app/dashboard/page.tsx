@@ -64,9 +64,10 @@ export default function DashboardPage() {
           <div style={{background:'white',borderRadius:12,padding:24,boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
             <h3 style={{color:'#00A896',marginTop:0}}>📋 Mis planeaciones</h3>
             <p style={{color:'#999',fontSize:14}}>Aún no tienes planeaciones.<br/>¡Crea tu primera hoy!</p>
-            <button style={{background:'#00A896',color:'white',border:'none',padding:'10px 20px',borderRadius:6,cursor:'pointer',fontSize:14,marginTop:8}}>
-              + Nueva planeación
-            </button>
+            <button onClick={() => router.push('/planeacion/nueva')}
+  style={{background:'#00A896',color:'white',border:'none',padding:'10px 20px',borderRadius:6,cursor:'pointer',fontSize:14,marginTop:8}}>
+  + Nueva planeación
+</button>
           </div>
           <div style={{background:'white',borderRadius:12,padding:24,boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
             <h3 style={{color:'#3D3A8C',marginTop:0}}>📊 Cobertura PDA</h3>
