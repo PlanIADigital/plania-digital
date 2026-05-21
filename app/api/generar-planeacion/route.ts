@@ -40,7 +40,7 @@ DATOS DEL PROYECTO:
 Genera el Momento 3 completo con 3 actividades narrativas siguiendo todas las reglas de voz. Responde en texto plano, sin JSON ni markdown.`
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1500,
       messages: [{ role: 'user', content: userMessage }],
       system: systemPrompt
