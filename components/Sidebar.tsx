@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { label: 'Cobertura PDA',     path: null,                icon: '📊', activo: false },
   { label: 'Calendario',        path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',      path: null,                icon: '📈', activo: false },
-  { label: 'Configuración',     path: null,                icon: '⚙️', activo: false },
+  { label: 'Configuración',     path: '/configuracion',    icon: '⚙️', activo: true },,
 ]
 
 interface SidebarProps {
