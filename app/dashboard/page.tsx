@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Sidebar from '@/components/Sidebar'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,11 +35,6 @@ export default function DashboardPage() {
     loadUser()
   }, [])
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-  }
-
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
       <p style={{ color: '#3D3A8C' }}>Cargando...</p>
@@ -46,20 +42,12 @@ export default function DashboardPage() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif' }}>
-      <nav style={{ background: '#3D3A8C', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ color: 'white', margin: 0, fontSize: 20, fontWeight: 600 }}>PlanIA Digital</h1>
-        <button onClick={handleLogout}
-          style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', borderRadius: 6, fontSize: 14 }}>
-          Cerrar sesión
-        </button>
-      </nav>
-
-      <div style={{ maxWidth: 800, margin: '40px auto', padding: '0 24px' }}>
+    <Sidebar profile={profile}>
+      <div style={{ maxWidth: 800, margin: '40px auto', padding: '0 32px' }}>
 
         {/* Bienvenida */}
-        <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4 }}>
+        <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22 }}>
             Bienvenida, {profile?.full_name} 👋
           </h2>
           <p style={{ color: '#666', margin: 0, fontSize: 13 }}>
@@ -69,20 +57,20 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-          <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Planeaciones</h3>
+          <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Planeaciones</h3>
             <p style={{ color: '#3D3A8C', fontSize: 32, fontWeight: 700, margin: 0 }}>{planeaciones.length}</p>
             <p style={{ color: '#999', fontSize: 13, margin: '4px 0 0' }}>Este ciclo escolar</p>
           </div>
-          <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cobertura PDA</h3>
+          <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cobertura PDA</h3>
             <p style={{ color: '#3D3A8C', fontSize: 32, fontWeight: 700, margin: 0 }}>{planeaciones.length}</p>
             <p style={{ color: '#999', fontSize: 13, margin: '4px 0 0' }}>PDAs cubiertos — Ciclo 2025-2026</p>
           </div>
         </div>
 
         {/* Historial */}
-        <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h3 style={{ color: '#3D3A8C', margin: 0, fontSize: 16, fontWeight: 700 }}>Mis planeaciones</h3>
             <button onClick={() => router.push('/planeacion/nueva')}
@@ -145,7 +133,8 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        <div style={{ height: 40 }} />
       </div>
-    </div>
+    </Sidebar>
   )
 }

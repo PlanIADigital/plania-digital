@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Sidebar from '@/components/Sidebar'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -142,7 +143,6 @@ export default function NuevaPlaneacionPage() {
     }
   }, [form.fecha_inicio, form.duracion_dias])
 
-  // Animación de progreso mientras genera
   useEffect(() => {
     if (!generating) return
     setPasoActual(0)
@@ -193,10 +193,7 @@ export default function NuevaPlaneacionPage() {
         })
       })
       const data = await res.json()
-      if (data.error) {
-        setResult({ error: data.error })
-        return
-      }
+      if (data.error) { setResult({ error: data.error }); return }
       if (data.planeacion) {
         setPorcentaje(100)
         await new Promise(r => setTimeout(r, 600))
@@ -245,55 +242,36 @@ export default function NuevaPlaneacionPage() {
     { key: 'momento_5_reflexion', titulo: '5. Reflexión' },
   ]
 
+  if (!profile) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
+      <p style={{ color: '#3D3A8C' }}>Cargando...</p>
+    </div>
+  )
+
   return (
-    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif' }}>
-      <nav style={{ background: '#3D3A8C', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ color: 'white', margin: 0, fontSize: 20, fontWeight: 600 }}>PlanIA Digital</h1>
-        <button onClick={() => router.push('/dashboard')}
-          style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', borderRadius: 6, fontSize: 14 }}>
-          ← Dashboard
-        </button>
-      </nav>
+    <Sidebar profile={profile}>
+      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 32px' }}>
 
-      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 24px' }}>
-
-        {/* Pantalla de progreso — visible solo mientras genera */}
         {generating && (
           <div style={{ background: 'white', borderRadius: 14, padding: 36, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
-            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 6, fontSize: 18 }}>
-              Creando tu planeación
-            </h3>
+            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 6, fontSize: 18 }}>Creando tu planeación</h3>
             {profile && (
               <p style={{ color: '#666', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
                 Diseñada específicamente para tus <strong>{profile.total_students || 24} alumnos</strong> de <strong>{profile.grado || '2°'} grado</strong>, turno <strong>{profile.shift_primary || 'matutino'}</strong>
               </p>
             )}
-            {/* Barra de progreso */}
             <div style={{ background: '#EEEDF8', borderRadius: 99, height: 8, marginBottom: 16, overflow: 'hidden' }}>
-              <div style={{
-                background: 'linear-gradient(90deg, #3D3A8C, #00A896)',
-                height: '100%',
-                borderRadius: 99,
-                width: `${porcentaje}%`,
-                transition: 'width 0.8s ease'
-              }} />
+              <div style={{ background: 'linear-gradient(90deg, #3D3A8C, #00A896)', height: '100%', borderRadius: 99, width: `${porcentaje}%`, transition: 'width 0.8s ease' }} />
             </div>
-            <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 500, marginBottom: 0 }}>
-              {PASOS_PROGRESO[pasoActual]?.texto}
-            </p>
-            <p style={{ color: '#aaa', fontSize: 12, marginTop: 8 }}>
-              Esto toma entre 30 y 45 segundos
-            </p>
+            <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 500, marginBottom: 0 }}>{PASOS_PROGRESO[pasoActual]?.texto}</p>
+            <p style={{ color: '#aaa', fontSize: 12, marginTop: 8 }}>Esto toma entre 30 y 45 segundos</p>
           </div>
         )}
 
-        {/* Formulario — oculto mientras genera */}
         {!generating && !result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 36, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24 }}>
-            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>
-              Nueva planeación
-            </h2>
+            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>Nueva planeación</h2>
             {profile && (
               <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>
                 {profile.cct_primary} · Turno {profile.shift_primary}{profile.grado && ` · ${profile.grado} grado`}
@@ -303,16 +281,11 @@ export default function NuevaPlaneacionPage() {
             <div style={s.section}>
               <p style={s.sectionTitle}>1 · Datos del proyecto</p>
               <label style={s.label}>Nombre del proyecto *</label>
-              <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto}
-                onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
+              <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
               <label style={s.label}>Situación problema *</label>
-              <textarea placeholder="¿Qué situación del entorno motivó este proyecto?"
-                value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)}
-                rows={3} style={s.textarea} />
+              <textarea placeholder="¿Qué situación del entorno motivó este proyecto?" value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)} rows={3} style={s.textarea} />
               <label style={s.label}>Finalidad *</label>
-              <textarea placeholder="¿Qué lograrán los alumnos al concluir este proyecto?"
-                value={form.finalidad} onChange={e => update('finalidad', e.target.value)}
-                rows={3} style={s.textarea} />
+              <textarea placeholder="¿Qué lograrán los alumnos al concluir este proyecto?" value={form.finalidad} onChange={e => update('finalidad', e.target.value)} rows={3} style={s.textarea} />
             </div>
 
             <div style={s.section}>
@@ -349,11 +322,8 @@ export default function NuevaPlaneacionPage() {
                     {form.pda_principal}
                   </div>
                   <details style={{ marginBottom: 12 }}>
-                    <summary style={{ fontSize: 13, color: '#3D3A8C', cursor: 'pointer', userSelect: 'none', marginBottom: 8 }}>
-                      ✏️ Editar el PDA manualmente
-                    </summary>
-                    <textarea value={form.pda_principal} onChange={e => update('pda_principal', e.target.value)}
-                      rows={4} style={{ ...s.textarea, marginTop: 8, marginBottom: 8, background: '#FAFAFA' }} />
+                    <summary style={{ fontSize: 13, color: '#3D3A8C', cursor: 'pointer', userSelect: 'none', marginBottom: 8 }}>✏️ Editar el PDA manualmente</summary>
+                    <textarea value={form.pda_principal} onChange={e => update('pda_principal', e.target.value)} rows={4} style={{ ...s.textarea, marginTop: 8, marginBottom: 8, background: '#FAFAFA' }} />
                   </details>
                   {nivelesAvanzados.length > 0 && !esNivelAvanzado && (
                     <button onClick={() => setMostrarNivelesAvanzados(!mostrarNivelesAvanzados)}
@@ -369,9 +339,7 @@ export default function NuevaPlaneacionPage() {
                   )}
                   {mostrarNivelesAvanzados && nivelesAvanzados.length > 0 && (
                     <div style={{ background: '#F8F8FE', border: '1px solid #D8D6F0', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-                      <p style={{ fontSize: 12, color: '#666', marginTop: 0, marginBottom: 12 }}>
-                        Estos PDAs tienen mayor nivel de exigencia. Elige el que mejor corresponda al avance de tu grupo:
-                      </p>
+                      <p style={{ fontSize: 12, color: '#666', marginTop: 0, marginBottom: 12 }}>Estos PDAs tienen mayor nivel de exigencia:</p>
                       {nivelesAvanzados.map(n => (
                         <div key={n.grado} style={{ marginBottom: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -381,9 +349,7 @@ export default function NuevaPlaneacionPage() {
                               Elegir este
                             </button>
                           </div>
-                          <p style={{ fontSize: 13, color: '#444', lineHeight: 1.5, margin: 0, background: 'white', padding: '8px 10px', borderRadius: 6, border: '1px solid #E8E8F0' }}>
-                            {n.pda}
-                          </p>
+                          <p style={{ fontSize: 13, color: '#444', lineHeight: 1.5, margin: 0, background: 'white', padding: '8px 10px', borderRadius: 6, border: '1px solid #E8E8F0' }}>{n.pda}</p>
                         </div>
                       ))}
                     </div>
@@ -419,7 +385,7 @@ export default function NuevaPlaneacionPage() {
             </div>
 
             <button onClick={handleGenerar} disabled={generating}
-              style={{ background: '#00A896', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: 'pointer', width: '100%', borderRadius: 8, fontWeight: 600, letterSpacing: '0.01em' }}>
+              style={{ background: '#00A896', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: 'pointer', width: '100%', borderRadius: 8, fontWeight: 600 }}>
               ✨ Generar planeación con IA
             </button>
             {esNivelAvanzado && (
@@ -430,7 +396,6 @@ export default function NuevaPlaneacionPage() {
           </div>
         )}
 
-        {/* Resultado */}
         {result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>Planeación generada</h3>
@@ -446,18 +411,15 @@ export default function NuevaPlaneacionPage() {
             ) : (
               momentos.map(m => result[m.key] ? (
                 <div key={m.key} style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
-                  <h4 style={{ color: '#00A896', marginTop: 0, marginBottom: 12, fontSize: 15, fontWeight: 700 }}>
-                    {m.titulo}
-                  </h4>
-                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#1A1A2E', margin: 0, whiteSpace: 'pre-wrap' }}>
-                    {result[m.key]}
-                  </p>
+                  <h4 style={{ color: '#00A896', marginTop: 0, marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{m.titulo}</h4>
+                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#1A1A2E', margin: 0, whiteSpace: 'pre-wrap' }}>{result[m.key]}</p>
                 </div>
               ) : null)
             )}
           </div>
         )}
+        <div style={{ height: 40 }} />
       </div>
-    </div>
+    </Sidebar>
   )
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useParams } from 'next/navigation'
+import Sidebar from '@/components/Sidebar'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +20,7 @@ const momentos = [
 export default function VerPlaneacionPage() {
   const router = useRouter()
   const params = useParams()
+  const [profile, setProfile] = useState<any>(null)
   const [planeacion, setPlaneacion] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,6 +29,11 @@ export default function VerPlaneacionPage() {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth/login'); return }
+      const { data: userData } = await supabase
+        .from('users').select('*')
+        .eq('auth_uid', session.user.id).single()
+      if (!userData) { router.push('/auth/login'); return }
+      setProfile(userData)
       const { data, error: err } = await supabase
         .from('plannings')
         .select('*')
@@ -45,25 +52,17 @@ export default function VerPlaneacionPage() {
     </div>
   )
 
-  if (error) return (
+  if (error || !profile) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
-      <p style={{ color: '#e53e3e' }}>{error}</p>
+      <p style={{ color: '#e53e3e' }}>{error || 'Error al cargar'}</p>
     </div>
   )
 
   const contenido = planeacion?.content_json || {}
 
   return (
-    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif' }}>
-      <nav style={{ background: '#3D3A8C', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ color: 'white', margin: 0, fontSize: 20, fontWeight: 600 }}>PlanIA Digital</h1>
-        <button onClick={() => router.push('/dashboard')}
-          style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '8px 16px', cursor: 'pointer', borderRadius: 6, fontSize: 14 }}>
-          ← Dashboard
-        </button>
-      </nav>
-
-      <div style={{ maxWidth: 720, margin: '40px auto', padding: '0 24px' }}>
+    <Sidebar profile={profile}>
+      <div style={{ maxWidth: 720, margin: '40px auto', padding: '0 32px' }}>
 
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
@@ -137,6 +136,6 @@ export default function VerPlaneacionPage() {
 
         <div style={{ height: 40 }} />
       </div>
-    </div>
+    </Sidebar>
   )
 }
