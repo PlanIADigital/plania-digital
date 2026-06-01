@@ -8,13 +8,13 @@ const supabase = createClient(
 )
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',         path: '/dashboard',        icon: '🏠', activo: true },
-  { label: 'Nueva planeación',  path: '/planeacion/nueva', icon: '✨', activo: true },
-  { label: 'Mis planeaciones',  path: '/dashboard',        icon: '📋', activo: true },
-  { label: 'Cobertura PDA',     path: null,                icon: '📊', activo: false },
-  { label: 'Calendario',        path: null,                icon: '📅', activo: false },
-  { label: 'Estadísticas',      path: null,                icon: '📈', activo: false },
-  { label: 'Configuración',     path: '/configuracion',    icon: '⚙️', activo: true },,
+  { label: 'Dashboard',        path: '/dashboard',        icon: '🏠', activo: true },
+  { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
+  { label: 'Mis planeaciones', path: '/dashboard',        icon: '📋', activo: true },
+  { label: 'Cobertura PDA',    path: null,                icon: '📊', activo: false },
+  { label: 'Calendario',       path: null,                icon: '📅', activo: false },
+  { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
+  { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
 ]
 
 interface SidebarProps {
@@ -36,8 +36,6 @@ export default function Sidebar({ profile, children }: SidebarProps) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-
-      {/* SIDEBAR */}
       <aside style={{
         width: 240,
         background: '#3D3A8C',
@@ -61,17 +59,17 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           </p>
         </div>
 
-        {/* Nav items */}
+        {/* Nav */}
         <nav style={{ padding: '16px 12px', flex: 1 }}>
-          {NAV_ITEMS.map(item => {
-            const isActive = item.path && (pathname === item.path || 
-              (item.path === '/dashboard' && item.label === 'Mis planeaciones' && pathname?.startsWith('/planeacion/') && pathname !== '/planeacion/nueva'))
-            
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.path !== null && (
+              pathname === item.path ||
+              (item.label === 'Mis planeaciones' && pathname?.startsWith('/planeacion/') && pathname !== '/planeacion/nueva')
+            )
             return (
               <div key={item.label} style={{ marginBottom: 4 }}>
                 <button
-                  onClick={() => item.activo && item.path && router.push(item.path)}
-                  disabled={!item.activo}
+                  onClick={() => { if (item.activo && item.path) router.push(item.path) }}
                   style={{
                     width: '100%',
                     display: 'flex',
@@ -86,15 +84,6 @@ export default function Sidebar({ profile, children }: SidebarProps) {
                     fontSize: 14,
                     fontWeight: isActive ? 600 : 400,
                     textAlign: 'left',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => {
-                    if (item.activo && !isActive)
-                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive)
-                      (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
                   }}
                 >
                   <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{item.icon}</span>
@@ -116,17 +105,22 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           })}
         </nav>
 
-        {/* Perfil + logout */}
+        {/* Perfil */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: '#00A896',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0
-            }}>
-              {iniciales}
-            </div>
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="foto"
+                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: '#00A896',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0
+              }}>
+                {iniciales}
+              </div>
+            )}
             <div style={{ overflow: 'hidden' }}>
               <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {profile?.full_name}
@@ -147,7 +141,6 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         </div>
       </aside>
 
-      {/* CONTENIDO — margen izquierdo = ancho del sidebar */}
       <main style={{ marginLeft: 240, flex: 1, background: '#E8F5F2', minHeight: '100vh' }}>
         {children}
       </main>
