@@ -47,14 +47,14 @@ export default function Sidebar({ profile, children }: SidebarProps) {
       }}>
         {/* Logo */}
         <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 22 }}>✦</span>
-            <div>
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>PlanIA</span>
-              <span style={{ color: '#00A896', fontWeight: 700, fontSize: 16 }}> Digital</span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4 }}>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 18 }}>✦</span>
+            <span style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Plan</span>
+            <span style={{ color: '#00A896', fontWeight: 900, fontSize: 18 }}>IA</span>
+            <span style={{ color: 'white', fontWeight: 700, fontSize: 18 }}> Digital</span>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 18 }}>✦</span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, margin: '6px 0 0', letterSpacing: '0.03em' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
             Planea. Conecta. Transforma.
           </p>
         </div>
