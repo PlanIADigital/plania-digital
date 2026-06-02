@@ -8,16 +8,24 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const ROLES = [
+  { value: 'educadora', label: 'Educadora de preescolar' },
+  { value: 'maestro_musica', label: 'Maestro de música federal' },
+  { value: 'directivo', label: 'Directivo' },
+]
+
 export default function RegisterPage() {
   const router = useRouter()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [role, setRole] = useState('educadora')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleRegister() {
+    if (!fullName || !email || !password) { setError('Completa todos los campos'); return }
+    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     setError('')
     const { error } = await supabase.auth.signUp({
@@ -26,34 +34,117 @@ export default function RegisterPage() {
       options: { data: { full_name: fullName, role } }
     })
     if (error) { setError(error.message); setLoading(false) }
-    else router.push('/dashboard')
+    else router.push('/onboarding')
+  }
+
+  const inputStyle = {
+    display: 'block', width: '100%', padding: '11px 14px', fontSize: 14,
+    borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
+    marginBottom: 18, outline: 'none', fontFamily: 'sans-serif'
+  }
+
+  const labelStyle = {
+    display: 'block', fontSize: 13, fontWeight: 600 as const,
+    color: '#1A1A2E', marginBottom: 6
   }
 
   return (
-    <div style={{maxWidth:400,margin:'80px auto',fontFamily:'sans-serif',padding:24}}>
-      <h1 style={{color:'#3D3A8C'}}>PlanIA Digital</h1>
-      <h2>Crear cuenta</h2>
-      <input placeholder="Nombre completo" value={fullName}
-        onChange={e=>setFullName(e.target.value)}
-        style={{display:'block',width:'100%',marginBottom:12,padding:8,fontSize:16}} />
-      <input placeholder="Correo electrónico" value={email}
-        onChange={e=>setEmail(e.target.value)}
-        style={{display:'block',width:'100%',marginBottom:12,padding:8,fontSize:16}} />
-      <input placeholder="Contraseña" type="password" value={password}
-        onChange={e=>setPassword(e.target.value)}
-        style={{display:'block',width:'100%',marginBottom:12,padding:8,fontSize:16}} />
-      <select value={role} onChange={e=>setRole(e.target.value)}
-        style={{display:'block',width:'100%',marginBottom:16,padding:8,fontSize:16}}>
-        <option value="educadora">Educadora</option>
-        <option value="maestro_musica">Maestro de Música</option>
-        <option value="directivo">Directivo</option>
-      </select>
-      <button onClick={handleRegister} disabled={loading}
-        style={{background:'#00A896',color:'white',border:'none',padding:'12px 24px',fontSize:16,cursor:'pointer',width:'100%',borderRadius:6}}>
-        {loading ? 'Registrando...' : 'Crear cuenta'}
-      </button>
-      {error && <p style={{marginTop:16,color:'red',fontSize:14}}>{error}</p>}
-      <p style={{marginTop:24}}>¿Ya tienes cuenta? <a href="/auth/login">Inicia sesión</a></p>
+    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 420 }}>
+
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}>Plan</span>
+            <span style={{ color: '#00A896', fontWeight: 900, fontSize: 32 }}>IA</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}> Digital</span>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
+          </div>
+          <p style={{ color: '#3D3A8C', fontSize: 15, margin: 0, letterSpacing: '0.08em', fontWeight: 500 }}>
+            Planea. Conecta. Transforma.
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: 'white', borderRadius: 16, padding: 36, boxShadow: '0 4px 24px rgba(61,58,140,0.10)' }}>
+          <h2 style={{ color: '#1A1A2E', margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>
+            Crear cuenta
+          </h2>
+          <p style={{ color: '#888', fontSize: 13, margin: '0 0 28px' }}>
+            7 días gratis · Sin tarjeta de crédito
+          </p>
+
+          <label style={labelStyle}>Nombre completo</label>
+          <input
+            placeholder="Como aparecerá en tus planeaciones"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>Correo electrónico</label>
+          <input
+            placeholder="tu@correo.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>Contraseña</label>
+          <input
+            placeholder="Mínimo 6 caracteres"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleRegister()}
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>Soy...</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginBottom: 24 }}>
+            {ROLES.map(r => (
+              <button
+                key={r.value}
+                onClick={() => setRole(r.value)}
+                style={{
+                  padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  cursor: 'pointer', textAlign: 'left',
+                  border: role === r.value ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
+                  background: role === r.value ? '#EEEDF8' : 'white',
+                  color: role === r.value ? '#3D3A8C' : '#555',
+                }}
+              >
+                {role === r.value ? '✓ ' : ''}{r.label}
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleRegister}
+            disabled={loading}
+            style={{ background: loading ? '#9b99c4' : '#00A896', color: 'white', border: 'none', padding: '13px 24px', fontSize: 15, cursor: loading ? 'default' : 'pointer', width: '100%', borderRadius: 8, fontWeight: 600 }}>
+            {loading ? 'Creando cuenta...' : 'Crear cuenta gratis →'}
+          </button>
+
+          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#888' }}>
+            ¿Ya tienes cuenta?{' '}
+            <a href="/auth/login" style={{ color: '#3D3A8C', fontWeight: 600, textDecoration: 'none' }}>
+              Inicia sesión
+            </a>
+          </p>
+        </div>
+
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 11, color: '#aaa' }}>
+          PlanIA Digital no es una entidad afiliada ni respaldada por la SEP.
+        </p>
+      </div>
     </div>
   )
 }
