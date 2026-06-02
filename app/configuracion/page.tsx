@@ -37,17 +37,17 @@ export default function ConfiguracionPage() {
     setUploading(true)
     setSaveMsg('')
     const ext = file.name.split('.').pop()
-    const path = `avatars/${profile.id}.${ext}`
+    const path = `avatars/${profile.auth_uid}.${ext}`
     const { error: upErr } = await supabase.storage
       .from('avatars')
       .upload(path, file, { upsert: true })
-    if (upErr) { setSaveMsg('⚠️ Error al subir la foto'); setUploading(false); return }
+    if (upErr) { setSaveMsg('⚠️ Error al subir la foto: ' + upErr.message); setUploading(false); return }
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
     const { error: updateErr } = await supabase
       .from('users')
       .update({ avatar_url: urlData.publicUrl })
-      .eq('id', profile.id)
-    if (updateErr) { setSaveMsg('⚠️ Error al guardar'); setUploading(false); return }
+      .eq('auth_uid', profile.auth_uid)
+    if (updateErr) { setSaveMsg('⚠️ Error al guardar: ' + updateErr.message); setUploading(false); return }
     setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl }))
     setSaveMsg('✅ Foto actualizada correctamente')
     setUploading(false)
@@ -71,10 +71,9 @@ export default function ConfiguracionPage() {
         {/* Foto de perfil */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px' }}>Foto de perfil</p>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            {/* Avatar actual */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ flexShrink: 0 }}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Foto de perfil"
                   style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
@@ -107,10 +106,10 @@ export default function ConfiguracionPage() {
           )}
         </div>
 
-        {/* Datos del perfil (solo lectura por ahora) */}
+        {/* Datos de cuenta */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px' }}>Datos de cuenta</p>
-          
+
           {[
             { label: 'Nombre completo', value: profile?.full_name },
             { label: 'Correo electrónico', value: profile?.email },
