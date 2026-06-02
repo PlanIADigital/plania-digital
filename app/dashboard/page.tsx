@@ -48,7 +48,7 @@ export default function DashboardPage() {
         {/* Bienvenida */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22 }}>
-            Bienvenida, {profile?.full_name} 👋
+            Bienvenida, {profile?.role === 'educadora' ? 'Bienvenida' : 'Bienvenido'}, {profile?.full_name} 👋
           </h2>
           <p style={{ color: '#666', margin: 0, fontSize: 13 }}>
             {profile?.cct_primary} · {profile?.shift_primary} · Rol: <strong>{profile?.role}</strong> · Membresía: <strong>{profile?.membership_status}</strong>
