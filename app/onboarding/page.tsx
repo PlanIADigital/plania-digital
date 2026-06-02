@@ -13,7 +13,6 @@ const TURNOS = ['matutino', 'vespertino', 'discontinuo']
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -41,40 +40,62 @@ export default function OnboardingPage() {
     setError('')
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.push('/auth/login'); return }
-
     const { error: err } = await supabase
-  .from('users')
-  .update({
-    cct_primary: form.cct.toUpperCase(),
-    shift_primary: form.turno,
-    grado: form.grado,
-    profile_completed: true
-  })
-  .eq('auth_uid', session.user.id)
-
+      .from('users')
+      .update({
+        cct_primary: form.cct.toUpperCase(),
+        shift_primary: form.turno,
+        grado: form.grado,
+        profile_completed: true
+      })
+      .eq('auth_uid', session.user.id)
     if (err) { setError(err.message); setLoading(false); return }
     router.push('/dashboard')
   }
 
   const inputStyle = {
-    display: 'block', width: '100%', marginBottom: 16,
-    padding: '10px 12px', fontSize: 16, borderRadius: 6,
-    border: '1px solid #ddd', boxSizing: 'border-box' as const
+    display: 'block', width: '100%', padding: '11px 14px', fontSize: 14,
+    borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
+    marginBottom: 18, outline: 'none', fontFamily: 'sans-serif', background: 'white'
   }
-  const labelStyle = { display: 'block', marginBottom: 6, fontWeight: 500, color: '#1A1A2E' }
+
+  const labelStyle = {
+    display: 'block', fontSize: 13, fontWeight: 600 as const,
+    color: '#1A1A2E', marginBottom: 6
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif' }}>
-      <nav style={{ background: '#3D3A8C', padding: '16px 32px' }}>
-        <h1 style={{ color: 'white', margin: 0, fontSize: 20 }}>PlanIA Digital</h1>
-      </nav>
-      <div style={{ maxWidth: 560, margin: '40px auto', padding: '0 24px' }}>
-        <div style={{ background: 'white', borderRadius: 12, padding: 32, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <h2 style={{ color: '#3D3A8C', marginTop: 0 }}>Completa tu perfil</h2>
-          <p style={{ color: '#666', marginBottom: 24 }}>
-            Esta información permite que tus planeaciones reflejen el contexto real de tu grupo.
-          </p>
+    <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
 
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}>Plan</span>
+            <span style={{ color: '#00A896', fontWeight: 900, fontSize: 32 }}>IA</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}> Digital</span>
+            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
+          </div>
+          <p style={{ color: '#3D3A8C', fontSize: 15, margin: 0, letterSpacing: '0.08em', fontWeight: 500 }}>
+            Planea. Conecta. Transforma.
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: 'white', borderRadius: 16, padding: 36, boxShadow: '0 4px 24px rgba(61,58,140,0.10)' }}>
+
+          {/* Encabezado */}
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ color: '#1A1A2E', margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>
+              Completa tu perfil
+            </h2>
+            <p style={{ color: '#888', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+              Esta información permite que tus planeaciones reflejen el contexto real de tu grupo.
+            </p>
+          </div>
+
+          {/* CCT */}
           <label style={labelStyle}>Clave del Centro de Trabajo (CCT)</label>
           <input
             placeholder="Ej: 19DJN0293I"
@@ -84,16 +105,41 @@ export default function OnboardingPage() {
             style={inputStyle}
           />
 
+          {/* Grado */}
           <label style={labelStyle}>Grado que atiendes</label>
-          <select value={form.grado} onChange={e => update('grado', e.target.value)} style={inputStyle}>
-            {GRADOS.map(g => <option key={g} value={g}>{g} Preescolar</option>)}
-          </select>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+            {GRADOS.map(g => (
+              <button key={g} onClick={() => update('grado', g)}
+                style={{
+                  padding: '10px 8px', borderRadius: 8, fontSize: 14, fontWeight: 500,
+                  cursor: 'pointer', textAlign: 'center',
+                  border: form.grado === g ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
+                  background: form.grado === g ? '#EEEDF8' : 'white',
+                  color: form.grado === g ? '#3D3A8C' : '#555',
+                }}>
+                {g} Preescolar
+              </button>
+            ))}
+          </div>
 
+          {/* Turno */}
           <label style={labelStyle}>Turno</label>
-          <select value={form.turno} onChange={e => update('turno', e.target.value)} style={inputStyle}>
-            {TURNOS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-          </select>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+            {TURNOS.map(t => (
+              <button key={t} onClick={() => update('turno', t)}
+                style={{
+                  padding: '10px 8px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  cursor: 'pointer', textAlign: 'center',
+                  border: form.turno === t ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
+                  background: form.turno === t ? '#EEEDF8' : 'white',
+                  color: form.turno === t ? '#3D3A8C' : '#555',
+                }}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
 
+          {/* Número de alumnos */}
           <label style={labelStyle}>Número de alumnos</label>
           <input
             placeholder="Ej: 24"
@@ -105,28 +151,40 @@ export default function OnboardingPage() {
             style={inputStyle}
           />
 
-          <label style={labelStyle}>Contexto del grupo <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span></label>
+          {/* Contexto */}
+          <label style={labelStyle}>
+            Contexto del grupo{' '}
+            <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span>
+          </label>
           <textarea
-            placeholder="Describe brevemente el contexto de tu grupo: nivel socioeconómico, zona escolar, características relevantes..."
+            placeholder="Describe brevemente el contexto de tu grupo: zona escolar, características relevantes..."
             value={form.contexto_grupo}
             onChange={e => update('contexto_grupo', e.target.value)}
             rows={3}
-            style={{ ...inputStyle, resize: 'vertical' }}
+            style={{ ...inputStyle, resize: 'vertical' as const }}
           />
 
-          {error && <p style={{ color: 'red', fontSize: 14, marginBottom: 16 }}>{error}</p>}
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
+              {error}
+            </div>
+          )}
 
           <button
             onClick={handleSave}
             disabled={loading}
             style={{
-              background: '#00A896', color: 'white', border: 'none',
-              padding: '12px 24px', fontSize: 16, cursor: 'pointer',
-              width: '100%', borderRadius: 6, fontWeight: 500
+              background: loading ? '#9b99c4' : '#00A896', color: 'white', border: 'none',
+              padding: '13px 24px', fontSize: 15, cursor: loading ? 'default' : 'pointer',
+              width: '100%', borderRadius: 8, fontWeight: 600
             }}>
             {loading ? 'Guardando...' : 'Guardar y continuar →'}
           </button>
         </div>
+
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 11, color: '#aaa' }}>
+          PlanIA Digital no es una entidad afiliada ni respaldada por la SEP.
+        </p>
       </div>
     </div>
   )
