@@ -15,6 +15,8 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [cctInfo, setCctInfo] = useState<{ estado: string; sostenimiento: string; nivel: string; valido: boolean; error?: string } | null>(null)
+  const [cctLoading, setCctLoading] = useState(false)
   const [form, setForm] = useState({
     cct: '',
     grado: '2°',
@@ -27,9 +29,35 @@ export default function OnboardingPage() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  async function handleCCTChange(value: string) {
+    const val = value.toUpperCase()
+    update('cct', val)
+    setCctInfo(null)
+    if (val.length === 10) {
+      setCctLoading(true)
+      try {
+        const res = await fetch('/api/decode-cct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cct: val })
+        })
+        const data = await res.json()
+        setCctInfo(data)
+      } catch {
+        setCctInfo({ estado: '', sostenimiento: '', nivel: '', valido: false, error: 'No se pudo verificar el CCT' })
+      } finally {
+        setCctLoading(false)
+      }
+    }
+  }
+
   async function handleSave() {
     if (!form.cct || form.cct.length !== 10) {
       setError('El CCT debe tener exactamente 10 caracteres')
+      return
+    }
+    if (cctInfo && !cctInfo.valido) {
+      setError('El CCT ingresado no es válido. Verifica e intenta de nuevo.')
       return
     }
     if (!form.total_alumnos || isNaN(Number(form.total_alumnos))) {
@@ -46,7 +74,12 @@ export default function OnboardingPage() {
         cct_primary: form.cct.toUpperCase(),
         shift_primary: form.turno,
         grado: form.grado,
-        profile_completed: true
+        profile_completed: true,
+        estado: cctInfo?.estado || null,
+        sostenimiento: cctInfo?.sostenimiento || null,
+        nivel_educativo: cctInfo?.nivel || null,
+        total_alumnos: Number(form.total_alumnos),
+        contexto_grupo: form.contexto_grupo || null,
       })
       .eq('auth_uid', session.user.id)
     if (err) { setError(err.message); setLoading(false); return }
@@ -56,7 +89,7 @@ export default function OnboardingPage() {
   const inputStyle = {
     display: 'block', width: '100%', padding: '11px 14px', fontSize: 14,
     borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
-    marginBottom: 18, outline: 'none', fontFamily: 'sans-serif', background: 'white'
+    marginBottom: cctInfo ? 8 : 18, outline: 'none', fontFamily: 'sans-serif', background: 'white'
   }
 
   const labelStyle = {
@@ -85,7 +118,6 @@ export default function OnboardingPage() {
         {/* Card */}
         <div style={{ background: 'white', borderRadius: 16, padding: 36, boxShadow: '0 4px 24px rgba(61,58,140,0.10)' }}>
 
-          {/* Encabezado */}
           <div style={{ marginBottom: 28 }}>
             <h2 style={{ color: '#1A1A2E', margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>
               Completa tu perfil
@@ -100,10 +132,33 @@ export default function OnboardingPage() {
           <input
             placeholder="Ej: 19DJN0293I"
             value={form.cct}
-            onChange={e => update('cct', e.target.value.toUpperCase())}
+            onChange={e => handleCCTChange(e.target.value)}
             maxLength={10}
             style={inputStyle}
           />
+
+          {/* Pastilla CCT */}
+          {cctLoading && (
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 18, paddingLeft: 4 }}>
+              Verificando CCT...
+            </div>
+          )}
+          {cctInfo && cctInfo.valido && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '8px 12px', marginBottom: 18 }}>
+              <span style={{ fontSize: 16 }}>✅</span>
+              <span style={{ fontSize: 13, color: '#1A1A2E', fontWeight: 500 }}>
+                {cctInfo.estado} · {cctInfo.sostenimiento} · {cctInfo.nivel}
+              </span>
+            </div>
+          )}
+          {cctInfo && !cctInfo.valido && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fee2e2', border: '1.5px solid #f87171', borderRadius: 8, padding: '8px 12px', marginBottom: 18 }}>
+              <span style={{ fontSize: 16 }}>❌</span>
+              <span style={{ fontSize: 13, color: '#991b1b' }}>
+                {cctInfo.error || 'CCT no válido'}
+              </span>
+            </div>
+          )}
 
           {/* Grado */}
           <label style={labelStyle}>Grado que atiendes</label>
@@ -148,7 +203,7 @@ export default function OnboardingPage() {
             type="number"
             min="1"
             max="50"
-            style={inputStyle}
+            style={{ ...inputStyle, marginBottom: 18 }}
           />
 
           {/* Contexto */}
@@ -161,7 +216,7 @@ export default function OnboardingPage() {
             value={form.contexto_grupo}
             onChange={e => update('contexto_grupo', e.target.value)}
             rows={3}
-            style={{ ...inputStyle, resize: 'vertical' as const }}
+            style={{ ...inputStyle, resize: 'vertical' as const, marginBottom: 18 }}
           />
 
           {error && (
