@@ -31,7 +31,7 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>✦</div>
           <div>
-            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 24 }}>PlanIA</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 24 }}>Plan</span>
             <span style={{ color: '#00A896', fontWeight: 800, fontSize: 32 }}>IA</span>
             <span style={{ color: '#00A896', fontWeight: 700, fontSize: 24 }}> Digital</span>
           </div>
