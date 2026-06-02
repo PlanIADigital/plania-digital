@@ -31,9 +31,9 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>✦</div>
           <div>
-            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 24 }}>Plan</span>
-            <span style={{ color: '#00A896', fontWeight: 800, fontSize: 32 }}>IA</span>
-            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 24 }}> Digital</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}>Plan</span>
+            <span style={{ color: '#00A896', fontWeight: 900, fontSize: 38, verticalAlign: 'super', lineHeight: 1 }}>IA</span>
+            <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}> Digital</span>
           </div>
           <p style={{ color: '#888', fontSize: 13, margin: '6px 0 0', letterSpacing: '0.03em' }}>
             Planea. Conecta. Transforma.
