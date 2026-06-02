@@ -28,15 +28,15 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 420 }}>
 
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
             <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
             <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}>Plan</span>
             <span style={{ color: '#00A896', fontWeight: 900, fontSize: 32 }}>IA</span>
             <span style={{ color: '#3D3A8C', fontWeight: 700, fontSize: 32 }}> Digital</span>
             <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
           </div>
-          <p style={{ color: '#888', fontSize: 13, margin: 0, letterSpacing: '0.03em' }}>
+          <p style={{ color: '#3D3A8C', fontSize: 15, margin: 0, letterSpacing: '0.08em', fontWeight: 500 }}>
             Planea. Conecta. Transforma.
           </p>
         </div>
