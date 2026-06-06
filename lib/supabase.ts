@@ -15,4 +15,4 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey)
 
 // Cliente admin — usar SOLO en API routes del servidor
 // Bypasea RLS — nunca exponer al cliente
-export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey)
+export const supabaseAdmin = typeof window === 'undefined' ? createClient(supabaseUrl, supabaseSecretKey) : null as any
