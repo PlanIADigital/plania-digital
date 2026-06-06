@@ -430,7 +430,14 @@ export default function NuevaPlaneacionPage() {
                                             <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#FAFAFA', transition: 'all 0.15s' }}>
                                               <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda.pda)}
                                                 style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
-                                              <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                                                <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
+                                                {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
+                                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#00A896', background: '#E0F5F3', border: '1px solid #00A896', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                    ⭐ Prioritario para tu grupo
+                                                  </span>
+                                                )}
+                                              </div>
                                             </label>
                                           )
                                         })}
@@ -456,7 +463,14 @@ export default function NuevaPlaneacionPage() {
                                                     <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#F5FFFE', transition: 'all 0.15s' }}>
                                                       <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda.pda)}
                                                         style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
-                                                      <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
+                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                                                        <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
+                                                        {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
+                                                          <span style={{ fontSize: 10, fontWeight: 700, color: '#00A896', background: '#E0F5F3', border: '1px solid #00A896', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                            ⭐ Prioritario para tu grupo
+                                                          </span>
+                                                        )}
+                                                      </div>
                                                     </label>
                                                   )
                                                 })}
