@@ -88,6 +88,7 @@ export default function NuevaPlaneacionPage() {
   const [errorTransversales, setErrorTransversales] = useState('')
   const [ejePrincipal, setEjePrincipal] = useState('')
   const [ejeSecundario, setEjeSecundario] = useState('')
+  const [ejePrincipalDescartado, setEjePrincipalDescartado] = useState(false)
   const [ejeSecundarioDescartado, setEjeSecundarioDescartado] = useState(false)
   const [ejeElegidoPorEducadora, setEjeElegidoPorEducadora] = useState('')
   const [ejesDisponibles, setEjesDisponibles] = useState<string[]>([])
@@ -219,7 +220,7 @@ export default function NuevaPlaneacionPage() {
       const data = await res.json()
       if (data.transversales) {
         setTransversales(data.transversales.map((t: any) => ({ ...t, activo: true })))
-        if (data.eje_principal) setEjePrincipal(data.eje_principal)
+        if (data.eje_principal) { setEjePrincipal(data.eje_principal); setEjePrincipalDescartado(false) }
         if (data.eje_secundario) { setEjeSecundario(data.eje_secundario); setEjeSecundarioDescartado(false); setEjeElegidoPorEducadora('') }
         if (data.ejes_disponibles) setEjesDisponibles(data.ejes_disponibles)
       } else {
@@ -540,10 +541,31 @@ export default function NuevaPlaneacionPage() {
                 <div style={{ border: '1.5px solid #3D3A8C', borderRadius: 10, padding: 16, marginBottom: 12, background: '#F4F3FB' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Eje principal</span>
-                    <span style={{ fontSize: 11, background: '#3D3A8C', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>No modificable</span>
+                    <span style={{ fontSize: 11, background: '#00A896', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>Recomendado</span>
                   </div>
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>{ejePrincipal}</p>
                 </div>
+                <button onClick={() => setEjePrincipalDescartado(true)}
+                  style={{ background: '#FFF0F0', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, marginBottom: 12, display: 'block' }}>
+                  Cambiar eje principal
+                </button>
+                {ejePrincipalDescartado && (
+                  <div style={{ background: '#F8F8FE', border: '1px solid #E0DFF5', borderRadius: 10, padding: 16, marginBottom: 12 }}>
+                    <p style={{ margin: '0 0 10px', fontSize: 13, color: '#666' }}>Elige un eje principal diferente:</p>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                      {ejesDisponibles.filter(e => e !== ejePrincipal).map(eje => (
+                        <button key={eje} onClick={() => { setEjePrincipal(eje); setEjePrincipalDescartado(false) }}
+                          style={{ textAlign: 'left' as const, background: 'white', border: '1.5px solid #E0DFF5', borderRadius: 8, padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: '#1A1A2E' }}>
+                          {eje}
+                        </button>
+                      ))}
+                      <button onClick={() => setEjePrincipalDescartado(false)}
+                        style={{ textAlign: 'left' as const, background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: '4px 0', textDecoration: 'underline' }}>
+                        ← Mantener eje recomendado
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {!ejeSecundarioDescartado && !ejeElegidoPorEducadora ? (
                   <div style={{ border: '1.5px solid #00A896', borderRadius: 10, padding: 16, marginBottom: 8, background: 'white' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -553,7 +575,7 @@ export default function NuevaPlaneacionPage() {
                       </div>
                       <button onClick={() => setEjeSecundarioDescartado(true)}
                         style={{ background: '#FFF0F0', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, flexShrink: 0, marginLeft: 12 }}>
-                        ✕ Descartar
+                        Cambiar
                       </button>
                     </div>
                   </div>
@@ -569,7 +591,7 @@ export default function NuevaPlaneacionPage() {
                       ))}
                       <button onClick={() => { setEjeSecundarioDescartado(false); setEjeElegidoPorEducadora('') }}
                         style={{ textAlign: 'left' as const, background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: '4px 0', textDecoration: 'underline' }}>
-                        ← Restaurar eje sugerido
+                        ← Mantener el sugerido
                       </button>
                     </div>
                   </div>
