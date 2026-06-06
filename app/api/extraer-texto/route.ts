@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // ── PDF ──────────────────────────────────────────────────────────────────
     if (nombreArchivo.endsWith('.pdf')) {
-      const pdfParse = (await import('pdf-parse')).default
+      const pdfParse = await import('pdf-parse').then(m => m.default || m)
       const resultado = await pdfParse(buffer)
       const texto = resultado.text?.trim()
       if (!texto) {
