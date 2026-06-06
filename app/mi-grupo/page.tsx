@@ -84,7 +84,7 @@ export default function MiGrupoPage() {
         const total = data.total_students || data.total_alumnos || 24
         setEvaluacionIndividual(Array(total).fill(''))
       }
-      if (data.pdas_jardin) setPdasJardinTexto(data.pdas_jardin)
+      if (data.pdas_jardin && typeof data.pdas_jardin === 'string') setPdasJardinTexto(data.pdas_jardin)
     }
     load()
   }, [])
