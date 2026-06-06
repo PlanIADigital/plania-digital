@@ -3,7 +3,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 
 const client = new Anthropic()
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
@@ -12,7 +11,6 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const { diagnostico_texto, grado, auth_uid } = await request.json()
-
     if (!diagnostico_texto || !auth_uid) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
@@ -33,18 +31,24 @@ export async function POST(request: NextRequest) {
       `CAMPO: ${r.campo} | CONTENIDO: ${r.contenido} | PDA: ${r.pda}`
     ).join('\n')
 
-    // 3. Llamar a Haiku
+    // 3. Llamar a Haiku con modelo correcto y prompt mejorado
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3000,
       system: `Eres un agente pedagógico especializado en el Programa de Preescolar NEM 2022 Fase 2 de México.
+
 Tu tarea es analizar el diagnóstico de grupo de una educadora e identificar qué PDAs del catálogo oficial son más relevantes para atender las necesidades detectadas en sus alumnos.
 
-REGLAS CRÍTICAS:
-- Los PDAs deben ser LITERALES y EXACTOS del catálogo proporcionado. Sin parafrasear ni modificar.
-- Selecciona entre 5 y 7 PDAs máximo, ordenados de mayor a menor relevancia.
-- Para cada PDA incluye una justificación breve (1-2 oraciones) explicando por qué atiende las necesidades detectadas.
-- Responde SOLO con JSON válido, sin markdown, sin explicaciones.
+PASO 1 — EXTRACCIÓN:
+El diagnóstico puede venir en cualquier formato: narrativo, por secciones, por campos formativos, como lista, o mezclado con datos administrativos. Ignora completamente los datos administrativos (nombre del jardín, CCT, turno, horarios, infraestructura, datos de los padres de familia, nivel socioeconómico). Extrae ÚNICAMENTE las necesidades pedagógicas, áreas de oportunidad, y características de desarrollo y aprendizaje de los alumnos que sean relevantes para la planeación didáctica.
+
+PASO 2 — SELECCIÓN DE PDAs:
+Con base en las necesidades extraídas, selecciona entre 5 y 7 PDAs del catálogo oficial, ordenados de mayor a menor relevancia. Los PDAs deben ser LITERALES y EXACTOS del catálogo. Nunca parafrasear ni modificar el texto del PDA.
+
+PASO 3 — JUSTIFICACIÓN:
+Para cada PDA seleccionado, escribe una justificación breve (1-2 oraciones) explicando con qué necesidad específica detectada en el diagnóstico se relaciona directamente.
+
+REGLA ABSOLUTA: Responde SOLO con JSON válido, sin markdown, sin texto adicional, sin explicaciones fuera del JSON.
 
 FORMATO DE SALIDA EXACTO:
 {
@@ -59,13 +63,13 @@ FORMATO DE SALIDA EXACTO:
 }`,
       messages: [{
         role: 'user',
-        content: `DIAGNÓSTICO DE GRUPO:
+        content: `DIAGNÓSTICO DE GRUPO (puede venir en cualquier formato):
 ${diagnostico_texto}
 
 CATÁLOGO OFICIAL DE PDAs (grado ${grado || '2°'}):
 ${resumenPDAs}
 
-Analiza las necesidades detectadas en el diagnóstico y selecciona los 5-7 PDAs más relevantes para atenderlas. Los PDAs deben ser literales del catálogo.`
+Analiza el diagnóstico, extrae las necesidades pedagógicas reales ignorando datos administrativos, y selecciona los 5-7 PDAs más relevantes del catálogo. Los PDAs deben ser literales.`
       }]
     })
 
