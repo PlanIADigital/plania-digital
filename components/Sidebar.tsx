@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard',        path: '/dashboard',        icon: '🏠', activo: true },
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/dashboard',        icon: '📋', activo: true },
+  { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
   { label: 'Cobertura PDA',    path: null,                icon: '📊', activo: false },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },

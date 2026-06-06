@@ -104,6 +104,13 @@ export default function VerPlaneacionPage() {
             </div>
           )}
 
+          {planeacion.pda_contenido && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>Contenido</p>
+              <p style={{ fontSize: 14, color: '#444', lineHeight: 1.6, margin: 0 }}>{planeacion.pda_contenido}</p>
+            </div>
+          )}
+
           {planeacion.pda_literal && (
             <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '12px 14px' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>PDA principal</p>

@@ -1,10 +1,13 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { supabase } from '@/lib/supabase'
 
-
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const CAMPOS = [
   'Lenguajes',
@@ -38,19 +41,6 @@ function calcFechaFin(inicio: string, dias: number): string {
   return d.toISOString().split('T')[0]
 }
 
-interface PdaItem {
-  id: string
-  grado: string
-  pda: string
-  orden: number
-  esAvanzado: boolean
-}
-
-interface ContenidoSeleccionado {
-  contenido: string
-  pdasSeleccionados: string[]
-}
-
 interface Transversal {
   campo: string
   contenido: string
@@ -67,6 +57,7 @@ export default function NuevaPlaneacionPage() {
   const [result, setResult] = useState<any>(null)
   const [saveStatus, setSaveStatus] = useState('')
 
+  // Datos del proyecto
   const [form, setForm] = useState({
     nombre_proyecto: '',
     situacion_problema: '',
@@ -77,22 +68,26 @@ export default function NuevaPlaneacionPage() {
     fecha_fin: '',
   })
 
+  // Campo principal
   const [principalCampo, setPrincipalCampo] = useState('')
-  const [contenidosDisponibles, setContenidosDisponibles] = useState<string[]>([])
-  const [contenidosElegidos, setContenidosElegidos] = useState<ContenidoSeleccionado[]>([])
-  const [pdasPorContenido, setPdasPorContenido] = useState<Record<string, PdaItem[]>>({})
-  const [cargandoPdas, setCargandoPdas] = useState<Record<string, boolean>>({})
+  const [principalContenido, setPrincipalContenido] = useState('')
+  const [principalPda, setPrincipalPda] = useState('')
+  const [contenidos, setContenidos] = useState<string[]>([])
+  const [pdaSugerido, setPdaSugerido] = useState('')
+  const [nivelesAvanzados, setNivelesAvanzados] = useState<{ grado: string; pda: string }[]>([])
+  const [mostrarAvanzados, setMostrarAvanzados] = useState(false)
+  const [gradoPdaElegido, setGradoPdaElegido] = useState('')
 
+  // Transversales sugeridos por IA
   const [transversales, setTransversales] = useState<Transversal[]>([])
   const [sugirendoTransversales, setSugirendoTransversales] = useState(false)
   const [errorTransversales, setErrorTransversales] = useState('')
 
   const finalidadRef = useRef<HTMLTextAreaElement>(null)
   const gradoGrupo = profile?.grado || '2°'
+  const esAvanzado = gradoPdaElegido && gradoPdaElegido !== gradoGrupo
   const totalAlumnos = profile?.total_students || 24
   const pasosProgreso = getPasosProgreso(totalAlumnos)
-  const todasPdasSeleccionadas = contenidosElegidos.flatMap(c => c.pdasSeleccionados)
-  const hayPdasSeleccionados = todasPdasSeleccionadas.length > 0
 
   useEffect(() => {
     async function load() {
@@ -105,81 +100,58 @@ export default function NuevaPlaneacionPage() {
     load()
   }, [])
 
+  // Cargar contenidos al elegir campo principal
   useEffect(() => {
-    if (!principalCampo) {
-      setContenidosDisponibles([])
-      setContenidosElegidos([])
-      setPdasPorContenido({})
-      return
-    }
+    if (!principalCampo) { setContenidos([]); return }
     async function loadContenidos() {
       const { data } = await supabase
-        .from('pda_catalog')
-        .select('contenido, grado')
-        .eq('campo', principalCampo)
-        .order('contenido')
+        .from('pda_catalog').select('contenido')
+        .eq('campo', principalCampo).eq('grado', '2°').order('contenido')
       const unicos = [...new Set((data || []).map((r: any) => r.contenido))]
-      setContenidosDisponibles(unicos)
-      setContenidosElegidos([])
-      setPdasPorContenido({})
+      setContenidos(unicos)
+      setPrincipalContenido('')
+      setPrincipalPda('')
+      setPdaSugerido('')
     }
     loadContenidos()
   }, [principalCampo])
 
-  async function cargarPdasDeContenido(contenido: string) {
-    if (pdasPorContenido[contenido]) return
-    setCargandoPdas(prev => ({ ...prev, [contenido]: true }))
-    const gradosOrden = ['1°', '2°', '3°']
-    const idxGrupo = gradosOrden.indexOf(gradoGrupo)
-    const gradosPermitidos = gradosOrden.slice(idxGrupo)
-    const { data } = await supabase
-      .from('pda_catalog')
-      .select('id, grado, pda, orden')
-      .eq('campo', principalCampo)
-      .eq('contenido', contenido)
-      .in('grado', gradosPermitidos)
-      .order('grado')
-      .order('orden')
-    const items: PdaItem[] = (data || []).map((r: any) => ({
-      id: r.id,
-      grado: r.grado,
-      pda: r.pda,
-      orden: r.orden,
-      esAvanzado: r.grado !== gradoGrupo,
-    }))
-    setPdasPorContenido(prev => ({ ...prev, [contenido]: items }))
-    setCargandoPdas(prev => ({ ...prev, [contenido]: false }))
-  }
-
-  function toggleContenido(contenido: string) {
-    const yaElegido = contenidosElegidos.find(c => c.contenido === contenido)
-    if (yaElegido) {
-      setContenidosElegidos(prev => prev.filter(c => c.contenido !== contenido))
-    } else {
-      setContenidosElegidos(prev => [...prev, { contenido, pdasSeleccionados: [] }])
-      cargarPdasDeContenido(contenido)
-    }
-  }
-
-  function togglePda(contenido: string, pdaTexto: string) {
-    setContenidosElegidos(prev => prev.map(c => {
-      if (c.contenido !== contenido) return c
-      const yaSeleccionado = c.pdasSeleccionados.includes(pdaTexto)
-      return {
-        ...c,
-        pdasSeleccionados: yaSeleccionado
-          ? c.pdasSeleccionados.filter(p => p !== pdaTexto)
-          : [...c.pdasSeleccionados, pdaTexto]
+  // Cargar PDA al elegir contenido
+  useEffect(() => {
+    if (!principalContenido || !principalCampo) return
+    async function loadPda() {
+      const { data: sugerido } = await supabase
+        .from('pda_catalog').select('pda, grado')
+        .eq('campo', principalCampo).eq('contenido', principalContenido)
+        .eq('grado', gradoGrupo).single()
+      if (sugerido) {
+        setPdaSugerido(sugerido.pda)
+        setGradoPdaElegido(gradoGrupo)
+        setPrincipalPda(sugerido.pda)
       }
-    }))
-  }
+      const gradosOrden = ['1°', '2°', '3°']
+      const idx = gradosOrden.indexOf(gradoGrupo)
+      const superiores = gradosOrden.slice(idx + 1)
+      if (superiores.length > 0) {
+        const { data: avanzados } = await supabase
+          .from('pda_catalog').select('grado, pda')
+          .eq('campo', principalCampo).eq('contenido', principalContenido)
+          .in('grado', superiores).order('grado')
+        setNivelesAvanzados(avanzados || [])
+      }
+      setMostrarAvanzados(false)
+    }
+    loadPda()
+  }, [principalContenido, principalCampo])
 
+  // Fecha fin calculada
   useEffect(() => {
     if (form.fecha_inicio) {
       setForm(prev => ({ ...prev, fecha_fin: calcFechaFin(form.fecha_inicio, prev.duracion_dias) }))
     }
   }, [form.fecha_inicio, form.duracion_dias])
 
+  // Progreso de generación
   useEffect(() => {
     if (!generating) return
     setPasoActual(0); setPorcentaje(0)
@@ -236,19 +208,14 @@ export default function NuevaPlaneacionPage() {
       alert('Completa el nombre, situación problema y finalidad del proyecto')
       return
     }
-    if (!principalCampo || contenidosElegidos.length === 0) {
-      alert('Selecciona al menos un contenido del campo formativo principal')
-      return
-    }
-    if (!hayPdasSeleccionados) {
-      alert('Selecciona al menos un PDA')
+    if (!principalCampo || !principalContenido || !principalPda) {
+      alert('Completa el campo formativo principal')
       return
     }
     setGenerating(true); setResult(null); setSaveStatus('')
+
     const transversalesActivos = transversales.filter(t => t.activo)
-    const pdasParaAgente = contenidosElegidos.flatMap(c =>
-      c.pdasSeleccionados.map(p => ({ contenido: c.contenido, pda: p }))
-    )
+
     try {
       const res = await fetch('/api/generar-planeacion', {
         method: 'POST',
@@ -257,9 +224,8 @@ export default function NuevaPlaneacionPage() {
           form: {
             ...form,
             campo_formativo: principalCampo,
-            contenido: contenidosElegidos[0]?.contenido || '',
-            pda_principal: contenidosElegidos[0]?.pdasSeleccionados[0] || '',
-            pdas_seleccionados: pdasParaAgente,
+            contenido: principalContenido,
+            pda_principal: principalPda,
             grado_grupo: gradoGrupo,
             transversales: transversalesActivos,
           },
@@ -267,19 +233,20 @@ export default function NuevaPlaneacionPage() {
         })
       })
       const data = await res.json()
-      if (data.error) { setResult({ error: data.error }); setGenerating(false); return }
+      if (data.error) { setResult({ error: data.error }); return }
       if (data.planeacion) {
         setPorcentaje(100)
         await new Promise(r => setTimeout(r, 600))
         setResult(data.planeacion)
+
         const { error: saveError } = await supabase.from('plannings').insert({
           user_id: profile.id,
           project_name: form.nombre_proyecto,
           situacion_problema: form.situacion_problema,
           finalidad: form.finalidad,
           pda_campo: principalCampo,
-          pda_contenido: contenidosElegidos[0]?.contenido || '',
-          pda_literal: todasPdasSeleccionadas.join(' | '),
+          pda_contenido: principalContenido,
+          pda_literal: principalPda,
           recursos_materiales: form.recursos_materiales || null,
           transversal_1_campo: transversalesActivos[0]?.campo || null,
           transversal_1_contenido: transversalesActivos[0]?.contenido || null,
@@ -333,8 +300,9 @@ export default function NuevaPlaneacionPage() {
 
   return (
     <Sidebar profile={profile}>
-      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 16px' }}>
+      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 32px' }}>
 
+        {/* Pantalla de generación */}
         {generating && (
           <div style={{ background: 'white', borderRadius: 14, padding: 36, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
@@ -350,32 +318,59 @@ export default function NuevaPlaneacionPage() {
           </div>
         )}
 
+        {/* Formulario */}
         {!generating && !result && (
-          <div style={{ background: 'white', borderRadius: 14, padding: '32px 24px', boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
+          <div style={{ background: 'white', borderRadius: 14, padding: 36, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>Nueva planeación</h2>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>
               {profile.cct_primary} · Turno {profile.shift_primary}{profile.grado && ` · ${profile.grado} grado`}
             </p>
 
+            {/* Sección 1 — Datos del proyecto */}
             <div style={s.section}>
               <p style={s.sectionTitle}>1 · Datos del proyecto</p>
               <label style={s.label}>Nombre del proyecto *</label>
-              <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
+              <input
+                placeholder="Ej: El agua en nuestra vida"
+                value={form.nombre_proyecto}
+                onChange={e => update('nombre_proyecto', e.target.value)}
+                style={s.input}
+              />
               <label style={s.label}>Situación problema *</label>
-              <textarea placeholder="¿Qué situación del entorno motivó este proyecto?" value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)} rows={3} style={s.textarea} />
+              <textarea
+                placeholder="¿Qué situación del entorno motivó este proyecto?"
+                value={form.situacion_problema}
+                onChange={e => update('situacion_problema', e.target.value)}
+                rows={3} style={s.textarea}
+              />
               <label style={s.label}>Finalidad *</label>
-              <textarea ref={finalidadRef} placeholder="¿Qué lograrán los alumnos al concluir este proyecto?" value={form.finalidad} onChange={e => update('finalidad', e.target.value)} rows={3} style={{ ...s.textarea, marginBottom: 20 }} />
+              <textarea
+                ref={finalidadRef}
+                placeholder="¿Qué lograrán los alumnos al concluir este proyecto?"
+                value={form.finalidad}
+                onChange={e => update('finalidad', e.target.value)}
+                rows={3} style={{ ...s.textarea, marginBottom: 20 }}
+              />
+
               <div style={{ background: '#F8F8FE', border: '1px solid #D8D6F0', borderRadius: 10, padding: 16, marginBottom: 4 }}>
                 <label style={{ ...s.label, marginBottom: 4 }}>
                   Recursos o materiales específicos
                   <span style={{ fontWeight: 400, color: '#888', fontSize: 13, marginLeft: 6 }}>(opcional)</span>
                 </label>
-                <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>¿Tu directora indicó usar algún material en específico? El agente lo integrará en las actividades.</p>
-                <textarea placeholder="Ej: báscula, objetos de medición, lupas, material reciclado..." value={form.recursos_materiales} onChange={e => update('recursos_materiales', e.target.value)} rows={2}
-                  style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', background: 'white' } as React.CSSProperties} />
+                <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>
+                  ¿Tu directora indicó usar algún material en específico? El agente lo integrará en las actividades.
+                </p>
+                <textarea
+                  placeholder="Ej: báscula, objetos de medición, lupas, material reciclado..."
+                  value={form.recursos_materiales}
+                  onChange={e => update('recursos_materiales', e.target.value)}
+                  rows={2}
+                  style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', background: 'white' } as React.CSSProperties}
+                />
               </div>
             </div>
 
+            {/* Sección 2 — Campo principal */}
             <div style={s.section}>
               <p style={s.sectionTitle}>2 · Campo formativo principal</p>
               <label style={s.label}>Campo formativo *</label>
@@ -385,112 +380,84 @@ export default function NuevaPlaneacionPage() {
                 {CAMPOS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
 
-              {principalCampo && contenidosDisponibles.length > 0 && (
+              {principalCampo && (
+                <>
+                  <label style={s.label}>Contenido *</label>
+                  {contenidos.length === 0 ? (
+                    <p style={{ color: '#aaa', fontSize: 13, marginBottom: 20 }}>Cargando contenidos...</p>
+                  ) : (
+                    <select value={principalContenido} onChange={e => setPrincipalContenido(e.target.value)}
+                      style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 20, background: 'white', cursor: 'pointer' } as React.CSSProperties}>
+                      <option value="">— Selecciona un contenido —</option>
+                      {contenidos.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  )}
+                </>
+              )}
+
+              {pdaSugerido && principalContenido && (
                 <div>
-                  <label style={{ ...s.label, marginBottom: 10 }}>
-                    Contenidos *
-                    <span style={{ fontWeight: 400, color: '#888', fontSize: 12, marginLeft: 8 }}>Selecciona uno o más</span>
+                  <label style={s.label}>
+                    PDA *
+                    {esAvanzado && (
+                      <span style={{ marginLeft: 8, background: '#00A896', color: 'white', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        Nivel avanzado {gradoPdaElegido}
+                      </span>
+                    )}
                   </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                    {contenidosDisponibles.map(contenido => {
-                      const elegido = contenidosElegidos.find(c => c.contenido === contenido)
-                      const isChecked = !!elegido
-                      return (
-                        <div key={contenido}>
-                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', padding: '12px 14px', borderRadius: 8, border: `1.5px solid ${isChecked ? '#3D3A8C' : '#E0DFF5'}`, background: isChecked ? '#F4F3FB' : 'white', transition: 'all 0.15s' }}>
-                            <input type="checkbox" checked={isChecked} onChange={() => toggleContenido(contenido)}
-                              style={{ marginTop: 2, width: 16, height: 16, accentColor: '#3D3A8C', flexShrink: 0, cursor: 'pointer' }} />
-                            <span style={{ fontSize: 13, lineHeight: 1.5, color: isChecked ? '#1A1A2E' : '#555', fontWeight: isChecked ? 600 : 400 }}>{contenido}</span>
-                          </label>
-
-                          {isChecked && (
-                            <div style={{ marginLeft: 14, marginTop: 6, marginBottom: 4, paddingLeft: 14, borderLeft: '2px solid #D8D6F0' }}>
-                              {cargandoPdas[contenido] ? (
-                                <p style={{ color: '#aaa', fontSize: 12, margin: '8px 0' }}>Cargando PDAs...</p>
-                              ) : (
-                                <>
-                                  {(pdasPorContenido[contenido] || []).filter(p => !p.esAvanzado).length > 0 && (
-                                    <div style={{ marginBottom: 8 }}>
-                                      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '8px 0 6px' }}>{gradoGrupo} grado</p>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        {(pdasPorContenido[contenido] || []).filter(p => !p.esAvanzado).map(pda => {
-                                          const seleccionado = elegido?.pdasSeleccionados.includes(pda.pda) || false
-                                          return (
-                                            <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#FAFAFA', transition: 'all 0.15s' }}>
-                                              <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda.pda)}
-                                                style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
-                                              <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
-                                            </label>
-                                          )
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {(pdasPorContenido[contenido] || []).filter(p => p.esAvanzado).length > 0 && (
-                                    <details style={{ marginTop: 6 }}>
-                                      <summary style={{ fontSize: 12, color: '#00A896', cursor: 'pointer', userSelect: 'none', padding: '6px 0', fontWeight: 600 }}>
-                                        ¿Tu grupo ya superó este nivel? Ver PDAs de grado avanzado ▼
-                                      </summary>
-                                      <div style={{ marginTop: 8 }}>
-                                        {['2°', '3°'].map(grado => {
-                                          const pdasDeGrado = (pdasPorContenido[contenido] || []).filter(p => p.esAvanzado && p.grado === grado)
-                                          if (pdasDeGrado.length === 0) return null
-                                          return (
-                                            <div key={grado} style={{ marginBottom: 10 }}>
-                                              <p style={{ fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '6px 0' }}>{grado} grado — nivel avanzado</p>
-                                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                {pdasDeGrado.map(pda => {
-                                                  const seleccionado = elegido?.pdasSeleccionados.includes(pda.pda) || false
-                                                  return (
-                                                    <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#F5FFFE', transition: 'all 0.15s' }}>
-                                                      <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda.pda)}
-                                                        style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
-                                                      <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
-                                                    </label>
-                                                  )
-                                                })}
-                                              </div>
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                    </details>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                  <div style={{ background: '#EEEDF8', border: '1.5px solid #3D3A8C', borderRadius: 8, padding: '12px 14px', marginBottom: 10, fontSize: 14, lineHeight: 1.6, color: '#1A1A2E' }}>
+                    {principalPda}
                   </div>
-                </div>
-              )}
+                  <details style={{ marginBottom: 10 }}>
+                    <summary style={{ fontSize: 13, color: '#3D3A8C', cursor: 'pointer', userSelect: 'none', marginBottom: 6 }}>✏️ Editar PDA manualmente</summary>
+                    <textarea value={principalPda} onChange={e => setPrincipalPda(e.target.value)} rows={4}
+                      style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginTop: 8, resize: 'vertical', background: '#FAFAFA' } as React.CSSProperties} />
+                  </details>
+                  {nivelesAvanzados.length > 0 && !esAvanzado && (
+                    <button onClick={() => setMostrarAvanzados(!mostrarAvanzados)}
+                      style={{ background: 'none', border: 'none', color: '#00A896', fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', marginBottom: 10 }}>
+                      {mostrarAvanzados ? '▲ Ocultar niveles avanzados' : '¿Tu grupo ya superó este aprendizaje? Ver niveles avanzados ▼'}
+                    </button>
+                  )}
+                  {esAvanzado && (
+                    <button onClick={() => { setGradoPdaElegido(gradoGrupo); setPrincipalPda(pdaSugerido); setMostrarAvanzados(false) }}
+                      style={{ background: 'none', border: 'none', color: '#888', fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', marginBottom: 10, display: 'block' }}>
+                      ← Regresar al PDA de {gradoGrupo}
+                    </button>
+                  )}
+                  {mostrarAvanzados && nivelesAvanzados.length > 0 && (
+                    <div style={{ background: '#F8F8FE', border: '1px solid #D8D6F0', borderRadius: 8, padding: 16, marginBottom: 12 }}>
+                      <p style={{ fontSize: 12, color: '#666', marginTop: 0, marginBottom: 12 }}>Estos PDAs tienen mayor nivel de exigencia:</p>
+                      {nivelesAvanzados.map(n => (
+                        <div key={n.grado} style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#3D3A8C' }}>Nivel {n.grado}</span>
+                            <button onClick={() => { setGradoPdaElegido(n.grado); setPrincipalPda(n.pda); setMostrarAvanzados(false) }}
+                              style={{ background: '#3D3A8C', color: 'white', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>
+                              Elegir este
+                            </button>
+                          </div>
+                          <p style={{ fontSize: 13, color: '#444', lineHeight: 1.5, margin: 0, background: 'white', padding: '8px 10px', borderRadius: 6, border: '1px solid #E8E8F0' }}>{n.pda}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-              {hayPdasSeleccionados && (
-                <div style={{ background: '#F0FFF8', border: '1.5px solid #00A896', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: '#00A896', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    ✓ {todasPdasSeleccionadas.length} PDA{todasPdasSeleccionadas.length > 1 ? 's' : ''} seleccionado{todasPdasSeleccionadas.length > 1 ? 's' : ''}
-                  </p>
-                  {contenidosElegidos.filter(c => c.pdasSeleccionados.length > 0).map(c => (
-                    <p key={c.contenido} style={{ margin: '3px 0', fontSize: 12, color: '#065f46' }}>
-                      <strong>{c.pdasSeleccionados.length}</strong> de "{c.contenido.substring(0, 50)}..."
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {hayPdasSeleccionados && form.nombre_proyecto && form.situacion_problema && form.finalidad && (
-                <div style={{ paddingTop: 8 }}>
-                  <button onClick={sugerirTransversales} disabled={sugirendoTransversales}
-                    style={{ background: sugirendoTransversales ? '#F0EFF8' : '#EEEDF8', color: '#3D3A8C', border: '1.5px solid #3D3A8C', padding: '10px 18px', fontSize: 14, cursor: sugirendoTransversales ? 'default' : 'pointer', borderRadius: 8, fontWeight: 600, width: '100%' }}>
-                    {sugirendoTransversales ? '🔍 Analizando tu proyecto...' : '🔗 Sugerir campos transversales'}
-                  </button>
-                  {errorTransversales && <p style={{ color: '#DC2626', fontSize: 13, marginTop: 8 }}>{errorTransversales}</p>}
+                  {/* Botón para sugerir transversales */}
+                  {form.nombre_proyecto && form.situacion_problema && form.finalidad && (
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0EFF8' }}>
+                      <button onClick={sugerirTransversales} disabled={sugirendoTransversales}
+                        style={{ background: sugirendoTransversales ? '#F0EFF8' : '#EEEDF8', color: '#3D3A8C', border: '1.5px solid #3D3A8C', padding: '10px 18px', fontSize: 14, cursor: sugirendoTransversales ? 'default' : 'pointer', borderRadius: 8, fontWeight: 600, width: '100%' }}>
+                        {sugirendoTransversales ? '🔍 Analizando tu proyecto...' : '🔗 Sugerir campos transversales'}
+                      </button>
+                      {errorTransversales && <p style={{ color: '#DC2626', fontSize: 13, marginTop: 8 }}>{errorTransversales}</p>}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
+            {/* Sección 3 — Transversales sugeridos */}
             {transversales.length > 0 && (
               <div style={s.section}>
                 <p style={s.sectionTitle}>3 · Campos transversales sugeridos</p>
@@ -498,11 +465,26 @@ export default function NuevaPlaneacionPage() {
                   El sistema analizó tu proyecto y sugirió estos campos. Puedes descartar los que no apliquen.
                 </p>
                 {transversales.map((t, i) => (
-                  <div key={i} style={{ border: `1.5px solid ${t.activo ? '#00A896' : '#E0E0E0'}`, borderRadius: 10, padding: 16, marginBottom: 12, background: t.activo ? 'white' : '#FAFAFA', opacity: t.activo ? 1 : 0.5, transition: 'all 0.2s' }}>
+                  <div key={i} style={{
+                    border: `1.5px solid ${t.activo ? '#00A896' : '#E0E0E0'}`,
+                    borderRadius: 10, padding: 16, marginBottom: 12,
+                    background: t.activo ? 'white' : '#FAFAFA',
+                    opacity: t.activo ? 1 : 0.5,
+                    transition: 'all 0.2s',
+                  }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: t.activo ? 12 : 0 }}>
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: t.activo ? '#00A896' : '#999', textTransform: 'uppercase', letterSpacing: '0.07em' }}>🔗 Transversal {i + 1}</p>
-                      <button onClick={() => t.activo ? descartarTransversal(i) : reactivarTransversal(i)}
-                        style={{ background: t.activo ? '#FFF0F0' : '#F0FFF8', border: `1px solid ${t.activo ? '#FCA5A5' : '#6EE7B7'}`, color: t.activo ? '#DC2626' : '#059669', borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: t.activo ? '#00A896' : '#999', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        🔗 Transversal {i + 1}
+                      </p>
+                      <button
+                        onClick={() => t.activo ? descartarTransversal(i) : reactivarTransversal(i)}
+                        style={{
+                          background: t.activo ? '#FFF0F0' : '#F0FFF8',
+                          border: `1px solid ${t.activo ? '#FCA5A5' : '#6EE7B7'}`,
+                          color: t.activo ? '#DC2626' : '#059669',
+                          borderRadius: 6, padding: '3px 10px', fontSize: 12,
+                          cursor: 'pointer', fontWeight: 600,
+                        }}>
                         {t.activo ? '✕ Descartar' : '+ Restaurar'}
                       </button>
                     </div>
@@ -521,6 +503,7 @@ export default function NuevaPlaneacionPage() {
               </div>
             )}
 
+            {/* Sección duración */}
             <div style={{ marginBottom: 28 }}>
               <p style={s.sectionTitle}>{transversales.length > 0 ? '4' : '3'} · Duración del proyecto</p>
               <label style={s.label}>¿Cuánto durará el proyecto? *</label>
@@ -547,18 +530,21 @@ export default function NuevaPlaneacionPage() {
               </div>
             </div>
 
-            <button onClick={handleGenerar} disabled={generating || !hayPdasSeleccionados}
-              style={{ background: hayPdasSeleccionados ? '#00A896' : '#D0D0D0', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: hayPdasSeleccionados ? 'pointer' : 'default', width: '100%', borderRadius: 8, fontWeight: 600, transition: 'background 0.2s' }}>
+            <button onClick={handleGenerar} disabled={generating}
+              style={{ background: '#00A896', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: 'pointer', width: '100%', borderRadius: 8, fontWeight: 600 }}>
               ✨ Generar planeación con IA
             </button>
           </div>
         )}
 
+        {/* Resultado */}
         {result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>Planeación generada</h3>
             {saveStatus && (
-              <p style={{ fontSize: 13, color: saveStatus.startsWith('✅') ? '#065f46' : '#92400e', background: saveStatus.startsWith('✅') ? '#d1fae5' : '#fef3c7', padding: '8px 12px', borderRadius: 6, marginBottom: 20 }}>
+              <p style={{ fontSize: 13, color: saveStatus.startsWith('✅') ? '#065f46' : '#92400e',
+                background: saveStatus.startsWith('✅') ? '#d1fae5' : '#fef3c7',
+                padding: '8px 12px', borderRadius: 6, marginBottom: 20 }}>
                 {saveStatus}
               </p>
             )}

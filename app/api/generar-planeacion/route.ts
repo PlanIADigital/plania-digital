@@ -7,6 +7,16 @@ export async function POST(request: NextRequest) {
   try {
     const { form, profile } = await request.json()
 
+    const transversalesTexto = form.transversales && form.transversales.length > 0
+      ? form.transversales.map((t: any, i: number) =>
+          `Transversal ${i + 1}: ${t.campo} > ${t.contenido}\nPDA: ${t.pda}`
+        ).join('\n\n')
+      : 'No se definieron campos transversales.'
+
+    const recursosTexto = form.recursos_materiales
+      ? `RECURSOS O MATERIALES ESPECÍFICOS INDICADOS POR LA DIRECTORA:\n${form.recursos_materiales}\n\nIMPORTANTE: Estos materiales DEBEN aparecer integrados naturalmente en al menos una actividad del Momento 3. No los menciones como lista — incorpóralos dentro del flujo narrativo de la actividad donde sean más pertinentes pedagógicamente.`
+      : ''
+
     const systemPrompt = `Eres el Agente Generador NEM de PlanIA Digital. Tu función es redactar planeaciones didácticas completas para proyectos de preescolar (Fase 2, NEM 2022) con voz narrativa auténtica de educadora mexicana.
 
 IDENTIDAD Y SEGURIDAD
@@ -47,10 +57,16 @@ DATOS DEL PROYECTO:
 - Nombre: ${form.nombre_proyecto}
 - Situación problema: ${form.situacion_problema}
 - Finalidad: ${form.finalidad}
+- Campo principal: ${form.campo_formativo}
+- Contenido principal: ${form.contenido}
 - PDA principal: ${form.pda_principal}
 - Fechas: ${form.fecha_inicio} al ${form.fecha_fin}
 
-Genera los 5 momentos completos siguiendo todas las reglas de voz. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una.`
+CAMPOS FORMATIVOS TRANSVERSALES:
+${transversalesTexto}
+${recursosTexto ? '\n' + recursosTexto : ''}
+
+Genera los 5 momentos completos siguiendo todas las reglas de voz. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',
@@ -60,11 +76,9 @@ Genera los 5 momentos completos siguiendo todas las reglas de voz. El Momento 3 
     })
 
     const content = message.content[0].type === 'text' ? message.content[0].text : ''
-    
-    // Limpiar posible markdown y parsear JSON
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const planeacion = JSON.parse(cleanContent)
-    
+
     return NextResponse.json({ planeacion })
 
   } catch (error: unknown) {
