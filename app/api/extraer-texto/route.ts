@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
 
     // ── PDF ──────────────────────────────────────────────────────────────────
     if (nombreArchivo.endsWith('.pdf')) {
-      const pdfParse = await import('pdf-parse').then(m => m.default || m)
-      const resultado = await pdfParse(buffer)
-      const texto = resultado.text?.trim()
+      const { getDocumentProxy, extractText } = await import('unpdf')
+      const pdf = await getDocumentProxy(new Uint8Array(buffer))
+      const { text } = await extractText(pdf, { mergePages: true })
+      const texto = text?.trim()
       if (!texto) {
         return NextResponse.json({ error: 'El PDF no contiene texto legible.' }, { status: 422 })
       }
