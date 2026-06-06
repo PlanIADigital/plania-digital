@@ -1,13 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { supabase } from '@/lib/supabase'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export default function MiGrupoPage() {
   const router = useRouter()
@@ -175,33 +171,55 @@ export default function MiGrupoPage() {
           )}
         </div>
 
-        {/* Resultados */}
-        {pdas.length > 0 && (
-          <div style={s.section}>
-            <p style={s.sectionTitle}>PDAs sugeridos para tu grupo</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
-              Basados en las necesidades detectadas en tu diagnóstico. Estos PDAs aparecerán destacados al crear tu próxima planeación.
-            </p>
-            {pdas.map((p, i) => (
-              <div key={i} style={{ border: '1.5px solid #E0F5F3', borderRadius: 10, padding: 16, marginBottom: 12, background: 'white' }}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>
-                    {p.campo}
-                  </span>
-                  <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
-                    #{i + 1} prioridad
-                  </span>
+        {/* Resultados agrupados por campo+contenido */}
+        {pdas.length > 0 && (() => {
+          // Agrupar PDAs por campo+contenido
+          const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
+          pdas.forEach((p) => {
+            const key = `${p.campo}||${p.contenido}`
+            if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
+            grupos[key].items.push(p)
+          })
+          const gruposArray = Object.values(grupos)
+          return (
+            <div style={s.section}>
+              <p style={s.sectionTitle}>PDAs sugeridos para tu grupo</p>
+              <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
+                Basados en las necesidades detectadas en tu diagnóstico. Estos PDAs aparecerán destacados al crear tu próxima planeación.
+              </p>
+              {gruposArray.map((grupo, gi) => (
+                <div key={gi} style={{ border: '1.5px solid #E0F5F3', borderRadius: 10, padding: 16, marginBottom: 12, background: 'white' }}>
+                  {/* Encabezado del grupo */}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
+                    <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>
+                      {grupo.campo}
+                    </span>
+                    <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
+                      {grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''} prioritario{grupo.items.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 12px', fontSize: 12, color: '#888' }}>Contenido</p>
+                  <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.5 }}>{grupo.contenido}</p>
+                  {/* PDAs del grupo */}
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+                    {grupo.items.map((p, pi) => (
+                      <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: 12 }}>
+                        {grupo.items.length > 1 && (
+                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                            PDA {pi + 1}
+                          </p>
+                        )}
+                        <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, fontStyle: 'italic' }}>{p.pda}</p>
+                        <p style={{ margin: '0 0 2px', fontSize: 11, color: '#888' }}>¿Por qué este PDA?</p>
+                        <p style={{ margin: 0, fontSize: 12, color: '#444', lineHeight: 1.5 }}>{p.justificacion}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p style={{ margin: '0 0 6px', fontSize: 12, color: '#888' }}>Contenido</p>
-                <p style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>{p.contenido}</p>
-                <p style={{ margin: '0 0 6px', fontSize: 12, color: '#888' }}>PDA</p>
-                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, background: '#E0F5F3', padding: '10px 12px', borderRadius: 8, fontStyle: 'italic' }}>{p.pda}</p>
-                <p style={{ margin: '0 0 4px', fontSize: 12, color: '#888' }}>¿Por qué este PDA?</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#444', lineHeight: 1.6 }}>{p.justificacion}</p>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )
+        })()}
 
         <div style={{ height: 40 }} />
       </div>
