@@ -4,11 +4,55 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { supabase } from '@/lib/supabase'
 
+const ICONOS_CAMPO: Record<string, (size?: number, opacity?: number) => React.ReactNode> = {
+  'Lenguajes': (size = 48, opacity = 1) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }} xmlns="http://www.w3.org/2000/svg">
+      <rect x="7" y="5" width="20" height="28" rx="3" fill="#EEEDF8" stroke="#3D3A8C" strokeWidth="1.8"/>
+      <rect x="13" y="5" width="22" height="30" rx="3" fill="white" stroke="#3D3A8C" strokeWidth="1.8"/>
+      <line x1="18" y1="14" x2="30" y2="14" stroke="#3D3A8C" strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="18" y1="19" x2="30" y2="19" stroke="#00A896" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="18" y1="24" x2="26" y2="24" stroke="#00A896" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="35" cy="36" r="8" fill="#3D3A8C"/>
+      <text x="35" y="40" textAnchor="middle" fontSize="10" fill="white" fontWeight="bold">A</text>
+    </svg>
+  ),
+  'Saberes y Pensamiento Científico': (size = 48, opacity = 1) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="7" fill="#E0F5F3" stroke="#00A896" strokeWidth="1.8"/>
+      <ellipse cx="24" cy="24" rx="14" ry="7" stroke="#00A896" strokeWidth="1.5" strokeDasharray="3 2"/>
+      <ellipse cx="24" cy="24" rx="7" ry="14" stroke="#3D3A8C" strokeWidth="1.5" strokeDasharray="3 2"/>
+      <circle cx="24" cy="24" r="2.5" fill="#00A896"/>
+      <circle cx="24" cy="10" r="2" fill="#3D3A8C"/>
+      <circle cx="24" cy="38" r="2" fill="#3D3A8C"/>
+    </svg>
+  ),
+  'Ética, Naturaleza y Sociedades': (size = 48, opacity = 1) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }} xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 40 C24 40 10 28 10 18 C10 11 16 6 24 6 C32 6 38 11 38 18 C38 28 24 40 24 40Z" fill="#D1FAE5" stroke="#059669" strokeWidth="1.8"/>
+      <path d="M24 18 C24 18 18 13 20 8" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M24 18 C24 18 30 13 28 8" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="24" y1="18" x2="24" y2="36" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M24 24 C24 24 19 22 17 25" stroke="#059669" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M24 29 C24 29 29 27 31 30" stroke="#059669" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  ),
+  'De lo Humano y lo Comunitario': (size = 48, opacity = 1) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="14" r="5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
+      <circle cx="32" cy="14" r="5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
+      <circle cx="24" cy="12" r="5.5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
+      <path d="M6 36 C6 28 11 24 16 24 C18 24 20 25 22 26" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M42 36 C42 28 37 24 32 24 C30 24 28 25 26 26" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M14 38 C14 30 18 26 24 26 C30 26 34 30 34 38" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  ),
+}
+
 const CAMPOS = [
-  { nombre: 'Lenguajes', emoji: '📚', color: '#3D3A8C', bg: '#EEEDF8' },
-  { nombre: 'Saberes y Pensamiento Científico', emoji: '🔬', color: '#00A896', bg: '#E0F5F3' },
-  { nombre: 'Ética, Naturaleza y Sociedades', emoji: '🌱', color: '#059669', bg: '#D1FAE5' },
-  { nombre: 'De lo Humano y lo Comunitario', emoji: '🤝', color: '#7C3AED', bg: '#EDE9FE' },
+  { nombre: 'Lenguajes', color: '#3D3A8C', bg: '#EEEDF8' },
+  { nombre: 'Saberes y Pensamiento Científico', color: '#00A896', bg: '#E0F5F3' },
+  { nombre: 'Ética, Naturaleza y Sociedades', color: '#059669', bg: '#D1FAE5' },
+  { nombre: 'De lo Humano y lo Comunitario', color: '#7C3AED', bg: '#EDE9FE' },
 ]
 
 export default function MiAvancePage() {
@@ -92,7 +136,7 @@ export default function MiAvancePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 32 }}>
                 {CAMPOS.map(campo => (
                   <div key={campo.nombre} style={{ background: '#F8F8FE', border: '1.5px dashed #D8D6F0', borderRadius: 12, padding: '20px 16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.4 }}>{campo.emoji}</div>
+                    <div style={{ marginBottom: 8 }}>{ICONOS_CAMPO[campo.nombre]?.(36, 0.3)}</div>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#C4C2E8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 8px' }}>
                       {campo.nombre === 'Saberes y Pensamiento Científico' ? 'Saberes y P. Científico' :
                        campo.nombre === 'Ética, Naturaleza y Sociedades' ? 'Ética, Naturaleza...' :
@@ -140,7 +184,7 @@ export default function MiAvancePage() {
                     <div key={campo.nombre}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 18 }}>{campo.emoji}</span>
+                          <span>{ICONOS_CAMPO[campo.nombre]?.(22)}</span>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>
                             {campo.nombre === 'Saberes y Pensamiento Científico' ? 'Saberes y P. Científico' :
                              campo.nombre === 'Ética, Naturaleza y Sociedades' ? 'Ética, Naturaleza y Sociedades' :
@@ -176,7 +220,7 @@ export default function MiAvancePage() {
                   const campo = CAMPOS.find(cf => cf.nombre === c.campo)
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 14px', background: '#F8F8FE', borderRadius: 8, border: '1px solid #EEEDF8' }}>
-                      <span style={{ fontSize: 16, flexShrink: 0 }}>{campo?.emoji || '📋'}</span>
+                      <span style={{ flexShrink: 0 }}>{campo ? ICONOS_CAMPO[campo.nombre]?.(20) : '📋'}</span>
                       <div style={{ flex: 1 }}>
                         <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, color: campo?.color || '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.campo}</p>
                         <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{c.pda}</p>
