@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/dashboard',        icon: '📋', activo: true },
   { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
-  { label: 'Cobertura PDA',    path: null,                icon: '📊', activo: false },
+  { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
   { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
