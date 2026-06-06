@@ -4,6 +4,86 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { supabase } from '@/lib/supabase'
 
+const MENSAJES_ANALISIS = [
+  '🔍 Leyendo las necesidades de tu grupo...',
+  '📚 Revisando los 371 PDAs del Programa NEM 2022...',
+  '🧩 Identificando áreas de oportunidad clave...',
+  '✨ Seleccionando los PDAs más relevantes para tus alumnos...',
+  '📋 Preparando tus resultados...',
+]
+
+function PantallaAnimacion({ grado, totalAlumnos, cct }: { grado: string; totalAlumnos: number; cct: string }) {
+  const [mensajeIdx, setMensajeIdx] = useState(0)
+  const [puntos, setPuntos] = useState('')
+
+  useEffect(() => {
+    const intervaloMensaje = setInterval(() => {
+      setMensajeIdx(prev => (prev + 1) % MENSAJES_ANALISIS.length)
+    }, 2200)
+    const intervaloPuntos = setInterval(() => {
+      setPuntos(prev => prev.length >= 3 ? '' : prev + '.')
+    }, 500)
+    return () => { clearInterval(intervaloMensaje); clearInterval(intervaloPuntos) }
+  }, [])
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      minHeight: '80vh', padding: '0 24px', textAlign: 'center'
+    }}>
+      {/* Círculo animado */}
+      <div style={{ position: 'relative', width: 90, height: 90, marginBottom: 32 }}>
+        <div style={{
+          width: 90, height: 90, borderRadius: '50%',
+          border: '4px solid #E8F5F2',
+          borderTop: '4px solid #00A896',
+          animation: 'giroPlanIA 1s linear infinite',
+          position: 'absolute', top: 0, left: 0,
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: 28,
+        }}>🧠</div>
+      </div>
+
+      <style>{`
+        @keyframes giroPlanIA {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeInMsg {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <h2 style={{ color: '#3D3A8C', fontSize: 20, fontWeight: 700, marginBottom: 8, marginTop: 0 }}>
+        Analizando tu grupo{puntos}
+      </h2>
+      <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>
+        {grado} grado · {totalAlumnos} alumnos · {cct}
+      </p>
+
+      <div style={{
+        background: 'white', borderRadius: 12, padding: '16px 24px',
+        boxShadow: '0 2px 12px rgba(61,58,140,0.08)',
+        minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        maxWidth: 360, width: '100%',
+        animation: 'fadeInMsg 0.4s ease',
+        key: mensajeIdx,
+      }}>
+        <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 500, margin: 0, lineHeight: 1.5 }}>
+          {MENSAJES_ANALISIS[mensajeIdx]}
+        </p>
+      </div>
+
+      <p style={{ color: '#C4C2E8', fontSize: 12, marginTop: 24 }}>
+        Esto puede tomar unos segundos
+      </p>
+    </div>
+  )
+}
 
 export default function MiGrupoPage() {
   const router = useRouter()
@@ -100,129 +180,131 @@ export default function MiGrupoPage() {
 
   return (
     <Sidebar profile={profile}>
-      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 32px' }}>
+      {analizando ? (
+        <PantallaAnimacion
+          grado={profile.grado || '2°'}
+          totalAlumnos={profile.total_students || 24}
+          cct={profile.cct_primary || ''}
+        />
+      ) : (
+        <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 32px' }}>
 
-        <div style={s.section}>
-          <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>
-            Diagnóstico de mi grupo
-          </h2>
-          <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
-            {profile.cct_primary} · {profile.grado || '2°'} grado · {profile.total_students || 24} alumnos
-          </p>
-
-          {/* Sección texto */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={s.label}>Escribe o pega tu diagnóstico *</label>
-            <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>
-              Describe las áreas de oportunidad y necesidades detectadas en tus alumnos. El sistema analizará el texto y sugerirá los PDAs más relevantes para atenderlas.
+          <div style={s.section}>
+            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>
+              Diagnóstico de mi grupo
+            </h2>
+            <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
+              {profile.cct_primary} · {profile.grado || '2°'} grado · {profile.total_students || 24} alumnos
             </p>
-            <textarea
-              value={diagnosticoTexto}
-              onChange={e => setDiagnosticoTexto(e.target.value)}
-              rows={8}
-              placeholder="Ej: El grupo presenta dificultades en la expresión oral, varios niños no logran sostener conversaciones breves. En pensamiento matemático se detectó que la mayoría no identifica cantidades mayores a 5..."
-              style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
-            />
-          </div>
 
-          {/* Subir archivo */}
-          <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 24 }}>
-            <label style={{ ...s.label, marginBottom: 4 }}>
-              O sube tu diagnóstico en Word o PDF
-              <span style={{ fontWeight: 400, color: '#888', fontSize: 13, marginLeft: 6 }}>(opcional)</span>
-            </label>
-            <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
-              El sistema extraerá el texto automáticamente.
-            </p>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleArchivo}
-              style={{ display: 'none' }}
-              id="archivo-diagnostico"
-            />
-            <label htmlFor="archivo-diagnostico" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              📎 Seleccionar archivo
-            </label>
-            {archivoNombre && (
-              <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>
-                ✓ {archivoNombre}
-              </span>
+            <div style={{ marginBottom: 20 }}>
+              <label style={s.label}>Escribe o pega tu diagnóstico *</label>
+              <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Describe las áreas de oportunidad y necesidades detectadas en tus alumnos. El sistema analizará el texto y sugerirá los PDAs más relevantes para atenderlas.
+              </p>
+              <textarea
+                value={diagnosticoTexto}
+                onChange={e => setDiagnosticoTexto(e.target.value)}
+                rows={8}
+                placeholder="Ej: El grupo presenta dificultades en la expresión oral, varios niños no logran sostener conversaciones breves. En pensamiento matemático se detectó que la mayoría no identifica cantidades mayores a 5..."
+                style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
+              />
+            </div>
+
+            <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+              <label style={{ ...s.label, marginBottom: 4 }}>
+                O sube tu diagnóstico en Word o PDF
+                <span style={{ fontWeight: 400, color: '#888', fontSize: 13, marginLeft: 6 }}>(opcional)</span>
+              </label>
+              <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
+                El sistema extraerá el texto automáticamente.
+              </p>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleArchivo}
+                style={{ display: 'none' }}
+                id="archivo-diagnostico"
+              />
+              <label htmlFor="archivo-diagnostico" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                📎 Seleccionar archivo
+              </label>
+              {archivoNombre && (
+                <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>
+                  ✓ {archivoNombre}
+                </span>
+              )}
+            </div>
+
+            {error && (
+              <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 16, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>
+                {error}
+              </p>
+            )}
+
+            <button
+              onClick={handleAnalizar}
+              disabled={analizando || !diagnosticoTexto.trim()}
+              style={{ background: '#00A896', color: 'white', border: 'none', padding: '13px 24px', fontSize: 15, cursor: 'pointer', width: '100%', borderRadius: 8, fontWeight: 600 }}>
+              ✨ Analizar diagnóstico y sugerir PDAs
+            </button>
+
+            {guardado && (
+              <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginTop: 12, marginBottom: 0 }}>
+                ✅ Diagnóstico guardado. Los PDAs prioritarios ya están disponibles al crear tu próxima planeación.
+              </p>
             )}
           </div>
 
-          {error && (
-            <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 16, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>
-              {error}
-            </p>
-          )}
+          {pdas.length > 0 && (() => {
+            const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
+            pdas.forEach((p) => {
+              const key = `${p.campo}||${p.contenido}`
+              if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
+              grupos[key].items.push(p)
+            })
+            const gruposArray = Object.values(grupos)
+            return (
+              <div style={s.section}>
+                <p style={s.sectionTitle}>PDAs sugeridos para tu grupo</p>
+                <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
+                  Basados en las necesidades detectadas en tu diagnóstico. Estos PDAs aparecerán destacados al crear tu próxima planeación.
+                </p>
+                {gruposArray.map((grupo, gi) => (
+                  <div key={gi} style={{ border: '1.5px solid #E0F5F3', borderRadius: 10, padding: 16, marginBottom: 12, background: 'white' }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
+                      <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>
+                        {grupo.campo}
+                      </span>
+                      <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
+                        {grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''} prioritario{grupo.items.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p style={{ margin: '0 0 12px', fontSize: 12, color: '#888' }}>Contenido</p>
+                    <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.5 }}>{grupo.contenido}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+                      {grupo.items.map((p, pi) => (
+                        <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: 12 }}>
+                          {grupo.items.length > 1 && (
+                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                              PDA {pi + 1}
+                            </p>
+                          )}
+                          <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, fontStyle: 'italic' }}>{p.pda}</p>
+                          <p style={{ margin: '0 0 2px', fontSize: 11, color: '#888' }}>¿Por qué este PDA?</p>
+                          <p style={{ margin: 0, fontSize: 12, color: '#444', lineHeight: 1.5 }}>{p.justificacion}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
 
-          <button
-            onClick={handleAnalizar}
-            disabled={analizando || !diagnosticoTexto.trim()}
-            style={{ background: analizando ? '#F0EFF8' : '#00A896', color: analizando ? '#3D3A8C' : 'white', border: 'none', padding: '13px 24px', fontSize: 15, cursor: analizando ? 'default' : 'pointer', width: '100%', borderRadius: 8, fontWeight: 600 }}>
-            {analizando ? '🔍 Analizando las necesidades de tu grupo...' : '✨ Analizar diagnóstico y sugerir PDAs'}
-          </button>
-
-          {guardado && (
-            <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginTop: 12, marginBottom: 0 }}>
-              ✅ Diagnóstico guardado. Los PDAs prioritarios ya están disponibles al crear tu próxima planeación.
-            </p>
-          )}
+          <div style={{ height: 40 }} />
         </div>
-
-        {/* Resultados agrupados por campo+contenido */}
-        {pdas.length > 0 && (() => {
-          // Agrupar PDAs por campo+contenido
-          const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
-          pdas.forEach((p) => {
-            const key = `${p.campo}||${p.contenido}`
-            if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
-            grupos[key].items.push(p)
-          })
-          const gruposArray = Object.values(grupos)
-          return (
-            <div style={s.section}>
-              <p style={s.sectionTitle}>PDAs sugeridos para tu grupo</p>
-              <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
-                Basados en las necesidades detectadas en tu diagnóstico. Estos PDAs aparecerán destacados al crear tu próxima planeación.
-              </p>
-              {gruposArray.map((grupo, gi) => (
-                <div key={gi} style={{ border: '1.5px solid #E0F5F3', borderRadius: 10, padding: 16, marginBottom: 12, background: 'white' }}>
-                  {/* Encabezado del grupo */}
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
-                    <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>
-                      {grupo.campo}
-                    </span>
-                    <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
-                      {grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''} prioritario{grupo.items.length > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <p style={{ margin: '0 0 12px', fontSize: 12, color: '#888' }}>Contenido</p>
-                  <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.5 }}>{grupo.contenido}</p>
-                  {/* PDAs del grupo */}
-                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-                    {grupo.items.map((p, pi) => (
-                      <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: 12 }}>
-                        {grupo.items.length > 1 && (
-                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-                            PDA {pi + 1}
-                          </p>
-                        )}
-                        <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, fontStyle: 'italic' }}>{p.pda}</p>
-                        <p style={{ margin: '0 0 2px', fontSize: 11, color: '#888' }}>¿Por qué este PDA?</p>
-                        <p style={{ margin: 0, fontSize: 12, color: '#444', lineHeight: 1.5 }}>{p.justificacion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        })()}
-
-        <div style={{ height: 40 }} />
-      </div>
+      )}
     </Sidebar>
   )
 }
