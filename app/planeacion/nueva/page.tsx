@@ -91,8 +91,6 @@ export default function NuevaPlaneacionPage() {
   const [ejeSecundarioDescartado, setEjeSecundarioDescartado] = useState(false)
   const [ejeElegidoPorEducadora, setEjeElegidoPorEducadora] = useState('')
   const [ejesDisponibles, setEjesDisponibles] = useState<string[]>([])
-  const [ejeElegidoPorEducadora, setEjeElegidoPorEducadora] = useState('')
-  const [ejesDisponibles, setEjesDisponibles] = useState<string[]>([])
 
   const finalidadRef = useRef<HTMLTextAreaElement>(null)
   const gradoGrupo = profile?.grado || '2°'
