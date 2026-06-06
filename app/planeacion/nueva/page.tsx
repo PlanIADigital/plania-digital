@@ -86,6 +86,13 @@ export default function NuevaPlaneacionPage() {
   const [transversales, setTransversales] = useState<Transversal[]>([])
   const [sugirendoTransversales, setSugirendoTransversales] = useState(false)
   const [errorTransversales, setErrorTransversales] = useState('')
+  const [ejePrincipal, setEjePrincipal] = useState('')
+  const [ejeSecundario, setEjeSecundario] = useState('')
+  const [ejeSecundarioDescartado, setEjeSecundarioDescartado] = useState(false)
+  const [ejeElegidoPorEducadora, setEjeElegidoPorEducadora] = useState('')
+  const [ejesDisponibles, setEjesDisponibles] = useState<string[]>([])
+  const [ejeElegidoPorEducadora, setEjeElegidoPorEducadora] = useState('')
+  const [ejesDisponibles, setEjesDisponibles] = useState<string[]>([])
 
   const finalidadRef = useRef<HTMLTextAreaElement>(null)
   const gradoGrupo = profile?.grado || '2°'
@@ -214,6 +221,9 @@ export default function NuevaPlaneacionPage() {
       const data = await res.json()
       if (data.transversales) {
         setTransversales(data.transversales.map((t: any) => ({ ...t, activo: true })))
+        if (data.eje_principal) setEjePrincipal(data.eje_principal)
+        if (data.eje_secundario) { setEjeSecundario(data.eje_secundario); setEjeSecundarioDescartado(false); setEjeElegidoPorEducadora('') }
+        if (data.ejes_disponibles) setEjesDisponibles(data.ejes_disponibles)
       } else {
         setErrorTransversales('No se pudieron sugerir los campos transversales.')
       }
@@ -262,6 +272,8 @@ export default function NuevaPlaneacionPage() {
             pdas_seleccionados: pdasParaAgente,
             grado_grupo: gradoGrupo,
             transversales: transversalesActivos,
+            eje_principal: ejePrincipal,
+            eje_secundario: ejeElegidoPorEducadora || (ejeSecundarioDescartado ? '' : ejeSecundario),
           },
           profile
         })
@@ -521,8 +533,67 @@ export default function NuevaPlaneacionPage() {
               </div>
             )}
 
+            {ejePrincipal && (
+              <div style={s.section}>
+                <p style={s.sectionTitle}>{transversales.length > 0 ? '4' : '3'} · Ejes articuladores</p>
+                <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+                  El sistema determinó los ejes que mejor articulan todos tus campos y contenidos.
+                </p>
+                <div style={{ border: '1.5px solid #3D3A8C', borderRadius: 10, padding: 16, marginBottom: 12, background: '#F4F3FB' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Eje principal</span>
+                    <span style={{ fontSize: 11, background: '#3D3A8C', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>No modificable</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1A1A2E' }}>{ejePrincipal}</p>
+                </div>
+                {!ejeSecundarioDescartado && !ejeElegidoPorEducadora ? (
+                  <div style={{ border: '1.5px solid #00A896', borderRadius: 10, padding: 16, marginBottom: 8, background: 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Eje secundario sugerido</p>
+                        <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1A1A2E' }}>{ejeSecundario}</p>
+                      </div>
+                      <button onClick={() => setEjeSecundarioDescartado(true)}
+                        style={{ background: '#FFF0F0', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, flexShrink: 0, marginLeft: 12 }}>
+                        ✕ Descartar
+                      </button>
+                    </div>
+                  </div>
+                ) : ejeSecundarioDescartado && !ejeElegidoPorEducadora ? (
+                  <div style={{ background: '#F8F8FE', border: '1px solid #E0DFF5', borderRadius: 10, padding: 16, marginBottom: 8 }}>
+                    <p style={{ margin: '0 0 10px', fontSize: 13, color: '#666' }}>Elige un eje secundario alternativo:</p>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                      {ejesDisponibles.filter(e => e !== ejePrincipal && e !== ejeSecundario).map(eje => (
+                        <button key={eje} onClick={() => setEjeElegidoPorEducadora(eje)}
+                          style={{ textAlign: 'left' as const, background: 'white', border: '1.5px solid #E0DFF5', borderRadius: 8, padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: '#1A1A2E' }}>
+                          {eje}
+                        </button>
+                      ))}
+                      <button onClick={() => { setEjeSecundarioDescartado(false); setEjeElegidoPorEducadora('') }}
+                        style={{ textAlign: 'left' as const, background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: '4px 0', textDecoration: 'underline' }}>
+                        ← Restaurar eje sugerido
+                      </button>
+                    </div>
+                  </div>
+                ) : ejeElegidoPorEducadora ? (
+                  <div style={{ border: '1.5px solid #00A896', borderRadius: 10, padding: 16, marginBottom: 8, background: 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Eje secundario elegido</p>
+                        <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1A1A2E' }}>{ejeElegidoPorEducadora}</p>
+                      </div>
+                      <button onClick={() => { setEjeElegidoPorEducadora(''); setEjeSecundarioDescartado(true) }}
+                        style={{ background: '#FFF0F0', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, flexShrink: 0, marginLeft: 12 }}>
+                        Cambiar
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             <div style={{ marginBottom: 28 }}>
-              <p style={s.sectionTitle}>{transversales.length > 0 ? '4' : '3'} · Duración del proyecto</p>
+              <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '5' : '4') : (transversales.length > 0 ? '4' : '3')} · Duración del proyecto</p>
               <label style={s.label}>¿Cuánto durará el proyecto? *</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
                 {DURACIONES.map(d => (
