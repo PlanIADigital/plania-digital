@@ -35,6 +35,17 @@ export default function DashboardPage() {
     loadUser()
   }, [])
 
+
+  function nombreCorto(nombre: string | null): string {
+    if (!nombre) return ''
+    return nombre
+      .replace(/^Jardín de Niños Indígena\s*/i, '')
+      .replace(/^Jardín de Niños\s*/i, '')
+      .replace(/^Jardin de Niños\s*/i, '')
+      .replace(/^Centro de Educación Preescolar\s*/i, '')
+      .trim()
+  }
+
   const rolLabel: Record<string, string> = {
     educadora: 'Educadora',
     educador: 'Educador',

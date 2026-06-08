@@ -44,6 +44,17 @@ function PantallaAnimacion({ grado, totalAlumnos, cct }: { grado: string; totalA
   )
 }
 
+
+function nombreCorto(nombre: string | null): string {
+  if (!nombre) return ''
+  return nombre
+    .replace(/^Jardín de Niños Indígena\s*/i, '')
+    .replace(/^Jardín de Niños\s*/i, '')
+    .replace(/^Jardin de Niños\s*/i, '')
+    .replace(/^Centro de Educación Preescolar\s*/i, '')
+    .trim()
+}
+
 export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -186,7 +197,7 @@ export default function MiGrupoPage() {
               Mi grupo
             </h2>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
-              {profile.school_name && <><strong>JN:</strong> {profile.school_name} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
+              {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
             </p>
 
             <p style={s.sectionTitle}>1 · Diagnóstico grupal</p>

@@ -129,7 +129,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
                 {profile?.full_name}
               </p>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, margin: 0 }}>
-                {profile?.school_name || profile?.cct_primary}
+
               </p>
             </div>
           </div>

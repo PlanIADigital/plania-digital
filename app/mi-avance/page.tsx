@@ -55,6 +55,17 @@ const CAMPOS = [
   { nombre: 'De lo Humano y lo Comunitario', color: '#7C3AED', bg: '#EDE9FE' },
 ]
 
+
+function nombreCorto(nombre: string | null): string {
+  if (!nombre) return ''
+  return nombre
+    .replace(/^Jardín de Niños Indígena\s*/i, '')
+    .replace(/^Jardín de Niños\s*/i, '')
+    .replace(/^Jardin de Niños\s*/i, '')
+    .replace(/^Centro de Educación Preescolar\s*/i, '')
+    .trim()
+}
+
 export default function MiAvancePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -113,7 +124,7 @@ export default function MiAvancePage() {
             Mi avance curricular
           </h2>
           <p style={{ color: '#888', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
-            {profile.school_name && <><strong>JN:</strong> {profile.school_name} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Ciclo Escolar:</strong> 2025-2026
+            {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Ciclo Escolar:</strong> 2025-2026
           </p>
         </div>
 
