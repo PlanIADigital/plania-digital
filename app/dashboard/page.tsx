@@ -83,7 +83,7 @@ export default function DashboardPage() {
             ¡Hola, {profile?.full_name}! 👋
           </h2>
           <p style={{ color: '#666', margin: 0, fontSize: 13 }}>
-            {profile?.cct_primary} · {profile?.shift_primary} · Rol: <strong>{rolLabel[profile?.role] ?? profile?.role}</strong> · Membresía: <strong>{profile?.membership_status}</strong>
+            {profile?.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile?.cct_primary} · <strong>Turno:</strong> {turnoLabel[profile?.shift_primary] ?? profile?.shift_primary} · <strong>Rol:</strong> {rolLabel[profile?.role] ?? profile?.role} · <strong>Membresía:</strong> {membresiaLabel[profile?.membership_status] ?? profile?.membership_status}
           </p>
         </div>
 
