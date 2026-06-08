@@ -9,9 +9,9 @@ const supabase = createClient(
 
 const NAV_ITEMS = [
   { label: 'Dashboard',        path: '/dashboard',        icon: '🏠', activo: true },
+  { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
-  { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
   { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
