@@ -59,6 +59,14 @@ export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
 
+  // Capa 0 — Diagnóstico escolar
+  const [diagnosticoEscolarTexto, setDiagnosticoEscolarTexto] = useState('')
+  const [archivoEscolarNombre, setArchivoEscolarNombre] = useState('')
+  const [analizandoEscolar, setAnalizandoEscolar] = useState(false)
+  const [diagnosticoEscolarGuardado, setDiagnosticoEscolarGuardado] = useState(false)
+  const [errorEscolar, setErrorEscolar] = useState('')
+  const [resultadoEscolar, setResultadoEscolar] = useState<any>(null)
+
   // Capa 1 — Diagnóstico grupal
   const [diagnosticoTexto, setDiagnosticoTexto] = useState('')
   const [analizando, setAnalizando] = useState(false)
@@ -87,6 +95,10 @@ export default function MiGrupoPage() {
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      if (data.diagnostico_escolar) {
+        setResultadoEscolar(data.diagnostico_escolar)
+        setDiagnosticoEscolarGuardado(true)
+      }
       if (data.diagnostico_texto) setDiagnosticoTexto(data.diagnostico_texto)
       if (data.pdas_prioritarios?.length > 0) setPdas(data.pdas_prioritarios)
       if (data.evaluacion_individual?.length > 0) {
@@ -99,6 +111,50 @@ export default function MiGrupoPage() {
     }
     load()
   }, [])
+
+  async function handleArchivoEscolar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setArchivoEscolarNombre(file.name)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) setDiagnosticoEscolarTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
+    } catch {
+      setErrorEscolar('No se pudo extraer el texto del archivo.')
+    }
+  }
+
+  async function handleAnalizarEscolar() {
+    if (!diagnosticoEscolarTexto.trim()) {
+      setErrorEscolar('Escribe o sube al menos un documento.')
+      return
+    }
+    setAnalizandoEscolar(true)
+    setErrorEscolar('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/analizar-diagnostico-escolar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: diagnosticoEscolarTexto, auth_uid: session.user.id })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setResultadoEscolar(data.resultado)
+        setDiagnosticoEscolarGuardado(true)
+      } else {
+        setErrorEscolar('Error al analizar el documento. Intenta de nuevo.')
+      }
+    } catch {
+      setErrorEscolar('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setAnalizandoEscolar(false)
+    }
+  }
 
   async function handleArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0]
@@ -199,6 +255,89 @@ export default function MiGrupoPage() {
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
             </p>
+
+            <p style={s.sectionTitle}>0 · Diagnóstico escolar</p>
+            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+              Sube tu PMC (Programa de Mejora Continua) y/o tu Programa Analítico. MÍA extraerá el contexto institucional para personalizar tus planeaciones.
+            </p>
+
+            {!diagnosticoEscolarGuardado ? (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={s.label}>Escribe o pega el contenido</label>
+                  <textarea
+                    value={diagnosticoEscolarTexto}
+                    onChange={e => setDiagnosticoEscolarTexto(e.target.value)}
+                    rows={5}
+                    placeholder="Pega aquí el contenido de tu PMC o Programa Analítico..."
+                    style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
+                  />
+                </div>
+                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 4 }}>
+                    O sube tu documento en Word o PDF
+                    <span style={{ fontWeight: 400, color: '#888', fontSize: 13, marginLeft: 6 }}>(puedes subir hasta 2 archivos)</span>
+                  </label>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>El sistema extraerá el texto automáticamente.</p>
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEscolar} style={{ display: 'none' }} id="archivo-escolar" />
+                  <label htmlFor="archivo-escolar" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    📎 Seleccionar archivo
+                  </label>
+                  {archivoEscolarNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEscolarNombre}</span>}
+                </div>
+                {errorEscolar && (
+                  <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
+                    {errorEscolar}
+                  </div>
+                )}
+                <button
+                  onClick={handleAnalizarEscolar}
+                  disabled={analizandoEscolar || !diagnosticoEscolarTexto.trim()}
+                  style={{ background: analizandoEscolar || !diagnosticoEscolarTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: analizandoEscolar || !diagnosticoEscolarTexto.trim() ? 'default' : 'pointer', width: '100%' }}>
+                  {analizandoEscolar ? '🔍 Analizando documento...' : '✨ Analizar y guardar contexto escolar'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>
+                    ✅ Contexto escolar guardado
+                    {resultadoEscolar?.tipo_detectado && (
+                      <span style={{ marginLeft: 8, background: '#3D3A8C', color: 'white', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                        {resultadoEscolar.tipo_detectado}
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    onClick={() => { setDiagnosticoEscolarGuardado(false); setResultadoEscolar(null) }}
+                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                    Actualizar
+                  </button>
+                </div>
+                {resultadoEscolar?.contexto_social && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Contexto social:</strong> {resultadoEscolar.contexto_social}
+                  </p>
+                )}
+                {resultadoEscolar?.diagnostico_pedagogico && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Diagnóstico pedagógico:</strong> {resultadoEscolar.diagnostico_pedagogico}
+                  </p>
+                )}
+                {resultadoEscolar?.areas_oportunidad?.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Áreas de oportunidad:</p>
+                    {resultadoEscolar.areas_oportunidad.map((area: string, i: number) => (
+                      <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
 
             <p style={s.sectionTitle}>1 · Diagnóstico grupal</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
