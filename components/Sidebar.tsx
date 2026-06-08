@@ -10,7 +10,7 @@ const supabase = createClient(
 const NAV_ITEMS = [
   { label: 'Dashboard',        path: '/dashboard',        icon: '🏠', activo: true },
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
-  { label: 'Mis planeaciones', path: '/dashboard',        icon: '📋', activo: true },
+  { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
   { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
   { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
@@ -65,7 +65,9 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           {NAV_ITEMS.map((item) => {
             const isActive = item.path !== null && (
               pathname === item.path ||
-              (item.label === 'Mis planeaciones' && pathname?.startsWith('/planeacion/') && pathname !== '/planeacion/nueva')
+              (item.label === 'Mis planeaciones' && (
+                pathname?.startsWith('/planeacion/') && pathname !== '/planeacion/nueva'
+              ))
             )
             return (
               <div key={item.label} style={{ marginBottom: 4 }}>
@@ -127,7 +129,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
                 {profile?.full_name}
               </p>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, margin: 0 }}>
-                {profile?.cct_primary} · {profile?.shift_primary}
+                {profile?.school_name || profile?.cct_primary}
               </p>
             </div>
           </div>

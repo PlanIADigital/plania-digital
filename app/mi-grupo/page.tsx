@@ -186,7 +186,7 @@ export default function MiGrupoPage() {
               Mi grupo
             </h2>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
-              {profile.cct_primary} · {profile.grado || '2°'} grado · {totalAlumnos} alumnos
+              {profile.school_name && <><strong>JN:</strong> {profile.school_name} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
             </p>
 
             <p style={s.sectionTitle}>1 · Diagnóstico grupal</p>

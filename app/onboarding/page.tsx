@@ -15,7 +15,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [cctInfo, setCctInfo] = useState<{ estado: string; sostenimiento: string; nivel: string; valido: boolean; error?: string } | null>(null)
+  const [cctInfo, setCctInfo] = useState<{ estado: string; sostenimiento: string; nivel: string; valido: boolean; nombre?: string; error?: string } | null>(null)
   const [cctLoading, setCctLoading] = useState(false)
   const [form, setForm] = useState({
     cct: '',
@@ -36,7 +36,7 @@ export default function OnboardingPage() {
     if (val.length === 10) {
       setCctLoading(true)
       try {
-        const res = await fetch('/api/decode-cct', {
+        const res = await fetch('/api/decodificar-cct', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cct: val })
@@ -78,6 +78,7 @@ export default function OnboardingPage() {
         estado: cctInfo?.estado || null,
         sostenimiento: cctInfo?.sostenimiento || null,
         nivel_educativo: cctInfo?.nivel || null,
+        school_name: cctInfo?.nombre || null,
         total_alumnos: Number(form.total_alumnos),
         contexto_grupo: form.contexto_grupo || null,
       })
@@ -147,7 +148,7 @@ export default function OnboardingPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '8px 12px', marginBottom: 18 }}>
               <span style={{ fontSize: 16 }}>✅</span>
               <span style={{ fontSize: 13, color: '#1A1A2E', fontWeight: 500 }}>
-                {cctInfo.estado} · {cctInfo.sostenimiento} · {cctInfo.nivel}
+                {cctInfo.nombre ? <strong>{cctInfo.nombre}</strong> : null}{cctInfo.nombre ? ' · ' : ''}{cctInfo.estado} · {cctInfo.sostenimiento}
               </span>
             </div>
           )}
