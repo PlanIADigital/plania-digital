@@ -35,6 +35,14 @@ export default function DashboardPage() {
     loadUser()
   }, [])
 
+  const rolLabel: Record<string, string> = {
+    educadora: 'Educadora',
+    educador: 'Educador',
+    maestra_musica: 'Maestra de música',
+    maestro_musica: 'Maestro de música',
+    directivo: 'Directivo',
+  }
+
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
       <p style={{ color: '#3D3A8C' }}>Cargando...</p>
@@ -48,10 +56,10 @@ export default function DashboardPage() {
         {/* Bienvenida */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22 }}>
-            {profile?.role === 'educadora' ? 'Bienvenida' : 'Bienvenido'}, {profile?.full_name} 👋
+            ¡Hola, {profile?.full_name}! 👋
           </h2>
           <p style={{ color: '#666', margin: 0, fontSize: 13 }}>
-            {profile?.cct_primary} · {profile?.shift_primary} · Rol: <strong>{profile?.role}</strong> · Membresía: <strong>{profile?.membership_status}</strong>
+            {profile?.cct_primary} · {profile?.shift_primary} · Rol: <strong>{rolLabel[profile?.role] ?? profile?.role}</strong> · Membresía: <strong>{profile?.membership_status}</strong>
           </p>
         </div>
 

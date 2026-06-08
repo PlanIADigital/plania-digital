@@ -9,8 +9,10 @@ const supabase = createClient(
 )
 
 const ROLES = [
-  { value: 'educadora', label: 'Educadora de preescolar' },
-  { value: 'maestro_musica', label: 'Maestro de música federal' },
+  { value: 'educadora', label: 'Educadora' },
+  { value: 'educador', label: 'Educador' },
+  { value: 'maestra_musica', label: 'Maestra de música' },
+  { value: 'maestro_musica', label: 'Maestro de música' },
   { value: 'directivo', label: 'Directivo' },
 ]
 
@@ -19,12 +21,12 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('educadora')
+  const [role, setRole] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleRegister() {
-    if (!fullName || !email || !password) { setError('Completa todos los campos'); return }
+    if (!fullName || !email || !password || !role) { setError('Completa todos los campos, incluyendo tu rol'); return }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     setError('')
