@@ -482,81 +482,6 @@ export default function MiGrupoPage() {
 
             <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
 
-            <p style={s.sectionTitle}>4 · Tu estilo de narración</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Esto es para que tu planeación sea realmente tuya — a tu tono y a tu estilo. Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti.
-            </p>
-
-            {!estiloGuardado ? (
-              <div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={s.label}>Escribe o pega un texto tuyo</label>
-                  <textarea
-                    value={estiloTexto}
-                    onChange={e => setEstiloTexto(e.target.value)}
-                    rows={6}
-                    placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
-                    style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
-                  />
-                </div>
-                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                  <label style={{ ...s.label, marginBottom: 4 }}>
-                    O sube un documento Word o PDF
-                  </label>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Cualquier texto que hayas escrito tú: carta, informe, notas.</p>
-                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} id="archivo-estilo" />
-                  <label htmlFor="archivo-estilo" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    📎 Seleccionar archivo
-                  </label>
-                  {archivoEstiloNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
-                </div>
-                {errorEstilo && (
-                  <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
-                    {errorEstilo}
-                  </div>
-                )}
-                <button
-                  onClick={handleAnalizarEstilo}
-                  disabled={analizandoEstilo || !estiloTexto.trim()}
-                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: analizandoEstilo || !estiloTexto.trim() ? 'default' : 'pointer', width: '100%' }}>
-                  {analizandoEstilo ? '🔍 Analizando tu estilo...' : '✨ Analizar mi estilo de escritura'}
-                </button>
-              </div>
-            ) : (
-              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>✅ Estilo de escritura guardado</p>
-                  <button
-                    onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
-                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>
-                    Actualizar
-                  </button>
-                </div>
-                {resultadoEstilo?.tono && (
-                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
-                    <strong>Tono:</strong> {resultadoEstilo.tono}
-                  </p>
-                )}
-                {resultadoEstilo?.vocabulario && (
-                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
-                    <strong>Vocabulario:</strong> {resultadoEstilo.vocabulario}
-                  </p>
-                )}
-                {resultadoEstilo?.caracteristicas?.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Características detectadas:</p>
-                    {resultadoEstilo.caracteristicas.map((c: string, i: number) => (
-                      <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
-
             <p style={s.sectionTitle}>2 · Diagnóstico grupal</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Describe las necesidades y áreas de oportunidad que detectaste en tu grupo. El sistema sugerirá los PDAs más relevantes para atenderlas.
@@ -691,6 +616,132 @@ export default function MiGrupoPage() {
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
                   🔄 Actualizar evaluación
                   <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
+                </label>
+              </div>
+            )}
+          </div>
+
+
+          <div style={s.section}>
+            <p style={s.sectionTitle}>4 · Tu estilo de narración</p>
+            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+              Esto es para que tu planeación sea realmente tuya — a tu tono y a tu estilo. Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti.
+            </p>
+
+            {!estiloGuardado ? (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={s.label}>Escribe o pega un texto tuyo</label>
+                  <textarea
+                    value={estiloTexto}
+                    onChange={e => setEstiloTexto(e.target.value)}
+                    rows={6}
+                    placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
+                    style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
+                  />
+                </div>
+                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 4 }}>
+                    O sube un documento Word o PDF
+                  </label>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Cualquier texto que hayas escrito tú: carta, informe, notas.</p>
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} id="archivo-estilo" />
+                  <label htmlFor="archivo-estilo" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    📎 Seleccionar archivo
+                  </label>
+                  {archivoEstiloNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
+                </div>
+                {errorEstilo && (
+                  <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
+                    {errorEstilo}
+                  </div>
+                )}
+                <button
+                  onClick={handleAnalizarEstilo}
+                  disabled={analizandoEstilo || !estiloTexto.trim()}
+                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: analizandoEstilo || !estiloTexto.trim() ? 'default' : 'pointer', width: '100%' }}>
+                  {analizandoEstilo ? '🔍 Analizando tu estilo...' : '✨ Analizar mi estilo de escritura'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>✅ Estilo de escritura guardado</p>
+                  <button
+                    onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
+                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                    Actualizar
+                  </button>
+                </div>
+                {resultadoEstilo?.tono && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Tono:</strong> {resultadoEstilo.tono}
+                  </p>
+                )}
+                {resultadoEstilo?.vocabulario && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Vocabulario:</strong> {resultadoEstilo.vocabulario}
+                  </p>
+                )}
+                {resultadoEstilo?.caracteristicas?.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Características detectadas:</p>
+                    {resultadoEstilo.caracteristicas.map((c: string, i: number) => (
+                      <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          
+          <div style={s.section}>
+            <p style={s.sectionTitle}>5 · Recomendaciones del directivo</p>
+            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+              Si tu directora te compartió observaciones o áreas de mejora, súbelas aquí. MÍA las integrará como contexto en tus planeaciones.
+            </p>
+            {!observacionesGuardadas ? (
+              <div>
+                <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>🏫</div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube el documento de tu directora</p>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF con observaciones áulicas o recomendaciones institucionales.</p>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    📁 Seleccionar archivo
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} />
+                  </label>
+                  <p style={{ fontSize: 11, color: '#aaa', marginTop: 10, marginBottom: 0 }}>Esta sección es opcional</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {resultadoObservaciones && (
+                  <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: '#065F46', margin: '0 0 6px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>✅ Observaciones del directivo integradas</p>
+                    {resultadoObservaciones.areas_mejora?.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 6px' }}>Áreas de mejora:</p>
+                        {resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
+                          <p key={i} style={{ fontSize: 12, color: '#444', margin: '0 0 3px', lineHeight: 1.5 }}>• {area}</p>
+                        ))}
+                      </div>
+                    )}
+                    {resultadoObservaciones.fortalezas?.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 6px' }}>Fortalezas reconocidas:</p>
+                        {resultadoObservaciones.fortalezas.map((f: string, i: number) => (
+                          <p key={i} style={{ fontSize: 12, color: '#444', margin: '0 0 3px', lineHeight: 1.5 }}>• {f}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                  🔄 Actualizar documento
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} />
                 </label>
               </div>
             )}
