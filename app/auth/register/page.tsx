@@ -9,11 +9,11 @@ const supabase = createClient(
 )
 
 const ROLES = [
-  { value: 'educadora', label: 'Educadora' },
-  { value: 'educador', label: 'Educador' },
-  { value: 'maestra_musica', label: 'Maestra de música' },
-  { value: 'maestro_musica', label: 'Maestro de música' },
-  { value: 'directivo', label: 'Directivo' },
+  { value: 'educadora', label: 'Educadora', activo: true },
+  { value: 'educador', label: 'Educador', activo: true },
+  { value: 'maestra_musica', label: 'Maestra de música', activo: false },
+  { value: 'maestro_musica', label: 'Maestro de música', activo: false },
+  { value: 'directivo', label: 'Directivo', activo: false },
 ]
 
 export default function RegisterPage() {
@@ -108,16 +108,23 @@ export default function RegisterPage() {
             {ROLES.map(r => (
               <button
                 key={r.value}
-                onClick={() => setRole(r.value)}
+                onClick={() => r.activo && setRole(r.value)}
+                disabled={!r.activo}
                 style={{
                   padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', textAlign: 'left',
+                  cursor: r.activo ? 'pointer' : 'default', textAlign: 'left',
                   border: role === r.value ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
-                  background: role === r.value ? '#EEEDF8' : 'white',
-                  color: role === r.value ? '#3D3A8C' : '#555',
+                  background: !r.activo ? '#F9F9F9' : role === r.value ? '#EEEDF8' : 'white',
+                  color: !r.activo ? '#BBBBBB' : role === r.value ? '#3D3A8C' : '#555',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}
               >
-                {role === r.value ? '✓ ' : ''}{r.label}
+                <span>{role === r.value ? '✓ ' : ''}{r.label}</span>
+                {!r.activo && (
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#BBBBBB', background: '#EFEFEF', padding: '2px 7px', borderRadius: 20, letterSpacing: '0.05em' }}>
+                    PRÓXIMAMENTE
+                  </span>
+                )}
               </button>
             ))}
           </div>
