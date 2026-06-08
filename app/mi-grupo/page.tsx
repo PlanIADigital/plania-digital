@@ -312,7 +312,7 @@ export default function MiGrupoPage() {
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
             </p>
 
-            <p style={s.sectionTitle}>0 · Diagnóstico escolar</p>
+            <p style={s.sectionTitle}>1 · Diagnóstico escolar</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Sube tu PMC (Programa de Mejora Continua) y/o tu Programa Analítico. MÍA extraerá el contexto institucional para personalizar tus planeaciones.
             </p>
@@ -395,9 +395,9 @@ export default function MiGrupoPage() {
 
             <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
 
-            <p style={s.sectionTitle}>2 · Tu estilo de redacción</p>
+            <p style={s.sectionTitle}>4 · Tu estilo de narración</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Comparte cómo escribes tú. Puede ser una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá tu tono y estilo para que tus planeaciones suenen a ti.
+              Esto es para que tu planeación sea realmente tuya — a tu tono y a tu estilo. Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti.
             </p>
 
             {!estiloGuardado ? (
@@ -470,7 +470,7 @@ export default function MiGrupoPage() {
 
             <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
 
-            <p style={s.sectionTitle}>1 · Diagnóstico grupal</p>
+            <p style={s.sectionTitle}>2 · Diagnóstico grupal</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Describe las necesidades y áreas de oportunidad que detectaste en tu grupo. El sistema sugerirá los PDAs más relevantes para atenderlas.
             </p>
@@ -547,7 +547,7 @@ export default function MiGrupoPage() {
 
           {/* ── CAPA 2: Evaluación individual ── */}
           <div style={s.section}>
-            <p style={s.sectionTitle}>2 · Evaluación individual</p>
+            <p style={s.sectionTitle}>3 · Diagnóstico individual</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 8, lineHeight: 1.6 }}>
               Anota las necesidades específicas de cada alumno. Esta información personaliza aún más tus planeaciones.
             </p>
@@ -581,7 +581,7 @@ export default function MiGrupoPage() {
           {/* ── CAPA 3: PDAs del jardín (opcional) ── */}
           <div style={{ ...s.section, border: '1.5px dashed #C4C2E8' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <p style={{ ...s.sectionTitle, marginBottom: 0 }}>3 · PDAs del jardín</p>
+              <p style={{ ...s.sectionTitle, marginBottom: 0 }}>6 · PDAs del jardín de niños</p>
               <span style={{ fontSize: 11, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>Opcional</span>
             </div>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
