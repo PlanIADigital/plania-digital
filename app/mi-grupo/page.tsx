@@ -83,6 +83,14 @@ export default function MiGrupoPage() {
   const [errorEstilo, setErrorEstilo] = useState('')
   const [resultadoEstilo, setResultadoEstilo] = useState<any>(null)
 
+  // Capa 5 — Observaciones del directivo
+  const [observacionesTexto, setObservacionesTexto] = useState('')
+  const [archivoObservacionesNombre, setArchivoObservacionesNombre] = useState('')
+  const [analizandoObservaciones, setAnalizandoObservaciones] = useState(false)
+  const [observacionesGuardadas, setObservacionesGuardadas] = useState(false)
+  const [errorObservaciones, setErrorObservaciones] = useState('')
+  const [resultadoObservaciones, setResultadoObservaciones] = useState<any>(null)
+
   // Capa 2 — Evaluación individual
   const [evaluacionIndividual, setEvaluacionIndividual] = useState<string[]>([])
   const [guardandoEval, setGuardandoEval] = useState(false)
@@ -103,6 +111,10 @@ export default function MiGrupoPage() {
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      if (data.observaciones_directivo) {
+        setResultadoObservaciones(data.observaciones_directivo)
+        setObservacionesGuardadas(true)
+      }
       if (data.estilo_narrativo) {
         setResultadoEstilo(data.estilo_narrativo)
         setEstiloGuardado(true)
@@ -123,6 +135,50 @@ export default function MiGrupoPage() {
     }
     load()
   }, [])
+
+  async function handleArchivoObservaciones(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setArchivoObservacionesNombre(file.name)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) setObservacionesTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
+    } catch {
+      setErrorObservaciones('No se pudo extraer el texto del archivo.')
+    }
+  }
+
+  async function handleAnalizarObservaciones() {
+    if (!observacionesTexto.trim()) {
+      setErrorObservaciones('Escribe o sube las observaciones.')
+      return
+    }
+    setAnalizandoObservaciones(true)
+    setErrorObservaciones('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/analizar-observaciones-directivo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: observacionesTexto, auth_uid: session.user.id })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setResultadoObservaciones(data.resultado)
+        setObservacionesGuardadas(true)
+      } else {
+        setErrorObservaciones('Error al analizar. Intenta de nuevo.')
+      }
+    } catch {
+      setErrorObservaciones('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setAnalizandoObservaciones(false)
+    }
+  }
 
   async function handleArchivoEstilo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
