@@ -5,8 +5,8 @@ import Sidebar from '@/components/Sidebar'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 const ICONOS_CAMPO: Record<string, (size?: number, opacity?: number) => React.ReactNode> = {
