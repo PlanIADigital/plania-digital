@@ -89,7 +89,7 @@ export default function MiAvancePage() {
       // Cargar cobertura de PDAs
       const { data: cov } = await supabase
         .from('pda_coverage')
-        .select('campo, contenido, pda, fecha_abordado')
+        .select('campo, pda_literal, is_primary, covered_on, times_used')
         .eq('user_id', user.id)
         
       setCoverage(cov || [])
