@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── PlanIA Digital — Paleta oficial ── */
+:root {
+  --plania-indigo:        #3D3A8C;
+  --plania-indigo-light:  #EEEDF8;
+  --plania-cyan:          #00A896;
+  --plania-cyan-light:    #E8F5F2;
+  --plania-menta:         #E8F5F2;
+  --plania-negro:         #1A1A2E;
+
+  --plania-lenguajes:     #3D3A8C;
+  --plania-saberes:       #00A896;
+  --plania-etica:         #059669;
+  --plania-humano:        #7C3AED;
+}
