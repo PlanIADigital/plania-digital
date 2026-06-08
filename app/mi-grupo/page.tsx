@@ -75,6 +75,14 @@ export default function MiGrupoPage() {
   const [errorDiagnostico, setErrorDiagnostico] = useState('')
   const [archivoNombre, setArchivoNombre] = useState('')
 
+  // Capa 2 — Estilo narrativo
+  const [estiloTexto, setEstiloTexto] = useState('')
+  const [archivoEstiloNombre, setArchivoEstiloNombre] = useState('')
+  const [analizandoEstilo, setAnalizandoEstilo] = useState(false)
+  const [estiloGuardado, setEstiloGuardado] = useState(false)
+  const [errorEstilo, setErrorEstilo] = useState('')
+  const [resultadoEstilo, setResultadoEstilo] = useState<any>(null)
+
   // Capa 2 — Evaluación individual
   const [evaluacionIndividual, setEvaluacionIndividual] = useState<string[]>([])
   const [guardandoEval, setGuardandoEval] = useState(false)
@@ -95,6 +103,10 @@ export default function MiGrupoPage() {
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      if (data.estilo_narrativo) {
+        setResultadoEstilo(data.estilo_narrativo)
+        setEstiloGuardado(true)
+      }
       if (data.diagnostico_escolar) {
         setResultadoEscolar(data.diagnostico_escolar)
         setDiagnosticoEscolarGuardado(true)
@@ -111,6 +123,50 @@ export default function MiGrupoPage() {
     }
     load()
   }, [])
+
+  async function handleArchivoEstilo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setArchivoEstiloNombre(file.name)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) setEstiloTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
+    } catch {
+      setErrorEstilo('No se pudo extraer el texto del archivo.')
+    }
+  }
+
+  async function handleAnalizarEstilo() {
+    if (!estiloTexto.trim()) {
+      setErrorEstilo('Escribe o sube un texto para analizar.')
+      return
+    }
+    setAnalizandoEstilo(true)
+    setErrorEstilo('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/analizar-estilo-narrativo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: estiloTexto, auth_uid: session.user.id })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setResultadoEstilo(data.resultado)
+        setEstiloGuardado(true)
+      } else {
+        setErrorEstilo('Error al analizar el texto. Intenta de nuevo.')
+      }
+    } catch {
+      setErrorEstilo('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setAnalizandoEstilo(false)
+    }
+  }
 
   async function handleArchivoEscolar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -330,6 +386,81 @@ export default function MiGrupoPage() {
                     {resultadoEscolar.areas_oportunidad.map((area: string, i: number) => (
                       <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>
                         {area}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ height: 1, background: '#EEEDF8', margin: '28px 0' }} />
+
+            <p style={s.sectionTitle}>2 · Tu estilo de redacción</p>
+            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+              Comparte cómo escribes tú. Puede ser una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá tu tono y estilo para que tus planeaciones suenen a ti.
+            </p>
+
+            {!estiloGuardado ? (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={s.label}>Escribe o pega un texto tuyo</label>
+                  <textarea
+                    value={estiloTexto}
+                    onChange={e => setEstiloTexto(e.target.value)}
+                    rows={6}
+                    placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
+                    style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
+                  />
+                </div>
+                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 4 }}>
+                    O sube un documento Word o PDF
+                  </label>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Cualquier texto que hayas escrito tú: carta, informe, notas.</p>
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} id="archivo-estilo" />
+                  <label htmlFor="archivo-estilo" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    📎 Seleccionar archivo
+                  </label>
+                  {archivoEstiloNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
+                </div>
+                {errorEstilo && (
+                  <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
+                    {errorEstilo}
+                  </div>
+                )}
+                <button
+                  onClick={handleAnalizarEstilo}
+                  disabled={analizandoEstilo || !estiloTexto.trim()}
+                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: analizandoEstilo || !estiloTexto.trim() ? 'default' : 'pointer', width: '100%' }}>
+                  {analizandoEstilo ? '🔍 Analizando tu estilo...' : '✨ Analizar mi estilo de escritura'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>✅ Estilo de escritura guardado</p>
+                  <button
+                    onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
+                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                    Actualizar
+                  </button>
+                </div>
+                {resultadoEstilo?.tono && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Tono:</strong> {resultadoEstilo.tono}
+                  </p>
+                )}
+                {resultadoEstilo?.vocabulario && (
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}>
+                    <strong>Vocabulario:</strong> {resultadoEstilo.vocabulario}
+                  </p>
+                )}
+                {resultadoEstilo?.caracteristicas?.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Características detectadas:</p>
+                    {resultadoEstilo.caracteristicas.map((c: string, i: number) => (
+                      <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>
+                        {c}
                       </span>
                     ))}
                   </div>
