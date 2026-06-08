@@ -43,6 +43,19 @@ export default function DashboardPage() {
     directivo: 'Directivo',
   }
 
+  const turnoLabel: Record<string, string> = {
+    matutino: 'Matutino',
+    vespertino: 'Vespertino',
+    discontinuo: 'Discontinuo',
+  }
+
+  const membresiaLabel: Record<string, string> = {
+    trial: 'Prueba gratuita',
+    active: 'Activa',
+    cancelled: 'Cancelada',
+    expired: 'Expirada',
+  }
+
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
       <p style={{ color: '#3D3A8C' }}>Cargando...</p>

@@ -59,6 +59,27 @@ export default function ConfiguracionPage() {
     </div>
   )
 
+  const rolLabel: Record<string, string> = {
+    educadora: 'Educadora',
+    educador: 'Educador',
+    maestra_musica: 'Maestra de música',
+    maestro_musica: 'Maestro de música',
+    directivo: 'Directivo',
+  }
+
+  const turnoLabel: Record<string, string> = {
+    matutino: 'Matutino',
+    vespertino: 'Vespertino',
+    discontinuo: 'Discontinuo',
+  }
+
+  const membresiaLabel: Record<string, string> = {
+    trial: 'Prueba gratuita',
+    active: 'Activa',
+    cancelled: 'Cancelada',
+    expired: 'Expirada',
+  }
+
   const iniciales = profile?.full_name
     ?.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase() || '?'
 
@@ -113,10 +134,10 @@ export default function ConfiguracionPage() {
           {[
             { label: 'Nombre completo', value: profile?.full_name },
             { label: 'Correo electrónico', value: profile?.email },
-            { label: 'Rol', value: profile?.role },
+            { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
             { label: 'CCT principal', value: profile?.cct_primary },
-            { label: 'Turno', value: profile?.shift_primary },
-            { label: 'Membresía', value: profile?.membership_status },
+            { label: 'Turno', value: turnoLabel[profile?.shift_primary] ?? profile?.shift_primary },
+            { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
           ].map(item => (
             <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid #F0EFF8' }}>
               <span style={{ fontSize: 13, color: '#888' }}>{item.label}</span>
