@@ -27,7 +27,7 @@ function getPasosProgreso(totalAlumnos: number) {
     { texto: `Diseñando actividades para tus ${totalAlumnos} niños específicamente...`, porcentaje: 60 },
     { texto: 'Integrando materiales y preguntas detonadoras...', porcentaje: 75 },
     { texto: 'Redactando el cierre con la voz de tu grupo...', porcentaje: 88 },
-    { texto: 'Ajustando el tono y estilo a tu identidad como educadora...', porcentaje: 95 },
+    { texto: 'Ajustando el tono y estilo a tu identidad docente...', porcentaje: 95 },
   ]
 }
 
@@ -67,6 +67,20 @@ function nombreCorto(nombre: string | null): string {
     .replace(/^Jardin de Niños\s*/i, '')
     .replace(/^Centro de Educación Preescolar\s*/i, '')
     .trim()
+}
+
+function getBadgesCapa2(evaluacion: any, pdaTexto: string): boolean {
+  if (!evaluacion || Array.isArray(evaluacion)) return false
+  const lista = evaluacion?.pdas_prioritarios_grupo || []
+  return lista.some((p: any) =>
+    (typeof p === 'string' ? p : p?.pda || '')
+      .toLowerCase().trim() === pdaTexto.toLowerCase().trim()
+  )
+}
+
+function getBadgesCapa3(pdasJardin: string | null, pdaTexto: string): boolean {
+  if (!pdasJardin) return false
+  return pdasJardin.toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
 }
 
 export default function NuevaPlaneacionPage() {
@@ -448,6 +462,16 @@ export default function NuevaPlaneacionPage() {
                                                     ⭐ Prioritario para tu grupo
                                                   </span>
                                                 )}
+                                                {getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
+                                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', border: '1px solid #7C3AED', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                    🧒 Necesidad individual detectada
+                                                  </span>
+                                                )}
+                                                {getBadgesCapa3(profile?.pdas_jardin, pda.pda) && (
+                                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#B45309', background: '#FEF3C7', border: '1px solid #D97706', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                    📌 Prioritario del jardín
+                                                  </span>
+                                                )}
                                               </div>
                                             </label>
                                           )
@@ -479,6 +503,16 @@ export default function NuevaPlaneacionPage() {
                                                         {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
                                                           <span style={{ fontSize: 10, fontWeight: 700, color: '#00A896', background: '#E0F5F3', border: '1px solid #00A896', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                                             ⭐ Prioritario para tu grupo
+                                                          </span>
+                                                        )}
+                                                        {getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
+                                                          <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', border: '1px solid #7C3AED', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                            🧒 Necesidad individual detectada
+                                                          </span>
+                                                        )}
+                                                        {getBadgesCapa3(profile?.pdas_jardin, pda.pda) && (
+                                                          <span style={{ fontSize: 10, fontWeight: 700, color: '#B45309', background: '#FEF3C7', border: '1px solid #D97706', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                                            📌 Prioritario del jardín
                                                           </span>
                                                         )}
                                                       </div>
