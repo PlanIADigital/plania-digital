@@ -142,7 +142,7 @@ export default function MiAvancePage() {
       setProfile(user)
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, pda_campo, eje_articulador, status, starts_on, ends_on, created_at')
+        .select('id, project_name, pda_campo, eje_principal, eje_secundario, status, starts_on, ends_on, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
       setPlannings(plans || [])
@@ -167,7 +167,8 @@ export default function MiAvancePage() {
   const pdasPrioritariosPendientes = coverage.filter(c => c.is_primary && !c.covered_on).length
   const ejesConteo: Record<string, number> = {}
   plannings.forEach(p => {
-    if (p.eje_articulador) ejesConteo[p.eje_articulador] = (ejesConteo[p.eje_articulador] || 0) + 1
+    if (p.eje_principal) ejesConteo[p.eje_principal] = (ejesConteo[p.eje_principal] || 0) + 1
+    if (p.eje_secundario) ejesConteo[p.eje_secundario] = (ejesConteo[p.eje_secundario] || 0) + 1
   })
   const maxEje = Math.max(1, ...Object.values(ejesConteo))
   const ejesSinUsar = EJES.filter(e => !ejesConteo[e])
@@ -175,7 +176,10 @@ export default function MiAvancePage() {
   coverage.forEach(c => { pdaCoverageMap[c.pda_literal] = (pdaCoverageMap[c.pda_literal] || 0) + (c.times_used || 1) })
   const prioritariosPDA = new Set(coverage.filter(c => c.is_primary).map(c => c.pda_literal))
   const evaluacionIndividual = profile?.evaluacion_individual || {}
-  const alumnosConNEE = Object.entries(evaluacionIndividual).filter(([, v]: any) => v?.nee && v.nee.length > 0).slice(0, 4)
+  const alumnosRaw: any[] = Array.isArray(evaluacionIndividual?.alumnos)
+    ? evaluacionIndividual.alumnos
+    : Object.entries(evaluacionIndividual).map(([ref, v]: any) => ({ referencia: ref, ...v }))
+  const alumnosConNEE = alumnosRaw.filter((a: any) => a?.nee && a.nee.length > 0).slice(0, 6)
   const mesActual = mesActualCiclo()
   const alertas: Array<{ tipo: 'warn' | 'info' | 'success'; texto: React.ReactNode }> = []
   const camposBajos = pdaUnicosPorCampo.filter(c => c.porcentaje < 20)
@@ -299,12 +303,15 @@ export default function MiAvancePage() {
                 <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
                 <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>No has registrado observaciones de diversidad en Mi Grupo todavía.</p>
                 <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
-              </div> : <div>{alumnosConNEE.map(([ref, datos]: any, i) => (
+              </div> : <div>{alumnosConNEE.map((alumno: any, i: number) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>{String(ref).replace('alumno_', 'A')}</div>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent:'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>
+                    {String(alumno.referencia || i + 1).replace('Alumno ', '')}
+                  </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 4px' }}>{datos.nee?.join(' · ')}</p>
-                    <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{datos.pdas_sugeridos?.length || 0} PDAs adaptados</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 4px' }}>{alumno.nee?.join(' · ')}</p>
+                    <p style={{ fontSize: 11, color: '#888', margin: '0 0 2px' }}>{alumno.observaciones || ''}</p>
+                    <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{alumno.pdas_sugeridos?.length || 0} PDAs adaptados</p>
                   </div>
                   <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>Activo</span>
                 </div>
@@ -326,7 +333,7 @@ export default function MiAvancePage() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.project_name}</p>
-                <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{campoCorto(p.pda_campo || '')} · {p.eje_articulador || 'sin eje'}</p>
+                <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{campoCorto(p.pda_campo || '')} · {p.eje_principal || 'sin eje'}</p>
               </div>
               <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600 }}>{p.status === 'active' ? 'Activa' : 'Cerrada'}</span>
             </div>

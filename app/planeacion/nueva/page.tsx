@@ -334,6 +334,8 @@ export default function NuevaPlaneacionPage() {
           duration_days: form.duracion_dias,
           grade: profile.grado || '2°',
           content_json: data.planeacion,
+          eje_principal: ejePrincipal || null,
+          eje_secundario: ejeElegidoPorEducadora || (ejeSecundarioDescartado ? null : ejeSecundario) || null,
           school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
           status: 'active',
         })
