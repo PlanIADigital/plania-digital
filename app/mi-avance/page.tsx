@@ -2,7 +2,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 const ICONOS_CAMPO: Record<string, (size?: number, opacity?: number) => React.ReactNode> = {
   'Lenguajes': (size = 48, opacity = 1) => (
@@ -86,7 +91,7 @@ export default function MiAvancePage() {
         .from('pda_coverage')
         .select('campo, contenido, pda, fecha_abordado')
         .eq('user_id', user.id)
-        .order('fecha_abordado', { ascending: false })
+        
       setCoverage(cov || [])
 
       // Contar planeaciones
@@ -189,7 +194,7 @@ export default function MiAvancePage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {CAMPOS.map(campo => {
                   const pdasDelCampo = coverage.filter(c => c.campo === campo.nombre)
-                  const unicos = [...new Set(pdasDelCampo.map(c => c.pda))]
+                  const unicos = [...new Set(pdasDelCampo.map(c => c.pda_literal))]
                   const porcentaje = Math.min(Math.round((unicos.length / 20) * 100), 100)
                   return (
                     <div key={campo.nombre}>
@@ -234,7 +239,7 @@ export default function MiAvancePage() {
                       <span style={{ flexShrink: 0 }}>{campo ? ICONOS_CAMPO[campo.nombre]?.(20) : '📋'}</span>
                       <div style={{ flex: 1 }}>
                         <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, color: campo?.color || '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.campo}</p>
-                        <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{c.pda}</p>
+                        <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{c.pda_literal}</p>
                       </div>
                     </div>
                   )
