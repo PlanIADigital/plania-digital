@@ -659,20 +659,41 @@ export default function MiGrupoPage() {
           <div style={s.section}>
             <p style={s.sectionTitle}>5 · Recomendaciones del directivo</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Si tu directora te compartió observaciones o áreas de mejora, súbelas aquí. MÍA las integrará como contexto en tus planeaciones.
+              Escribe lo que tu directora te comentó en la visita áulica o áreas de mejora que te indicó. MÍA las integrará en tus planeaciones.
             </p>
             {!observacionesGuardadas ? (
               <div>
-                <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>🏫</div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube el documento de tu directora</p>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF con observaciones áulicas o recomendaciones institucionales.</p>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    📁 Seleccionar archivo
-                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} />
-                  </label>
-                  <p style={{ fontSize: 11, color: '#aaa', marginTop: 10, marginBottom: 0 }}>Esta sección es opcional</p>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={s.label}>Escribe las observaciones</label>
+                  <textarea
+                    value={observacionesTexto}
+                    onChange={e => setObservacionesTexto(e.target.value)}
+                    rows={5}
+                    placeholder="Ej: La directora me indicó trabajar más la expresión oral, fortalecer la convivencia en el recreo y atender a los alumnos que presentan dificultades en motricidad fina..."
+                    style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 0 }}
+                  />
                 </div>
+                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 4 }}>O sube un documento</label>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Si tu directora te dio un documento con observaciones, súbelo aquí.</p>
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} id="archivo-observaciones" />
+                  <label htmlFor="archivo-observaciones" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    📎 Seleccionar archivo
+                  </label>
+                  {archivoObservacionesNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoObservacionesNombre}</span>}
+                </div>
+                {errorObservaciones && (
+                  <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
+                    {errorObservaciones}
+                  </div>
+                )}
+                <button
+                  onClick={handleAnalizarObservaciones}
+                  disabled={analizandoObservaciones || !observacionesTexto.trim()}
+                  style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: analizandoObservaciones || !observacionesTexto.trim() ? 'default' : 'pointer', width: '100%' }}>
+                  {analizandoObservaciones ? '🔍 Analizando...' : '✨ Guardar observaciones del directivo'}
+                </button>
+                <p style={{ fontSize: 11, color: '#aaa', marginTop: 10, textAlign: 'center' as const }}>Esta sección es opcional</p>
               </div>
             ) : (
               <div>
