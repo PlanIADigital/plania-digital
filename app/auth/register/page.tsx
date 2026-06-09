@@ -13,8 +13,10 @@ const ROLES = [
   { value: 'educador', label: 'Educador', activo: true },
   { value: 'maestra_musica', label: 'Maestra de música', activo: false },
   { value: 'maestro_musica', label: 'Maestro de música', activo: false },
-  { value: 'directivo', label: 'Directivo', activo: false },
+  { value: 'directivo', label: 'Directivo', activo: true },
 ]
+
+const ROLES_ACTIVOS = ROLES.filter(r => r.activo)
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -104,30 +106,16 @@ export default function RegisterPage() {
           />
 
           <label style={labelStyle}>Soy...</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginBottom: 24 }}>
-            {ROLES.map(r => (
-              <button
-                key={r.value}
-                onClick={() => r.activo && setRole(r.value)}
-                disabled={!r.activo}
-                style={{
-                  padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: r.activo ? 'pointer' : 'default', textAlign: 'left',
-                  border: role === r.value ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
-                  background: !r.activo ? '#F9F9F9' : role === r.value ? '#EEEDF8' : 'white',
-                  color: !r.activo ? '#BBBBBB' : role === r.value ? '#3D3A8C' : '#555',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}
-              >
-                <span>{role === r.value ? '✓ ' : ''}{r.label}</span>
-                {!r.activo && (
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#BBBBBB', background: '#EFEFEF', padding: '2px 7px', borderRadius: 20, letterSpacing: '0.05em' }}>
-                    PRÓXIMAMENTE
-                  </span>
-                )}
-              </button>
+          <select
+            value={role}
+            onChange={e => setRole(e.target.value)}
+            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, marginBottom: 24, outline: 'none', fontFamily: 'sans-serif', background: 'white', color: role ? '#1A1A2E' : '#888', cursor: 'pointer' }}
+          >
+            <option value="" disabled>Selecciona tu rol...</option>
+            {ROLES_ACTIVOS.map(r => (
+              <option key={r.value} value={r.value}>{r.label}</option>
             ))}
-          </div>
+          </select>
 
           {error && (
             <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
