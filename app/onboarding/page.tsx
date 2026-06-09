@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
@@ -17,6 +17,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState('')
   const [cctInfo, setCctInfo] = useState<{ estado: string; sostenimiento: string; nivel: string; valido: boolean; nombre?: string; error?: string } | null>(null)
   const [cctLoading, setCctLoading] = useState(false)
+  const [userRole, setUserRole] = useState<string>('')
   const [form, setForm] = useState({
     cct: '',
     grado: '2°',
@@ -24,6 +25,16 @@ export default function OnboardingPage() {
     total_alumnos: '',
     contexto_grupo: ''
   })
+
+  useEffect(() => {
+    async function loadRole() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.push('/auth/login'); return }
+      const { data } = await supabase.from('users').select('role').eq('auth_uid', session.user.id).single()
+      if (data?.role) setUserRole(data.role)
+    }
+    loadRole()
+  }, [])
 
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -60,7 +71,7 @@ export default function OnboardingPage() {
       setError('El CCT ingresado no es válido. Verifica e intenta de nuevo.')
       return
     }
-    if (!form.total_alumnos || isNaN(Number(form.total_alumnos))) {
+    if (userRole !== 'directivo' && (!form.total_alumnos || isNaN(Number(form.total_alumnos)))) {
       setError('Ingresa un número válido de alumnos')
       return
     }
@@ -84,7 +95,11 @@ export default function OnboardingPage() {
       })
       .eq('auth_uid', session.user.id)
     if (err) { setError(err.message); setLoading(false); return }
-    router.push('/dashboard')
+    if (userRole === 'directivo') {
+      router.push('/directivo/dashboard')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   const inputStyle = {
@@ -124,7 +139,9 @@ export default function OnboardingPage() {
               Completa tu perfil
             </h2>
             <p style={{ color: '#888', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
-              Esta información permite que tus planeaciones reflejen el contexto real de tu grupo.
+              {userRole === 'directivo'
+                ? 'Esta información vincula tu cuenta con el jardín de niños que diriges.'
+                : 'Esta información permite que tus planeaciones reflejen el contexto real de tu grupo.'}
             </p>
           </div>
 
@@ -161,22 +178,26 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Grado */}
-          <label style={labelStyle}>Grado que atiendes</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
-            {GRADOS.map(g => (
-              <button key={g} onClick={() => update('grado', g)}
-                style={{
-                  padding: '10px 8px', borderRadius: 8, fontSize: 14, fontWeight: 500,
-                  cursor: 'pointer', textAlign: 'center',
-                  border: form.grado === g ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
-                  background: form.grado === g ? '#EEEDF8' : 'white',
-                  color: form.grado === g ? '#3D3A8C' : '#555',
-                }}>
-                {g} Preescolar
-              </button>
-            ))}
-          </div>
+          {/* Grado — solo educadores */}
+          {userRole !== 'directivo' && (
+            <>
+              <label style={labelStyle}>Grado que atiendes</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+                {GRADOS.map(g => (
+                  <button key={g} onClick={() => update('grado', g)}
+                    style={{
+                      padding: '10px 8px', borderRadius: 8, fontSize: 14, fontWeight: 500,
+                      cursor: 'pointer', textAlign: 'center',
+                      border: form.grado === g ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
+                      background: form.grado === g ? '#EEEDF8' : 'white',
+                      color: form.grado === g ? '#3D3A8C' : '#555',
+                    }}>
+                    {g} Preescolar
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Turno */}
           <label style={labelStyle}>Turno</label>
@@ -195,30 +216,32 @@ export default function OnboardingPage() {
             ))}
           </div>
 
-          {/* Número de alumnos */}
-          <label style={labelStyle}>Número de alumnos</label>
-          <input
-            placeholder="Ej: 24"
-            value={form.total_alumnos}
-            onChange={e => update('total_alumnos', e.target.value)}
-            type="number"
-            min="1"
-            max="50"
-            style={{ ...inputStyle, marginBottom: 18 }}
-          />
-
-          {/* Contexto */}
-          <label style={labelStyle}>
-            Contexto del grupo{' '}
-            <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span>
-          </label>
-          <textarea
-            placeholder="Describe brevemente el contexto de tu grupo: zona escolar, características relevantes..."
-            value={form.contexto_grupo}
-            onChange={e => update('contexto_grupo', e.target.value)}
-            rows={3}
-            style={{ ...inputStyle, resize: 'vertical' as const, marginBottom: 18 }}
-          />
+          {/* Número de alumnos y contexto — solo educadores */}
+          {userRole !== 'directivo' && (
+            <>
+              <label style={labelStyle}>Número de alumnos</label>
+              <input
+                placeholder="Ej: 24"
+                value={form.total_alumnos}
+                onChange={e => update('total_alumnos', e.target.value)}
+                type="number"
+                min="1"
+                max="50"
+                style={{ ...inputStyle, marginBottom: 18 }}
+              />
+              <label style={labelStyle}>
+                Contexto del grupo{' '}
+                <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span>
+              </label>
+              <textarea
+                placeholder="Describe brevemente el contexto de tu grupo: zona escolar, características relevantes..."
+                value={form.contexto_grupo}
+                onChange={e => update('contexto_grupo', e.target.value)}
+                rows={3}
+                style={{ ...inputStyle, resize: 'vertical' as const, marginBottom: 18 }}
+              />
+            </>
+          )}
 
           {error && (
             <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
