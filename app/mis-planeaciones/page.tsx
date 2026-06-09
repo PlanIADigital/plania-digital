@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
+import SidebarWrapper from '@/components/SidebarWrapper'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,7 +65,7 @@ export default function MisPlaneacionesPage() {
   )
 
   return (
-    <Sidebar profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 60px' }}>
 
         <div style={{ marginBottom: 24 }}>
@@ -156,6 +156,6 @@ export default function MisPlaneacionesPage() {
         )}
         <div style={{ height: 40 }} />
       </div>
-    </Sidebar>
+    </SidebarWrapper>
   )
 }

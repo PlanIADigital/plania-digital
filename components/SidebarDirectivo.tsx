@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const NAV_ITEMS = [
   { label: 'Dashboard',        path: '/directivo/dashboard', icon: '🏫', activo: true },
-  { label: 'Mis docentes',     path: '/directivo/docentes',  icon: '👩‍🏫', activo: true },
+  { label: 'Mis docentes',     path: '/directivo/dashboard', icon: '👩‍🏫', activo: true },
   { label: 'Estadísticas',     path: null,                   icon: '📈', activo: false },
   { label: 'Informes CTE',     path: null,                   icon: '📄', activo: false },
   { label: 'Configuración',    path: '/configuracion',       icon: '⚙️', activo: true },

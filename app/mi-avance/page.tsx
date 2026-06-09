@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
+import SidebarWrapper from '@/components/SidebarWrapper'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -197,7 +197,7 @@ export default function MiAvancePage() {
   )
 
   if (totalPlanes === 0) return (
-    <Sidebar profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ maxWidth: 640, margin: '40px auto', padding: '0 16px' }}>
         <div style={{ background: 'white', borderRadius: 16, padding: '48px 32px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', textAlign: 'center' }}>
           <div style={{ fontSize: 52, marginBottom: 20 }}>🗺️</div>
@@ -217,11 +217,11 @@ export default function MiAvancePage() {
           </button>
         </div>
       </div>
-    </Sidebar>
+    </SidebarWrapper>
   )
 
   return (
-    <Sidebar profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 60px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px' }}>Centro de control pedagógico</h1>
@@ -342,6 +342,6 @@ export default function MiAvancePage() {
         </div>
         <div style={{ height: 40 }} />
       </div>
-    </Sidebar>
+    </SidebarWrapper>
   )
 }

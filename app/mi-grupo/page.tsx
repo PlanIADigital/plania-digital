@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
+import SidebarWrapper from '@/components/SidebarWrapper'
 import { supabase } from '@/lib/supabase'
 
 const MENSAJES_ANALISIS = [
@@ -384,7 +384,7 @@ export default function MiGrupoPage() {
   const totalAlumnos = profile.total_students || profile.total_alumnos || 24
 
   return (
-    <Sidebar profile={profile}>
+    <SidebarWrapper profile={profile}>
       {analizando ? (
         <PantallaAnimacion grado={profile.grado || '2°'} totalAlumnos={totalAlumnos} cct={profile.cct_primary || ''} />
       ) : (
@@ -731,6 +731,6 @@ export default function MiGrupoPage() {
           <div style={{ height: 40 }} />
         </div>
       )}
-    </Sidebar>
+    </SidebarWrapper>
   )
 }

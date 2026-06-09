@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
+import SidebarWrapper from '@/components/SidebarWrapper'
 import { supabase } from '@/lib/supabase'
 
 
@@ -370,7 +370,7 @@ export default function NuevaPlaneacionPage() {
   )
 
   return (
-    <Sidebar profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 16px' }}>
 
         {generating && (
@@ -728,6 +728,6 @@ export default function NuevaPlaneacionPage() {
         )}
         <div style={{ height: 40 }} />
       </div>
-    </Sidebar>
+    </SidebarWrapper>
   )
 }
