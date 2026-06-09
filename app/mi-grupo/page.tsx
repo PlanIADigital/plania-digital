@@ -675,7 +675,7 @@ export default function MiGrupoPage() {
                 </div>
                 <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
                   <label style={{ ...s.label, marginBottom: 4 }}>O sube un documento</label>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Si tu directora te dio un documento con observaciones, súbelo aquí.</p>
+                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Solo Word (.docx) o PDF. Si tienes notas a mano, pásalas primero a un documento de texto.</p>
                   <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} id="archivo-observaciones" />
                   <label htmlFor="archivo-observaciones" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     📎 Seleccionar archivo
