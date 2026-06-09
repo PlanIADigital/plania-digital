@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const NAV_ITEMS = [
   { label: 'Dashboard',        path: '/directivo/dashboard', icon: '🏫', activo: true },
-  { label: 'Mis docentes',     path: '/directivo/dashboard', icon: '👩‍🏫', activo: true },
+  { label: 'Mis docentes',     path: '/directivo/docentes',  icon: '👩‍🏫', activo: true },
   { label: 'Estadísticas',     path: null,                   icon: '📈', activo: false },
   { label: 'Informes CTE',     path: null,                   icon: '📄', activo: false },
   { label: 'Configuración',    path: '/configuracion',       icon: '⚙️', activo: true },
@@ -63,7 +63,10 @@ export default function SidebarDirectivo({ profile, children }: SidebarDirectivo
         {/* Nav */}
         <nav style={{ padding: '16px 12px', flex: 1 }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = item.path !== null && pathname?.startsWith(item.path)
+            const isActive = item.path !== null && (
+              pathname === item.path ||
+              (item.path === '/directivo/docentes' && pathname?.startsWith('/directivo/docentes/'))
+            )
             return (
               <div key={item.label} style={{ marginBottom: 4 }}>
                 <button
@@ -106,14 +109,19 @@ export default function SidebarDirectivo({ profile, children }: SidebarDirectivo
         {/* Perfil */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: '#3D3A8C',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0
-            }}>
-              {iniciales}
-            </div>
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="foto"
+                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: '#3D3A8C',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0
+              }}>
+                {iniciales}
+              </div>
+            )}
             <div style={{ overflow: 'hidden' }}>
               <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {profile?.full_name}
