@@ -60,6 +60,9 @@ REGLAS CRÍTICAS:
 - Los PDAs deben ser LITERALES y EXACTOS del catálogo proporcionado. Sin parafrasear ni modificar.
 - Selecciona exactamente 3 campos formativos, todos diferentes entre sí y diferentes al campo principal.
 - Elige el contenido y PDA que tenga relación más directa con la situación problema y finalidad del proyecto.
+- Para los ejes articuladores, elige de esta lista EXACTA: ["Inclusión", "Pensamiento crítico", "Interculturalidad crítica", "Igualdad de género", "Vida saludable", "Apropiación de las culturas a través de la lectura y la escritura", "Artes y experiencias estéticas"]
+- El eje_principal debe ser el que mejor articule el proyecto completo de forma transversal.
+- El eje_secundario debe complementar al principal sin repetirlo.
 - Responde SOLO con JSON válido, sin markdown, sin explicaciones.
 
 FORMATO DE SALIDA EXACTO:
@@ -68,7 +71,10 @@ FORMATO DE SALIDA EXACTO:
     { "campo": "...", "contenido": "...", "pda": "..." },
     { "campo": "...", "contenido": "...", "pda": "..." },
     { "campo": "...", "contenido": "...", "pda": "..." }
-  ]
+  ],
+  "eje_principal": "nombre exacto del eje principal",
+  "eje_secundario": "nombre exacto del eje secundario",
+  "ejes_disponibles": ["Inclusión", "Pensamiento crítico", "Interculturalidad crítica", "Igualdad de género", "Vida saludable", "Apropiación de las culturas a través de la lectura y la escritura", "Artes y experiencias estéticas"]
 }`,
       messages: [{
         role: 'user',

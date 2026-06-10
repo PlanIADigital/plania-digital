@@ -625,7 +625,7 @@ export default function NuevaPlaneacionPage() {
 
             {ejePrincipal && (
               <div style={s.section}>
-                <p style={s.sectionTitle}>{transversales.length > 0 ? '4' : '3'} · Ejes articuladores</p>
+                <p style={s.sectionTitle}>{transversales.length > 0 ? '5' : '4'} · Ejes articuladores</p>
                 <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
                   El sistema determinó los ejes que mejor articulan todos tus campos y contenidos.
                 </p>

@@ -118,6 +118,8 @@ DATOS DEL PROYECTO:
 - PDA principal: ${form.pda_principal}
 - Fechas: ${form.fecha_inicio} al ${form.fecha_fin}
 - Modalidad: ${form.metodologia}
+- Eje articulador principal: ${form.eje_principal || 'No definido'}
+- Eje articulador secundario: ${form.eje_secundario || 'No definido'}
 
 CAMPOS FORMATIVOS TRANSVERSALES:
 ${transversalesTexto}
