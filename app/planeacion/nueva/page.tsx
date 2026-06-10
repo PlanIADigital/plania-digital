@@ -124,6 +124,8 @@ export default function NuevaPlaneacionPage() {
   const [sugirendoTransversales, setSugirendoTransversales] = useState(false)
   const [mensajeSugerencia, setMensajeSugerencia] = useState(0)
   const [mensajeEspera, setMensajeEspera] = useState(0)
+  const [esperaFinal, setEsperaFinal] = useState(false)
+  const [puntos, setPuntos] = useState('.')
 
   const MENSAJES_SUGERENCIA = [
     '🔍 Leyendo tu proyecto...',
@@ -274,16 +276,26 @@ export default function NuevaPlaneacionPage() {
   }, [sugirendoTransversales])
 
   useEffect(() => {
-    if (!generating || porcentaje < 95) { setMensajeEspera(0); return }
+    if (!esperaFinal) { setPuntos('.'); return }
+    const interval = setInterval(() => {
+      setPuntos(prev => prev.length >= 3 ? '.' : prev + '.')
+    }, 500)
+    return () => clearInterval(interval)
+  }, [esperaFinal])
+
+  useEffect(() => {
+    if (!generating || porcentaje < 95) { setMensajeEspera(0); setEsperaFinal(false); return }
     const tiempos = [3000, 4000, 3500, 5000, 3000]
     let idx = 0
     let timeout: ReturnType<typeof setTimeout>
     function avanzar() {
-      if (idx >= MENSAJES_ESPERA.length - 1) return
+      if (idx >= MENSAJES_ESPERA.length - 1) { setEsperaFinal(true); return }
       idx++
       setMensajeEspera(idx)
       if (idx < MENSAJES_ESPERA.length - 1) {
         timeout = setTimeout(avanzar, tiempos[idx] || 3000)
+      } else {
+        setEsperaFinal(true)
       }
     }
     timeout = setTimeout(avanzar, tiempos[0])
@@ -482,7 +494,7 @@ export default function NuevaPlaneacionPage() {
                       color: activo ? '#3D3A8C' : completado ? '#166534' : '#9CA3AF',
                       fontWeight: activo ? 600 : 400
                     }}>
-                      {activo && porcentaje >= 95 ? MENSAJES_ESPERA[mensajeEspera] : paso.texto}
+                      {activo && porcentaje >= 95 ? (esperaFinal ? `${MENSAJES_ESPERA[MENSAJES_ESPERA.length - 1]}${puntos}` : MENSAJES_ESPERA[mensajeEspera]) : paso.texto}
                     </p>
                   </div>
                 )
