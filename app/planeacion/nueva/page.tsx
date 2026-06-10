@@ -321,7 +321,7 @@ export default function NuevaPlaneacionPage() {
         setPorcentaje(100)
         await new Promise(r => setTimeout(r, 600))
         setResult(data.planeacion)
-        const { error: saveError } = await supabase.from('plannings').insert({
+        const { data: savedData, error: saveError } = await supabase.from('plannings').insert({
           user_id: profile.id,
           project_name: form.nombre_proyecto,
           situacion_problema: form.situacion_problema,
@@ -351,8 +351,12 @@ export default function NuevaPlaneacionPage() {
           eje_secundario: ejeElegidoPorEducadora || (ejeSecundarioDescartado ? null : ejeSecundario) || null,
           school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
           status: 'active',
-        })
-        setSaveStatus(saveError ? '⚠️ Generada pero no guardada: ' + saveError.message : '✅ Planeación guardada correctamente')
+        }).select('id').single()
+        if (saveError) {
+          setSaveStatus('⚠️ Generada pero no guardada: ' + saveError.message)
+        } else if (savedData?.id) {
+          router.push(`/planeacion/${savedData.id}`)
+        }
       }
     } catch {
       setResult({ error: 'Error de conexión' })
