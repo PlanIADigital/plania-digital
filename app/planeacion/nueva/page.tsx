@@ -27,7 +27,7 @@ function getPasosProgreso(totalAlumnos: number) {
     { texto: `Diseñando actividades para tus ${totalAlumnos} niños específicamente...`, porcentaje: 60 },
     { texto: 'Integrando materiales y preguntas detonadoras...', porcentaje: 75 },
     { texto: 'Redactando el cierre con la voz de tu grupo...', porcentaje: 88 },
-    { texto: 'Ajustando el tono y estilo a tu identidad docente...', porcentaje: 95 },
+    { texto: 'Ajustando el tono y estilo a tu forma de enseñar...', porcentaje: 95 },
   ]
 }
 
@@ -376,17 +376,53 @@ export default function NuevaPlaneacionPage() {
       <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 16px' }}>
 
         {generating && (
-          <div style={{ background: 'white', borderRadius: 14, padding: 36, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24, textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
-            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 6, fontSize: 18 }}>Creando tu planeación</h3>
-            <p style={{ color: '#666', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
-              Diseñada específicamente para tus <strong>{totalAlumnos} alumnos</strong> de <strong>{profile.grado || '2°'} grado</strong>
-            </p>
-            <div style={{ background: '#EEEDF8', borderRadius: 99, height: 8, marginBottom: 16, overflow: 'hidden' }}>
+          <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>✨</div>
+              <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 18 }}>Creando tu planeación</h3>
+              <p style={{ color: '#666', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
+                Diseñada para tus <strong>{totalAlumnos} alumnos</strong> de <strong>{profile.grado || '2°'} grado</strong>
+              </p>
+            </div>
+            <div style={{ background: '#EEEDF8', borderRadius: 99, height: 6, marginBottom: 8, overflow: 'hidden' }}>
               <div style={{ background: 'linear-gradient(90deg, #3D3A8C, #00A896)', height: '100%', borderRadius: 99, width: `${porcentaje}%`, transition: 'width 0.8s ease' }} />
             </div>
-            <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 500, marginBottom: 0 }}>{pasosProgreso[pasoActual]?.texto}</p>
-            <p style={{ color: '#aaa', fontSize: 12, marginTop: 8 }}>Esto toma entre 30 y 45 segundos</p>
+            <p style={{ color: '#3D3A8C', fontSize: 12, fontWeight: 600, textAlign: 'right', margin: '0 0 20px' }}>{porcentaje}%</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+              {pasosProgreso.map((paso, index) => {
+                const completado = index < pasoActual
+                const activo = index === pasoActual
+                return (
+                  <div key={index} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '10px 14px', borderRadius: 8,
+                    background: activo ? '#EEEDF8' : completado ? '#F0FDF4' : '#FAFAFA',
+                    border: activo ? '1.5px solid #3D3A8C' : completado ? '1.5px solid #86EFAC' : '1.5px solid #F0F0F0',
+                    opacity: index > pasoActual ? 0.4 : 1,
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: completado ? '#22C55E' : activo ? '#3D3A8C' : '#E5E7EB',
+                      fontSize: 11, color: 'white', fontWeight: 700
+                    }}>
+                      {completado ? '✓' : activo ? '●' : ''}
+                    </div>
+                    <p style={{
+                      margin: 0, fontSize: 13,
+                      color: activo ? '#3D3A8C' : completado ? '#166534' : '#9CA3AF',
+                      fontWeight: activo ? 600 : 400
+                    }}>
+                      {paso.texto}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+            <p style={{ color: '#aaa', fontSize: 12, marginTop: 16, textAlign: 'center', marginBottom: 0 }}>
+              Esto toma entre 30 y 45 segundos — no cierres esta ventana
+            </p>
           </div>
         )}
 
