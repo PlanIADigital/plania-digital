@@ -125,7 +125,20 @@ CAMPOS FORMATIVOS TRANSVERSALES:
 ${transversalesTexto}
 ${recursosTexto ? '\n' + recursosTexto : ''}
 
-Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.`
+Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El momento de desarrollo principal debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.
+
+Además del contenido narrativo, agrega al final del JSON una clave "rubrica" con este formato exacto:
+{
+  "rubrica": {
+    "indicador": "texto del indicador observable basado en el verbo central del PDA principal",
+    "nivel_3": "El alumno [acción concreta observable que demuestra dominio pleno del PDA]",
+    "nivel_2": "El alumno [acción observable que demuestra avance parcial del PDA, con apoyo]",
+    "nivel_1": "El alumno [acción observable inicial o con dificultad evidente]",
+    "nota_evaluadora": "Una oración breve con voz de maestra sobre qué observar durante las actividades"
+  }
+}
+
+REGLA R4-PDA PARA LA RÚBRICA: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.`
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',

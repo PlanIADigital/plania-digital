@@ -9,13 +9,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const momentos = [
-  { key: 'momento_1_punto_de_partida', titulo: '1. Punto de partida' },
-  { key: 'momento_2_planeacion', titulo: '2. Planeación' },
-  { key: 'momento_3_a_trabajar', titulo: '3. ¡A trabajar!' },
-  { key: 'momento_4_comunicamos', titulo: '4. Comunicamos' },
-  { key: 'momento_5_reflexion', titulo: '5. Reflexión' },
-]
+const CLAVES_EXCLUIDAS = ['ajustes_razonables', 'rubrica', 'materiales']
+
+function formatearTituloMomento(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\w/g, l => l.toUpperCase())
+    .replace(/^(\d+)\s/, '$1. ')
+}
 
 export default function VerPlaneacionPage() {
   const router = useRouter()
@@ -119,16 +120,18 @@ export default function VerPlaneacionPage() {
           )}
         </div>
 
-        {momentos.map(m => contenido[m.key] ? (
-          <div key={m.key} style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        {Object.entries(contenido)
+          .filter(([key]) => !CLAVES_EXCLUIDAS.includes(key) && typeof contenido[key] === 'string')
+          .map(([key, valor], index) => (
+          <div key={key} style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <h4 style={{ color: '#00A896', marginTop: 0, marginBottom: 14, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {m.titulo}
+              {index + 1}. {formatearTituloMomento(key)}
             </h4>
             <p style={{ fontSize: 14, lineHeight: 1.9, color: '#1A1A2E', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {contenido[m.key]}
+              {valor as string}
             </p>
           </div>
-        ) : null)}
+        ))}
 
         {contenido.ajustes_razonables && (
           <div style={{ background: '#FFF8E7', border: '1px solid #F6D860', borderRadius: 12, padding: 28, marginBottom: 16 }}>
@@ -138,6 +141,36 @@ export default function VerPlaneacionPage() {
             <p style={{ fontSize: 14, lineHeight: 1.9, color: '#1A1A2E', margin: 0, whiteSpace: 'pre-wrap' }}>
               {contenido.ajustes_razonables}
             </p>
+          </div>
+        )}
+
+        {contenido.rubrica && (
+          <div style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <h4 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 6, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Rúbrica de evaluación
+            </h4>
+            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, fontStyle: 'italic' }}>
+              {contenido.rubrica.indicador}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+              <div style={{ background: '#EAF3DE', borderRadius: 8, padding: '12px 14px' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 3 — Logrado</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_3}</p>
+              </div>
+              <div style={{ background: '#FFF8E7', borderRadius: 8, padding: '12px 14px' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#854F0B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 2 — En proceso</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_2}</p>
+              </div>
+              <div style={{ background: '#FCEBEB', borderRadius: 8, padding: '12px 14px' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 1 — Inicio</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_1}</p>
+              </div>
+            </div>
+            <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '10px 14px' }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#3D3A8C', lineHeight: 1.6 }}>
+                <strong>Nota para evaluar:</strong> {contenido.rubrica.nota_evaluadora}
+              </p>
+            </div>
           </div>
         )}
 
