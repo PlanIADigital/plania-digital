@@ -257,19 +257,37 @@ export default function NuevaPlaneacionPage() {
   }
 
   useEffect(() => {
-    if (!sugirendoTransversales) return
-    const interval = setInterval(() => {
-      setMensajeSugerencia(prev => (prev + 1) % MENSAJES_SUGERENCIA.length)
-    }, 1800)
-    return () => clearInterval(interval)
+    if (!sugirendoTransversales) { setMensajeSugerencia(0); return }
+    const tiempos = [1200, 2000, 1800, 2200]
+    let idx = 0
+    let timeout: ReturnType<typeof setTimeout>
+    function avanzar() {
+      if (idx >= MENSAJES_SUGERENCIA.length - 1) return
+      idx++
+      setMensajeSugerencia(idx)
+      if (idx < MENSAJES_SUGERENCIA.length - 1) {
+        timeout = setTimeout(avanzar, tiempos[idx] || 2000)
+      }
+    }
+    timeout = setTimeout(avanzar, tiempos[0])
+    return () => clearTimeout(timeout)
   }, [sugirendoTransversales])
 
   useEffect(() => {
-    if (!generating || porcentaje < 95) return
-    const interval = setInterval(() => {
-      setMensajeEspera(prev => (prev + 1) % MENSAJES_ESPERA.length)
-    }, 2500)
-    return () => clearInterval(interval)
+    if (!generating || porcentaje < 95) { setMensajeEspera(0); return }
+    const tiempos = [3000, 4000, 3500, 5000, 3000]
+    let idx = 0
+    let timeout: ReturnType<typeof setTimeout>
+    function avanzar() {
+      if (idx >= MENSAJES_ESPERA.length - 1) return
+      idx++
+      setMensajeEspera(idx)
+      if (idx < MENSAJES_ESPERA.length - 1) {
+        timeout = setTimeout(avanzar, tiempos[idx] || 3000)
+      }
+    }
+    timeout = setTimeout(avanzar, tiempos[0])
+    return () => clearTimeout(timeout)
   }, [generating, porcentaje])
 
   async function sugerirTransversales() {
