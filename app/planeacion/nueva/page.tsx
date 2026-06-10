@@ -122,6 +122,25 @@ export default function NuevaPlaneacionPage() {
 
   const [transversales, setTransversales] = useState<Transversal[]>([])
   const [sugirendoTransversales, setSugirendoTransversales] = useState(false)
+  const [mensajeSugerencia, setMensajeSugerencia] = useState(0)
+  const [mensajeEspera, setMensajeEspera] = useState(0)
+
+  const MENSAJES_SUGERENCIA = [
+    '🔍 Leyendo tu proyecto...',
+    '📚 Revisando el catálogo de PDAs...',
+    '🔗 Buscando campos coherentes...',
+    '🧠 Analizando la situación problema...',
+    '✨ Casi listo...',
+  ]
+
+  const MENSAJES_ESPERA = [
+    'Revisando coherencia pedagógica...',
+    'Verificando que los PDAs estén bien integrados...',
+    'Puliendo el lenguaje narrativo...',
+    'Casi lista, revisando los detalles finales...',
+    'Unos segundos más — vale la pena esperar...',
+    'Asegurando que suene como tú, no como un documento...',
+  ]
   const [errorTransversales, setErrorTransversales] = useState('')
   const [ejePrincipal, setEjePrincipal] = useState('')
   const [ejeSecundario, setEjeSecundario] = useState('')
@@ -236,6 +255,22 @@ export default function NuevaPlaneacionPage() {
   function update(field: string, value: any) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
+
+  useEffect(() => {
+    if (!sugirendoTransversales) return
+    const interval = setInterval(() => {
+      setMensajeSugerencia(prev => (prev + 1) % MENSAJES_SUGERENCIA.length)
+    }, 1800)
+    return () => clearInterval(interval)
+  }, [sugirendoTransversales])
+
+  useEffect(() => {
+    if (!generating || porcentaje < 95) return
+    const interval = setInterval(() => {
+      setMensajeEspera(prev => (prev + 1) % MENSAJES_ESPERA.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [generating, porcentaje])
 
   async function sugerirTransversales() {
     if (!form.nombre_proyecto || !form.situacion_problema || !form.finalidad || !principalCampo) return
@@ -429,7 +464,7 @@ export default function NuevaPlaneacionPage() {
                       color: activo ? '#3D3A8C' : completado ? '#166534' : '#9CA3AF',
                       fontWeight: activo ? 600 : 400
                     }}>
-                      {paso.texto}
+                      {activo && porcentaje >= 95 ? MENSAJES_ESPERA[mensajeEspera] : paso.texto}
                     </p>
                   </div>
                 )
@@ -637,7 +672,7 @@ export default function NuevaPlaneacionPage() {
                 <div style={{ paddingTop: 8 }}>
                   <button onClick={sugerirTransversales} disabled={sugirendoTransversales}
                     style={{ background: sugirendoTransversales ? '#F0EFF8' : '#EEEDF8', color: '#3D3A8C', border: '1.5px solid #3D3A8C', padding: '10px 18px', fontSize: 14, cursor: sugirendoTransversales ? 'default' : 'pointer', borderRadius: 8, fontWeight: 600, width: '100%' }}>
-                    {sugirendoTransversales ? '🔍 Analizando tu proyecto...' : '🔗 Sugerir campos transversales'}
+                    {sugirendoTransversales ? MENSAJES_SUGERENCIA[mensajeSugerencia] : '🔗 Sugerir campos transversales'}
                   </button>
                   {errorTransversales && <p style={{ color: '#DC2626', fontSize: 13, marginTop: 8 }}>{errorTransversales}</p>}
                 </div>
