@@ -18,9 +18,15 @@ export default function LoginPage() {
   async function handleLogin() {
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError('Correo o contraseña incorrectos'); setLoading(false) }
-    else router.push('/dashboard')
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError('Correo o contraseña incorrectos'); setLoading(false); return }
+    if (!data.user?.email_confirmed_at) {
+      await supabase.auth.signOut()
+      setError('Debes confirmar tu correo electrónico antes de entrar. Revisa tu bandeja de entrada.')
+      setLoading(false)
+      return
+    }
+    router.push('/dashboard')
   }
 
   return (
