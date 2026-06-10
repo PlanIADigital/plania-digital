@@ -35,16 +35,72 @@ R4-PDA — EL PDA COMO ACCIÓN EJECUTADA: Identifica el verbo de acción central
 
 TONO: Cálido, directo, concreto. Como cuando una maestra le cuenta a otra lo que va a hacer con su grupo. NUNCA suena a documento de la SEP ni a planeación genérica.
 
-FORMATO DE SALIDA: Responde únicamente con JSON válido, sin markdown, sin explicaciones. Estructura exacta:
+FORMATO DE SALIDA: Responde únicamente con JSON válido, sin markdown, sin explicaciones.
+Las claves del JSON deben ser los nombres exactos de los momentos de la modalidad elegida, en snake_case sin acentos.
+Ejemplo para Proyectos:
 {
-  "momento_1_punto_de_partida": "texto narrativo...",
-  "momento_2_planeacion": "texto narrativo...",
-  "momento_3_a_trabajar": "texto narrativo con 3 actividades completas...",
-  "momento_4_comunicamos": "texto narrativo...",
-  "momento_5_reflexion": "texto narrativo..."
-}`
+  "situacion_inicial": "texto narrativo...",
+  "organizacion_de_las_acciones": "texto narrativo...",
+  "a_trabajar": "texto narrativo con 3 actividades completas...",
+  "comunicamos_nuestros_logros": "texto narrativo...",
+  "reflexion_sobre_el_aprendizaje": "texto narrativo..."
+}
+Ejemplo para ABJ:
+{
+  "planteamiento_del_juego": "texto narrativo...",
+  "desarrollo_de_las_actividades": "texto narrativo con 3 actividades...",
+  "compartimos_la_experiencia": "texto narrativo...",
+  "comunidad_de_juego": "texto narrativo..."
+}
+Adapta las claves según la modalidad. Nunca uses claves genéricas como momento_1, momento_2.`
 
-    const userMessage = `Genera la planeación didáctica COMPLETA con los 5 momentos para este proyecto:
+    const estructuraModalidad: Record<string, string> = {
+      'Proyectos': `MOMENTOS DE LA MODALIDAD: PROYECTOS
+1. SITUACIÓN INICIAL — Presenta el problema o situación del entorno que da origen al proyecto. Los niños dialogan, expresan saberes previos y acuerdan qué harán.
+2. ORGANIZACIÓN DE LAS ACCIONES — El grupo planifica: qué van a hacer, cómo, con qué materiales, quién hace qué.
+3. ¡A TRABAJAR! — Tres actividades completas de exploración, construcción y creación. Aquí se desarrollan los PDAs.
+4. COMUNICAMOS NUESTROS LOGROS — Los niños socializan, presentan y comparten lo que aprendieron con otros.
+5. REFLEXIÓN SOBRE EL APRENDIZAJE — Cierre metacognitivo: ¿qué aprendimos?, ¿cómo lo aprendimos?, ¿qué cambiaríamos?`,
+
+      'ABJ': `MOMENTOS DE LA MODALIDAD: APRENDIZAJE BASADO EN JUEGOS
+1. PLANTEAMIENTO DEL JUEGO — Presenta la situación lúdica, activa saberes previos, establece las reglas del juego.
+2. DESARROLLO DE LAS ACTIVIDADES — Tres actividades de juego activo donde los niños exploran, construyen y crean.
+3. COMPARTIMOS LA EXPERIENCIA — Los niños verbalizan sus descubrimientos y escuchan a sus compañeros.
+4. COMUNIDAD DE JUEGO — Integración colectiva: juegos grupales que consolidan los aprendizajes.`,
+
+      'Taller crítico': `MOMENTOS DE LA MODALIDAD: TALLER CRÍTICO
+1. SITUACIÓN INICIAL — Presenta la situación o problema que detona el análisis crítico del grupo.
+2. PUESTA EN MARCHA — Los niños trabajan activamente: exploran, crean, construyen, investigan.
+3. VALORAMOS LO APRENDIDO — El grupo evalúa el proceso, comparte resultados y reflexiona colectivamente.
+4. REFLEXIÓN — Cierre crítico: ¿qué cambiamos?, ¿qué transformamos?, ¿qué sigue?`,
+
+      'Rincones': `MOMENTOS DE LA MODALIDAD: RINCONES DE APRENDIZAJE
+1. ASAMBLEA INICIAL Y PLANEACIÓN — Presentación de los rincones, acuerdos de participación, organización del grupo.
+2. EXPLORACIÓN DE LOS RINCONES — Los niños trabajan de forma autónoma en los rincones diferenciados.
+3. COMPARTIMOS LO APRENDIDO — Puesta en común: cada niño comparte qué hizo y qué descubrió.
+4. REFLEXIÓN SOBRE EL APRENDIZAJE — ¿Qué aprendimos en los rincones? ¿Qué queremos seguir explorando?`,
+
+      'Centros de interés': `MOMENTOS DE LA MODALIDAD: CENTROS DE INTERÉS
+1. CONTACTO CON LA REALIDAD — Los niños observan, tocan, huelen, escuchan el objeto o fenómeno de interés.
+2. IDENTIFICACIÓN E INTEGRACIÓN — Relacionan lo observado con sus saberes, identifican características y conexiones.
+3. EXPRESIÓN — Expresan lo aprendido a través de múltiples lenguajes: dibujo, palabra, movimiento, construcción.`,
+
+      'Unidad didáctica': `MOMENTOS DE LA MODALIDAD: UNIDAD DIDÁCTICA
+1. LECTURA DE LA REALIDAD — Identificación del tema o trama desde el contexto real del grupo.
+2. IDENTIFICACIÓN DE LA TRAMA Y COMPLEJIDAD — El grupo profundiza: ¿qué sabemos?, ¿qué queremos saber?
+3. PLANIFICACIÓN Y ORGANIZACIÓN — Acuerdos sobre cómo abordar la trama: materiales, roles, tiempos.
+4. EXPLORACIÓN Y DESCUBRIMIENTO — Actividades de investigación, creación y construcción.
+5. PARTICIPACIÓN ACTIVA Y HORIZONTAL — Todos aportan, todos aprenden, nadie es solo receptor.
+6. VALORACIÓN DE LA EXPERIENCIA — Cierre reflexivo: logros, dificultades, proyecciones.`
+    }
+
+    const estructuraTexto = estructuraModalidad[form.metodologia] || estructuraModalidad['Proyectos']
+
+    const userMessage = `Genera la planeación didáctica COMPLETA para este proyecto usando la modalidad indicada:
+
+MODALIDAD DIDÁCTICA: ${form.metodologia}
+
+${estructuraTexto}
 
 CONTEXTO DEL GRUPO:
 - CCT: ${profile.cct_primary}
@@ -61,12 +117,13 @@ DATOS DEL PROYECTO:
 - Contenido principal: ${form.contenido}
 - PDA principal: ${form.pda_principal}
 - Fechas: ${form.fecha_inicio} al ${form.fecha_fin}
+- Modalidad: ${form.metodologia}
 
 CAMPOS FORMATIVOS TRANSVERSALES:
 ${transversalesTexto}
 ${recursosTexto ? '\n' + recursosTexto : ''}
 
-Genera los 5 momentos completos siguiendo todas las reglas de voz. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.`
+Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.`
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',

@@ -100,6 +100,7 @@ export default function NuevaPlaneacionPage() {
     duracion_dias: 15,
     fecha_inicio: '',
     fecha_fin: '',
+    metodologia: 'Proyectos',
   })
 
   const [principalCampo, setPrincipalCampo] = useState('')
@@ -290,6 +291,7 @@ export default function NuevaPlaneacionPage() {
         body: JSON.stringify({
           form: {
             ...form,
+            metodologia: form.metodologia,
             campo_formativo: principalCampo,
             contenido: contenidosElegidos[0]?.contenido || '',
             pda_principal: contenidosElegidos[0]?.pdasSeleccionados[0] || '',
@@ -412,6 +414,34 @@ export default function NuevaPlaneacionPage() {
                 <textarea placeholder="Ej: báscula, objetos de medición, lupas, material reciclado..." value={form.recursos_materiales} onChange={e => update('recursos_materiales', e.target.value)} rows={2}
                   style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', background: 'white' } as React.CSSProperties} />
               </div>
+            </div>
+
+            <div style={s.section}>
+              <p style={s.sectionTitle}>1.5 · Modalidad de trabajo</p>
+              <label style={s.label}>
+                Modalidad didáctica *
+                <span style={{ fontWeight: 400, color: '#00A896', fontSize: 12, marginLeft: 8, background: '#E8F5F2', padding: '2px 8px', borderRadius: 99 }}>Sugerida por NEM 2022</span>
+              </label>
+              <select
+                value={form.metodologia}
+                onChange={e => update('metodologia', e.target.value)}
+                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 8, background: 'white', cursor: 'pointer' } as React.CSSProperties}
+              >
+                <option value="Proyectos">⭐ Proyectos — sugerida NEM 2022</option>
+                <option value="ABJ">Aprendizaje Basado en Juegos (ABJ)</option>
+                <option value="Taller crítico">Taller crítico</option>
+                <option value="Rincones">Rincones de aprendizaje</option>
+                <option value="Centros de interés">Centros de interés</option>
+                <option value="Unidad didáctica">Unidad didáctica</option>
+              </select>
+              <p style={{ fontSize: 12, color: '#888', margin: '0 0 4px', lineHeight: 1.5 }}>
+                {form.metodologia === 'Proyectos' && 'Parte de una situación problema real del entorno. Modalidad preferente según NEM 2022.'}
+                {form.metodologia === 'ABJ' && '4 momentos: Planteamiento → Desarrollo → Compartimos → Comunidad de juego.'}
+                {form.metodologia === 'Taller crítico' && 'Parte de una situación inicial y promueve análisis y reflexión colectiva.'}
+                {form.metodologia === 'Rincones' && 'Espacios diferenciados donde los niños exploran de forma autónoma.'}
+                {form.metodologia === 'Centros de interés' && 'Parte del contacto directo con la realidad e intereses del grupo.'}
+                {form.metodologia === 'Unidad didáctica' && 'Trama de complejidad creciente con múltiples momentos estructurados.'}
+              </p>
             </div>
 
             <div style={s.section}>
@@ -676,17 +706,15 @@ export default function NuevaPlaneacionPage() {
             <div style={{ marginBottom: 28 }}>
               <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '5' : '4') : (transversales.length > 0 ? '4' : '3')} · Duración del proyecto</p>
               <label style={s.label}>¿Cuánto durará el proyecto? *</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+              <select
+                value={form.duracion_dias}
+                onChange={e => update('duracion_dias', Number(e.target.value))}
+                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 20, background: 'white', cursor: 'pointer' } as React.CSSProperties}
+              >
                 {DURACIONES.map(d => (
-                  <button key={d.dias} onClick={() => update('duracion_dias', d.dias)}
-                    style={{ padding: '12px 8px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', lineHeight: 1.3,
-                      border: form.duracion_dias === d.dias ? '2px solid #3D3A8C' : '1.5px solid #D8D6F0',
-                      background: form.duracion_dias === d.dias ? '#EEEDF8' : 'white',
-                      color: form.duracion_dias === d.dias ? '#3D3A8C' : '#555' }}>
-                    {d.label}
-                  </button>
+                  <option key={d.dias} value={d.dias}>{d.label}</option>
                 ))}
-              </div>
+              </select>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={s.label}>Fecha de inicio *</label>
