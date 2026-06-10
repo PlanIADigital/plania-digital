@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 800,
       system: `Eres un agente pedagógico especializado en educación preescolar mexicana NEM 2022.
 Recibes observaciones que un directivo ha hecho a una educadora durante visitas de aula o Consejos Técnicos Escolares.

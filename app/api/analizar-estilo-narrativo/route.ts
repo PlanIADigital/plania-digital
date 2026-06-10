@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 800,
       system: `Eres un agente especializado en análisis de estilo de escritura para educadoras de preescolar mexicanas.
 Recibes un texto escrito por una educadora. Tu tarea es identificar su estilo personal de redacción para que las planeaciones didácticas generadas por IA suenen auténticamente a ella.

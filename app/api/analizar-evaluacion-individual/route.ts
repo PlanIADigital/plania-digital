@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     ).join('\n')
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
       system: `Eres un agente pedagógico especializado en el Programa de Preescolar NEM 2022 Fase 2 de México.
 

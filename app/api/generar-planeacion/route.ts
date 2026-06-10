@@ -69,7 +69,7 @@ ${recursosTexto ? '\n' + recursosTexto : ''}
 Genera los 5 momentos completos siguiendo todas las reglas de voz. El Momento 3 debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.`
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',
       max_tokens: 8000,
       messages: [{ role: 'user', content: userMessage }],
       system: systemPrompt
