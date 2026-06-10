@@ -35,10 +35,13 @@ export default function RegisterPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, role } }
+      options: {
+        data: { full_name: fullName, role },
+        emailRedirectTo: `${window.location.origin}/onboarding`
+      }
     })
     if (error) { setError(error.message); setLoading(false) }
-    else router.push('/onboarding')
+    else router.push('/auth/confirmar-correo')
   }
 
   const inputStyle = {
