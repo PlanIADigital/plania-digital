@@ -417,7 +417,7 @@ export default function NuevaPlaneacionPage() {
             </div>
 
             <div style={s.section}>
-              <p style={s.sectionTitle}>1.5 · Modalidad de trabajo</p>
+              <p style={s.sectionTitle}>2 · Modalidad de trabajo</p>
               <label style={s.label}>
                 Modalidad didáctica *
                 <span style={{ fontWeight: 400, color: '#00A896', fontSize: 12, marginLeft: 8, background: '#E8F5F2', padding: '2px 8px', borderRadius: 99 }}>Sugerida por NEM 2022</span>
@@ -445,7 +445,7 @@ export default function NuevaPlaneacionPage() {
             </div>
 
             <div style={s.section}>
-              <p style={s.sectionTitle}>2 · Campo formativo principal</p>
+              <p style={s.sectionTitle}>3 · Campo formativo principal</p>
               <label style={s.label}>Campo formativo *</label>
               <select value={principalCampo} onChange={e => setPrincipalCampo(e.target.value)}
                 style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 20, background: 'white', cursor: 'pointer' } as React.CSSProperties}>
@@ -704,7 +704,7 @@ export default function NuevaPlaneacionPage() {
             )}
 
             <div style={{ marginBottom: 28 }}>
-              <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '5' : '4') : (transversales.length > 0 ? '4' : '3')} · Duración del proyecto</p>
+              <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '6' : '5') : (transversales.length > 0 ? '5' : '4')} · Duración del proyecto</p>
               <label style={s.label}>¿Cuánto durará el proyecto? *</label>
               <select
                 value={form.duracion_dias}
