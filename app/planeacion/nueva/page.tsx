@@ -78,9 +78,20 @@ function getBadgesCapa2(evaluacion: any, pdaTexto: string): boolean {
   )
 }
 
-function getBadgesCapa3(pdasJardin: string | null, pdaTexto: string): boolean {
+function getBadgesCapa3(pdasJardin: any, pdaTexto: string): boolean {
   if (!pdasJardin) return false
-  return pdasJardin.toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
+  if (typeof pdasJardin === 'string') {
+    return pdasJardin.toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
+  }
+  if (Array.isArray(pdasJardin)) {
+    return pdasJardin.some((p: any) =>
+      (typeof p === 'string' ? p : p?.pda || '').toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
+    )
+  }
+  if (typeof pdasJardin === 'object') {
+    return JSON.stringify(pdasJardin).toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
+  }
+  return false
 }
 
 export default function NuevaPlaneacionPage() {
