@@ -396,9 +396,29 @@ export default function MiGrupoPage() {
               Mi grupo
             </h2>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
-              {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A · <strong>Alumnos:</strong> {totalAlumnos}
+              {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A
             </p>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, background: '#F4F3FB', borderRadius: 10, padding: '12px 16px' }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E', flexShrink: 0 }}>Cantidad de alumnos:</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                placeholder="Ej: 24"
+                value={profile.total_alumnos || ''}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value)
+                  if (!val || val < 1) return
+                  setProfile((prev: any) => ({ ...prev, total_alumnos: val }))
+                  const { data: { session } } = await supabase.auth.getSession()
+                  if (session) {
+                    await supabase.from('users').update({ total_alumnos: val }).eq('auth_uid', session.user.id)
+                  }
+                }}
+                style={{ width: 80, padding: '8px 12px', fontSize: 15, borderRadius: 8, border: '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none' }}
+              />
+            </div>
             <p style={s.sectionTitle}>1 · Diagnóstico escolar</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Sube tu PMC (Programa de Mejora Continua) y/o tu Programa Analítico. MÍA extraerá el contexto institucional para personalizar tus planeaciones.
