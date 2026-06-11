@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     const { data: escuela, error: dbError } = await supabaseAdmin
       .from('schools_catalog')
-      .select('nombre, municipio, localidad, tipo, sostenimiento')
+      .select('nombre, municipio, localidad, tipo, sostenimiento, turno')
       .eq('cct', parsed.cct)
       .single()
 
@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
       nombre: escuela.nombre,
       municipio: escuela.municipio,
       localidad: escuela.localidad,
+      turno: escuela.turno || null,
       encontrado_en_catalogo: true
     })
 

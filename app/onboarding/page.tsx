@@ -61,6 +61,7 @@ export default function OnboardingPage() {
         })
         const data = await res.json()
         setCctInfo(data)
+        if (data.turno) update('turno', data.turno)
       } catch {
         setCctInfo({ estado: '', sostenimiento: '', nivel: '', valido: false, error: 'No se pudo verificar el CCT' })
       } finally {
