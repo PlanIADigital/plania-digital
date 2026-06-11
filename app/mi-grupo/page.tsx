@@ -488,7 +488,6 @@ export default function MiGrupoPage() {
               </label>
               {archivoNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoNombre}</p>}
             </div>
-            </div>
             {errorDiagnostico && <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 16, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorDiagnostico}</p>}
             {guardado && <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginBottom: 0 }}>✅ Diagnóstico guardado. Los PDAs prioritarios ya están disponibles al crear tu próxima planeación.</p>}
           </div>
