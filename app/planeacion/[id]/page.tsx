@@ -87,7 +87,7 @@ export default function VerPlaneacionPage() {
             )}
             {planeacion.grade && (
               <span style={{ background: '#E0F5F3', color: '#00766B', fontSize: 12, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
-                {planeacion.grade} grado
+                {planeacion.grade}
               </span>
             )}
             {planeacion.starts_on && (
