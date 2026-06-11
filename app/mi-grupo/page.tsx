@@ -426,15 +426,12 @@ export default function MiGrupoPage() {
 
             {!diagnosticoEscolarGuardado ? (
               <div>
-                <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>📄</div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube tu PMC o Programa Analítico</p>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF. Puedes subir hasta 2 archivos.</p>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizandoEscolar ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizandoEscolar ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                     {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar archivo'}
                     <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEscolar} style={{ display: 'none' }} disabled={analizandoEscolar} />
                   </label>
-                  {archivoEscolarNombre && <p style={{ fontSize: 12, color: '#00A896', marginTop: 10, marginBottom: 0, fontWeight: 500 }}>✓ {archivoEscolarNombre}</p>}
+                  {archivoEscolarNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoEscolarNombre}</p>}
                 </div>
                 {errorEscolar && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>{errorEscolar}</div>}
               </div>
@@ -484,16 +481,13 @@ export default function MiGrupoPage() {
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Describe las necesidades y áreas de oportunidad que detectaste en tu grupo. El sistema sugerirá los PDAs más relevantes para atenderlas.
             </p>
-
-            <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube tu diagnóstico de grupo</p>
-              <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF con las necesidades y áreas de oportunidad de tu grupo.</p>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizando ? '#C4C2E8' : '#00A896', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizando ? '#C4C2E8' : '#00A896', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                 {analizando ? '🔍 Analizando...' : '📁 Seleccionar archivo'}
                 <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
               </label>
-              {archivoNombre && <p style={{ fontSize: 12, color: '#00A896', marginTop: 10, marginBottom: 0, fontWeight: 500 }}>✓ {archivoNombre}</p>}
+              {archivoNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoNombre}</p>}
+            </div>
             </div>
             {errorDiagnostico && <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 16, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorDiagnostico}</p>}
             {guardado && <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginBottom: 0 }}>✅ Diagnóstico guardado. Los PDAs prioritarios ya están disponibles al crear tu próxima planeación.</p>}
@@ -543,17 +537,13 @@ export default function MiGrupoPage() {
             </p>
             {!evaluacionIndividual || (Array.isArray(evaluacionIndividual) && evaluacionIndividual.every((x: any) => !x)) || (typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && !(evaluacionIndividual as any).resumen_general) ? (
               <div>
-                <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '28px 20px', textAlign: 'center', marginBottom: 16 }}>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube tu evaluación individual</p>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 20px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF. Puede ser una tabla con todos tus alumnos o archivos por alumno.</p>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: guardandoEval ? '#F0EFF8' : '#3D3A8C', color: guardandoEval ? '#3D3A8C' : 'white', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: guardandoEval ? '#F0EFF8' : '#3D3A8C', color: guardandoEval ? '#3D3A8C' : 'white', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                     {guardandoEval ? '✦ MÍA está analizando...' : '📁 Seleccionar archivo'}
                     <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
                   </label>
-                  <p style={{ fontSize: 11, color: '#aaa', marginTop: 12, marginBottom: 0 }}>🔒 Los nombres reales nunca se almacenan</p>
+                  <p style={{ fontSize: 11, color: '#aaa', margin: 0 }}>🔒 Los nombres reales nunca se almacenan</p>
                 </div>
-                {errorEval && <p style={{ color: '#DC2626', fontSize: 13, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorEval}</p>}
               </div>
             ) : (
               <div>
@@ -618,16 +608,13 @@ export default function MiGrupoPage() {
                     style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6 } as React.CSSProperties}
                   />
                 </div>
-                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                  <label style={{ ...s.label, marginBottom: 4 }}>
-                    O sube un documento Word o PDF
-                  </label>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Cualquier texto que hayas escrito tú: carta, informe, notas.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 0, flexShrink: 0 }}>O sube un documento Word o PDF</label>
                   <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} id="archivo-estilo" />
-                  <label htmlFor="archivo-estilo" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <label htmlFor="archivo-estilo" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                     📎 Seleccionar archivo
                   </label>
-                  {archivoEstiloNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
+                  {archivoEstiloNombre && <span style={{ fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
                 </div>
                 {errorEstilo && (
                   <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
@@ -693,14 +680,13 @@ export default function MiGrupoPage() {
                     style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 0 }}
                   />
                 </div>
-                <div style={{ background: '#F8F8FE', border: '1px dashed #C4C2E8', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                  <label style={{ ...s.label, marginBottom: 4 }}>O sube un documento</label>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>Solo Word (.docx) o PDF. Si tienes notas a mano, pásalas primero a un documento de texto.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <label style={{ ...s.label, marginBottom: 0, flexShrink: 0 }}>O sube un documento</label>
                   <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} id="archivo-observaciones" />
-                  <label htmlFor="archivo-observaciones" style={{ display: 'inline-block', background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <label htmlFor="archivo-observaciones" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                     📎 Seleccionar archivo
                   </label>
-                  {archivoObservacionesNombre && <span style={{ marginLeft: 12, fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoObservacionesNombre}</span>}
+                  {archivoObservacionesNombre && <span style={{ fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoObservacionesNombre}</span>}
                 </div>
                 {errorObservaciones && (
                   <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 16 }}>
@@ -747,7 +733,7 @@ export default function MiGrupoPage() {
           </div>
 
           {/* ── CAPA 3: PDAs del jardín (opcional) ── */}
-          <div style={{ ...s.section, border: '1.5px dashed #C4C2E8' }}>
+          <div style={s.section}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <p style={{ ...s.sectionTitle, marginBottom: 0 }}>6 · PDAs del jardín de niños</p>
               <span style={{ fontSize: 11, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>Opcional</span>
@@ -755,15 +741,12 @@ export default function MiGrupoPage() {
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
               Si tu directora compartió los PDAs que acordaron trabajar este ciclo en el jardín, súbelos aquí. El sistema los integrará de forma armoniosa con tu diagnóstico.
             </p>
-            <div style={{ background: '#F8F8FE', border: '2px dashed #C4C2E8', borderRadius: 12, padding: '24px 20px', textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📌</div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#3D3A8C', margin: '0 0 6px' }}>Sube el documento de tu directora</p>
-              <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>Acepta Word (.docx) o PDF con los PDAs acordados para este ciclo.</p>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: guardandoJardin ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: guardandoJardin ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                 {guardandoJardin ? '⏳ Guardando...' : '📁 Seleccionar archivo'}
                 <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
               </label>
-              {archivoJardinNombre && <p style={{ fontSize: 12, color: '#00A896', marginTop: 10, marginBottom: 0, fontWeight: 500 }}>✓ {archivoJardinNombre}</p>}
+              {archivoJardinNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoJardinNombre}</p>}
             </div>
             {errorJardin && <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 12, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorJardin}</p>}
             {guardadoJardin && <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginBottom: 0 }}>✅ PDAs del jardín guardados. Se integrarán en tus próximas planeaciones.</p>}
