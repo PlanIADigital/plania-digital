@@ -163,7 +163,7 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',
-      max_tokens: 8000,
+      max_tokens: 12000,
       messages: [{ role: 'user', content: userMessage }],
       system: systemPrompt
     })
