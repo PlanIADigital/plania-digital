@@ -127,9 +127,14 @@ ${recursosTexto ? '\n' + recursosTexto : ''}
 
 Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El momento de desarrollo principal debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.
 
-Además del contenido narrativo, agrega al final del JSON una clave "rubrica" con este formato exacto:
+Además del contenido narrativo, agrega al final del JSON las siguientes claves de rúbricas:
+
+1. Una clave "rubrica" para el campo formativo PRINCIPAL con este formato exacto:
 {
   "rubrica": {
+    "campo": "[nombre del campo formativo principal]",
+    "contenido": "[contenido del campo formativo principal]",
+    "pda": "[pda principal literal]",
     "indicador": "texto del indicador observable basado en el verbo central del PDA principal",
     "nivel_3": "El alumno [acción concreta observable que demuestra dominio pleno del PDA]",
     "nivel_2": "El alumno [acción observable que demuestra avance parcial del PDA, con apoyo]",
@@ -138,7 +143,23 @@ Además del contenido narrativo, agrega al final del JSON una clave "rubrica" co
   }
 }
 
-REGLA R4-PDA PARA LA RÚBRICA: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.`
+2. Una clave por cada campo transversal activo. Usa los nombres: "rubrica_transversal_1", "rubrica_transversal_2", "rubrica_transversal_3" según corresponda. Solo genera las rúbricas de los transversales que aparezcan en CAMPOS FORMATIVOS TRANSVERSALES. Si un transversal no está definido, no incluyas su clave.
+
+Formato para cada transversal:
+{
+  "rubrica_transversal_N": {
+    "campo": "[campo del transversal N]",
+    "contenido": "[contenido del transversal N]",
+    "pda": "[pda del transversal N]",
+    "indicador": "texto del indicador observable",
+    "nivel_3": "El alumno [acción concreta observable]",
+    "nivel_2": "El alumno [acción observable con apoyo]",
+    "nivel_1": "El alumno [acción observable inicial]",
+    "nota_evaluadora": "Una oración breve con voz de maestra"
+  }
+}
+
+REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',

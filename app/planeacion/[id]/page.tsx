@@ -160,36 +160,55 @@ export default function VerPlaneacionPage() {
           </div>
         )}
 
-        {contenido.rubrica && (
-          <div style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        {/* Función helper para renderizar rúbrica con lista de cotejo */}
+        {[
+          contenido.rubrica,
+          contenido.rubrica_transversal_1,
+          contenido.rubrica_transversal_2,
+          contenido.rubrica_transversal_3,
+        ].filter(Boolean).map((rubrica: any, idx: number) => (
+          <div key={idx} style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <h4 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 6, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Rúbrica de evaluación
             </h4>
+            {rubrica.campo && (
+              <p style={{ fontSize: 12, color: '#3D3A8C', fontWeight: 600, margin: '0 0 2px' }}>
+                Campo Formativo: {rubrica.campo}
+              </p>
+            )}
+            {rubrica.contenido && (
+              <p style={{ fontSize: 12, color: '#555', margin: '0 0 2px' }}>
+                Contenido: {rubrica.contenido}
+              </p>
+            )}
+            {rubrica.pda && (
+              <p style={{ fontSize: 12, color: '#555', margin: '0 0 12px', fontStyle: 'italic' }}>
+                PDA: {rubrica.pda}
+              </p>
+            )}
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, fontStyle: 'italic' }}>
-              {contenido.rubrica.indicador}
+              {rubrica.indicador}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
               <div style={{ background: '#EAF3DE', borderRadius: 8, padding: '12px 14px' }}>
                 <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 3 — Logrado</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_3}</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_3}</p>
               </div>
               <div style={{ background: '#FFF8E7', borderRadius: 8, padding: '12px 14px' }}>
                 <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#854F0B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 2 — En proceso</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_2}</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_2}</p>
               </div>
               <div style={{ background: '#FCEBEB', borderRadius: 8, padding: '12px 14px' }}>
                 <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 1 — Requiere Apoyo</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_1}</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_1}</p>
               </div>
             </div>
-            <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
               <p style={{ margin: 0, fontSize: 13, color: '#3D3A8C', lineHeight: 1.6 }}>
-                <strong>Nota para evaluar:</strong> {contenido.rubrica.nota_evaluadora}
+                <strong>Nota para evaluar:</strong> {rubrica.nota_evaluadora}
               </p>
             </div>
-
-            {/* Lista de cotejo */}
-            <div style={{ marginTop: 24, overflowX: 'auto' }}>
+            <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#3D3A8C' }}>
@@ -214,7 +233,7 @@ export default function VerPlaneacionPage() {
               </table>
             </div>
           </div>
-        )}
+        ))}
 
         <div style={{ height: 40 }} />
       </div>
