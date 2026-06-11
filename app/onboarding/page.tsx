@@ -26,7 +26,6 @@ export default function OnboardingPage() {
     cct: '',
     grado: '',
     turno: '',
-    contexto_grupo: ''
   })
 
   useEffect(() => {
@@ -103,7 +102,7 @@ export default function OnboardingPage() {
         nivel_educativo: cctInfo?.nivel || null,
         school_name: cctInfo?.nombre || null,
         total_alumnos: null,
-        contexto_grupo: form.contexto_grupo || null,
+        contexto_grupo: null,
       })
       .eq('auth_uid', session.user.id)
     if (err) { setError(err.message); setLoading(false); return }
@@ -242,23 +241,6 @@ export default function OnboardingPage() {
                   <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                 ))}
               </select>
-            </>
-          )}
-
-          {/* Contexto del grupo — solo educadores */}
-          {userRole !== 'directivo' && (
-            <>
-              <label style={labelStyle}>
-                Contexto del grupo{' '}
-                <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span>
-              </label>
-              <textarea
-                placeholder="Describe brevemente el contexto de tu grupo: zona escolar, características relevantes..."
-                value={form.contexto_grupo}
-                onChange={e => update('contexto_grupo', e.target.value)}
-                rows={3}
-                style={{ ...inputStyle, resize: 'vertical' as const, marginBottom: 18 }}
-              />
             </>
           )}
 
