@@ -178,7 +178,7 @@ export default function VerPlaneacionPage() {
                 <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_2}</p>
               </div>
               <div style={{ background: '#FCEBEB', borderRadius: 8, padding: '12px 14px' }}>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 1 — Inicio</p>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 1 — Requiere Apoyo</p>
                 <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{contenido.rubrica.nivel_1}</p>
               </div>
             </div>
@@ -186,6 +186,32 @@ export default function VerPlaneacionPage() {
               <p style={{ margin: 0, fontSize: 13, color: '#3D3A8C', lineHeight: 1.6 }}>
                 <strong>Nota para evaluar:</strong> {contenido.rubrica.nota_evaluadora}
               </p>
+            </div>
+
+            {/* Lista de cotejo */}
+            <div style={{ marginTop: 24, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#3D3A8C' }}>
+                    <th style={{ color: 'white', padding: '8px 10px', textAlign: 'center', fontWeight: 700, width: 40, border: '1px solid #2D2A6E' }}>N°</th>
+                    <th style={{ color: 'white', padding: '8px 10px', textAlign: 'left', fontWeight: 700, border: '1px solid #2D2A6E' }}>Nombre del Alumno</th>
+                    <th style={{ color: 'white', padding: '8px 10px', textAlign: 'center', fontWeight: 700, width: 90, border: '1px solid #2D2A6E' }}>Logrado</th>
+                    <th style={{ color: 'white', padding: '8px 10px', textAlign: 'center', fontWeight: 700, width: 90, border: '1px solid #2D2A6E' }}>En Proceso</th>
+                    <th style={{ color: 'white', padding: '8px 10px', textAlign: 'center', fontWeight: 700, width: 110, border: '1px solid #2D2A6E' }}>Requiere Apoyo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: profile?.total_alumnos || profile?.total_students || 24 }).map((_, i) => (
+                    <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#F8F8FE' }}>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', border: '1px solid #E0DFF5', color: '#888', fontSize: 12 }}>{i + 1}</td>
+                      <td style={{ padding: '7px 10px', border: '1px solid #E0DFF5' }}></td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', border: '1px solid #E0DFF5' }}></td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', border: '1px solid #E0DFF5' }}></td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', border: '1px solid #E0DFF5' }}></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
