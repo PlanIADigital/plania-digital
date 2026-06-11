@@ -10,6 +10,14 @@ const supabase = createClient(
 )
 
 const CLAVES_EXCLUIDAS = ['ajustes_razonables', 'rubrica', 'materiales']
+const ORDEN_MOMENTOS: Record<string, string[]> = {
+  proyectos: ['situacion_inicial', 'organizacion_de_las_acciones', 'a_trabajar', 'comunicamos_nuestros_logros', 'reflexion_sobre_el_aprendizaje'],
+  abj: ['planteamiento_del_juego', 'desarrollo_de_las_actividades', 'compartimos_la_experiencia', 'comunidad_de_juego'],
+  taller_critico: ['situacion_inicial', 'puesta_en_marcha', 'valoramos_lo_aprendido', 'reflexion'],
+  rincones: ['asamblea_inicial_y_planeacion', 'exploracion_de_los_rincones', 'compartimos_lo_aprendido', 'reflexion_sobre_el_aprendizaje'],
+  centros_de_interes: ['contacto_con_la_realidad', 'identificacion_e_integracion', 'expresion'],
+  unidad_didactica: ['lectura_de_la_realidad', 'identificacion_de_la_trama_y_complejidad', 'planificacion_y_organizacion', 'exploracion_y_descubrimiento', 'participacion_activa_y_horizontal', 'valoracion_de_la_experiencia']
+}
 
 function formatearTituloMomento(key: string): string {
   return key
@@ -120,9 +128,15 @@ export default function VerPlaneacionPage() {
           )}
         </div>
 
-        {Object.entries(contenido)
-          .filter(([key]) => !CLAVES_EXCLUIDAS.includes(key) && typeof contenido[key] === 'string')
-          .map(([key, valor], index) => (
+        {(() => {
+          const claves = Object.keys(contenido).filter(k => !CLAVES_EXCLUIDAS.includes(k) && typeof contenido[k] === 'string')
+          const modalidadDetectada = Object.keys(ORDEN_MOMENTOS).find(m => ORDEN_MOMENTOS[m].some(k => claves.includes(k))) || ''
+          const ordenado = modalidadDetectada
+            ? ORDEN_MOMENTOS[modalidadDetectada].filter(k => claves.includes(k))
+            : claves
+          return ordenado.map((key, index) => {
+            const valor = contenido[key]
+            return (
           <div key={key} style={{ background: 'white', borderRadius: 12, padding: 28, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
             <h4 style={{ color: '#00A896', marginTop: 0, marginBottom: 14, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {index + 1}. {formatearTituloMomento(key)}
@@ -131,7 +145,9 @@ export default function VerPlaneacionPage() {
               {valor as string}
             </p>
           </div>
-        ))}
+            )
+          })
+        })()}
 
         {contenido.ajustes_razonables && (
           <div style={{ background: '#FFF8E7', border: '1px solid #F6D860', borderRadius: 12, padding: 28, marginBottom: 16 }}>
