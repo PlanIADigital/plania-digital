@@ -8,7 +8,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const GRADOS = ['1°', '2°', '3°']
+const GRADOS = [
+  { value: '1er Grado', label: '1er Grado' },
+  { value: '2do Grado', label: '2do Grado' },
+  { value: '3er Grado', label: '3er Grado' },
+]
 const TURNOS = ['matutino', 'vespertino', 'discontinuo']
 
 export default function OnboardingPage() {
@@ -20,15 +24,13 @@ export default function OnboardingPage() {
   const [userRole, setUserRole] = useState<string>('')
   const [form, setForm] = useState({
     cct: '',
-    grado: '2°',
-    turno: 'matutino',
-    total_alumnos: '',
+    grado: '',
+    turno: '',
     contexto_grupo: ''
   })
 
   useEffect(() => {
     async function loadRole() {
-      // Esperar a que Supabase procese el token del email de confirmación
       let session = null
       for (let i = 0; i < 5; i++) {
         const { data: { session: s } } = await supabase.auth.getSession()
@@ -77,8 +79,12 @@ export default function OnboardingPage() {
       setError('El CCT ingresado no es válido. Verifica e intenta de nuevo.')
       return
     }
-    if (userRole !== 'directivo' && (!form.total_alumnos || isNaN(Number(form.total_alumnos)))) {
-      setError('Ingresa un número válido de alumnos')
+    if (userRole !== 'directivo' && !form.grado) {
+      setError('Selecciona el grado que atiendes')
+      return
+    }
+    if (!form.turno) {
+      setError('Selecciona el turno')
       return
     }
     setLoading(true)
@@ -96,7 +102,7 @@ export default function OnboardingPage() {
         sostenimiento: cctInfo?.sostenimiento || null,
         nivel_educativo: cctInfo?.nivel || null,
         school_name: cctInfo?.nombre || null,
-        total_alumnos: Number(form.total_alumnos),
+        total_alumnos: null,
         contexto_grupo: form.contexto_grupo || null,
       })
       .eq('auth_uid', session.user.id)
@@ -117,6 +123,12 @@ export default function OnboardingPage() {
   const labelStyle = {
     display: 'block', fontSize: 13, fontWeight: 600 as const,
     color: '#1A1A2E', marginBottom: 6
+  }
+
+  const selectStyle = {
+    display: 'block', width: '100%', padding: '10px 12px', fontSize: 14,
+    borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
+    marginBottom: 18, background: 'white', cursor: 'pointer'
   }
 
   return (
@@ -184,41 +196,58 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Grado — solo educadores */}
+          {/* Grado y Turno en la misma fila — solo educadores */}
           {userRole !== 'directivo' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 0 }}>
+              <div>
+                <label style={labelStyle}>Grado que atiendes</label>
+                <select
+                  value={form.grado}
+                  onChange={e => update('grado', e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="" disabled>— Selecciona —</option>
+                  {GRADOS.map(g => (
+                    <option key={g.value} value={g.value}>{g.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Turno que atiendes</label>
+                <select
+                  value={form.turno}
+                  onChange={e => update('turno', e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="" disabled>— Selecciona —</option>
+                  {TURNOS.map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Turno solo — para directivo */}
+          {userRole === 'directivo' && (
             <>
-              <label style={labelStyle}>Grado que atiendes</label>
-              <select value={form.grado} onChange={e => update('grado', e.target.value)}
-                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, marginBottom: 18, background: 'white', cursor: 'pointer' }}>
-                <option value="">— Selecciona el grado —</option>
-                {GRADOS.map(g => <option key={g} value={g}>{g}° Preescolar</option>)}
+              <label style={labelStyle}>Turno</label>
+              <select
+                value={form.turno}
+                onChange={e => update('turno', e.target.value)}
+                style={selectStyle}
+              >
+                <option value="" disabled>— Selecciona —</option>
+                {TURNOS.map(t => (
+                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                ))}
               </select>
             </>
           )}
 
-          {/* Turno */}
-          <label style={labelStyle}>Turno</label>
-          <select value={form.turno} onChange={e => update('turno', e.target.value)}
-            style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, marginBottom: 18, background: 'white', cursor: 'pointer' }}>
-            <option value="">— Selecciona el turno —</option>
-            {TURNOS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-          </select>
-
-          {/* Número de alumnos y contexto — solo educadores */}
+          {/* Contexto del grupo — solo educadores */}
           {userRole !== 'directivo' && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                <label style={{ ...labelStyle, margin: 0, flexShrink: 0 }}>Número de alumnos</label>
-                <input
-                  placeholder="Ej: 24"
-                  value={form.total_alumnos}
-                  onChange={e => update('total_alumnos', e.target.value)}
-                  type="number"
-                  min="1"
-                  max="50"
-                  style={{ width: 90, padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, outline: 'none', textAlign: 'center' }}
-                />
-              </div>
               <label style={labelStyle}>
                 Contexto del grupo{' '}
                 <span style={{ fontWeight: 400, color: '#999' }}>(opcional)</span>
