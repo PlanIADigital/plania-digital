@@ -58,6 +58,7 @@ function nombreCorto(nombre: string | null): string {
 export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const [alumnosGuardado, setAlumnosGuardado] = useState(false)
 
   // Capa 0 — Diagnóstico escolar
   const [diagnosticoEscolarTexto, setDiagnosticoEscolarTexto] = useState('')
@@ -414,10 +415,17 @@ export default function MiGrupoPage() {
                   const { data: { session } } = await supabase.auth.getSession()
                   if (session) {
                     await supabase.from('users').update({ total_alumnos: val }).eq('auth_uid', session.user.id)
+                    setAlumnosGuardado(true)
+                    setTimeout(() => setAlumnosGuardado(false), 2000)
                   }
                 }}
                 style={{ width: 80, padding: '8px 12px', fontSize: 15, borderRadius: 8, border: '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none' }}
               />
+              {alumnosGuardado && (
+                <span style={{ fontSize: 12, color: '#00A896', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  ✓ Guardado
+                </span>
+              )}
             </div>
             <p style={s.sectionTitle}>1 · Diagnóstico escolar</p>
             <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
