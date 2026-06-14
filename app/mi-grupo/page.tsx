@@ -373,12 +373,12 @@ export default function MiGrupoPage() {
     card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
     cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px' } as React.CSSProperties,
     cols: { display: 'flex', gap: 0, flexWrap: 'wrap' as const } as React.CSSProperties,
-    col: { flex: '1 1 200px', minWidth: 0, padding: '0 16px 0 0' } as React.CSSProperties,
-    colRight: { flex: '1 1 200px', minWidth: 0, padding: '0 0 0 16px', borderLeft: '1px solid #EEEDF8' } as React.CSSProperties,
-    subTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 4px' } as React.CSSProperties,
-    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 } as React.CSSProperties,
+    col: { flex: '1 1 200px', minWidth: 0, padding: '0 16px 0 0', textAlign: 'center' as const } as React.CSSProperties,
+    colRight: { flex: '1 1 200px', minWidth: 0, padding: '0 0 0 16px', borderLeft: '1px solid #EEEDF8', textAlign: 'center' as const } as React.CSSProperties,
+    subTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 4px', textAlign: 'center' as const } as React.CSSProperties,
+    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5, textAlign: 'justify' as const } as React.CSSProperties,
     btn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
-    btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#00A896', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
+    btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
     ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px' } as React.CSSProperties,
     okText: { margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 } as React.CSSProperties,
     err: { background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 } as React.CSSProperties,
@@ -435,7 +435,7 @@ export default function MiGrupoPage() {
 
               {/* 1A — PMC */}
               <div style={s.col}>
-                <p style={s.subTitle}>1A · PMC</p>
+                <p style={s.subTitle}>1.1 · PMC</p>
                 <p style={s.desc}>Contexto institucional del jardín: entorno, organización y recursos.</p>
                 {!diagnosticoEscolarGuardado ? (
                   <div>
@@ -463,7 +463,7 @@ export default function MiGrupoPage() {
 
               {/* 1B — PA */}
               <div style={s.colRight}>
-                <p style={s.subTitle}>1B · Programa Analítico</p>
+                <p style={s.subTitle}>1.2 · Programa Analítico</p>
                 <p style={s.desc}>PDAs y contenidos priorizados por tu colectivo. Acepta .docx, .pptx, .pdf.</p>
                 {!paActivo ? (
                   <div>
@@ -541,7 +541,7 @@ export default function MiGrupoPage() {
 
               {/* 2A — Grupal */}
               <div style={s.col}>
-                <p style={s.subTitle}>2A · Grupal</p>
+                <p style={s.subTitle}>2.1 · Grupal</p>
                 <p style={s.desc}>Necesidades y áreas de oportunidad de tu grupo.</p>
                 {!guardado ? (
                   <div>
@@ -551,7 +551,7 @@ export default function MiGrupoPage() {
                     </label>
                     {archivoNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '6px 0 0' }}>✓ {archivoNombre}</p>}
                     {diagnosticoTexto && !analizando && (
-                      <button onClick={handleAnalizar} style={{ display: 'block', marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                      <button onClick={handleAnalizar} style={{ display: 'block', marginTop: 8, background: '#3D3A8C', color: 'white', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
                         ✨ Analizar
                       </button>
                     )}
@@ -569,7 +569,7 @@ export default function MiGrupoPage() {
 
               {/* 2B — Individual */}
               <div style={s.colRight}>
-                <p style={s.subTitle}>2B · Individual</p>
+                <p style={s.subTitle}>2.2 · Individual</p>
                 <p style={s.desc}>Evaluación por alumno. MÍA protege nombres y detecta NEE.</p>
                 {!evalCompleta ? (
                   <div>
@@ -631,7 +631,7 @@ export default function MiGrupoPage() {
 
               {/* 3A — Directivo */}
               <div style={s.col}>
-                <p style={s.subTitle}>3A · Recomendaciones del directivo</p>
+                <p style={s.subTitle}>3.1 · Recomendaciones del directivo</p>
                 <p style={s.desc}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
                 {!observacionesGuardadas ? (
                   <div>
@@ -666,7 +666,7 @@ export default function MiGrupoPage() {
 
               {/* 3B — PDAs jardín */}
               <div style={s.colRight}>
-                <p style={s.subTitle}>3B · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
+                <p style={s.subTitle}>3.2 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
                 <p style={s.desc}>PDAs acordados por el colectivo este ciclo. El sistema los integrará con tu diagnóstico.</p>
                 {!guardadoJardin ? (
                   <div>
