@@ -419,9 +419,9 @@ export default function MiGrupoPage() {
                     setTimeout(() => setAlumnosGuardado(false), 2000)
                   }
                 }}
-                style={{ width: 80, padding: '8px 12px', fontSize: 15, borderRadius: 8, border: '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none' }}
+                style={{ width: 80, padding: '8px 12px', fontSize: 15, borderRadius: 8, border: profile.total_alumnos ? '1.5px solid #00A896' : '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none', transition: 'border-color 0.3s' }}
               />
-              {alumnosGuardado && (
+              {profile.total_alumnos && (
                 <span style={{ fontSize: 12, color: '#00A896', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                   ✓ Guardado
                 </span>
