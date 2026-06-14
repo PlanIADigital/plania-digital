@@ -32,7 +32,6 @@ function PantallaAnimacion({ grado, totalAlumnos, cct }: { grado: string; totalA
       </div>
       <style>{`
         @keyframes giroPlanIA { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes fadeInMsg { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
       <h2 style={{ color: '#3D3A8C', fontSize: 20, fontWeight: 700, marginBottom: 8, marginTop: 0 }}>Analizando tu grupo{puntos}</h2>
       <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>{grado} grado · {totalAlumnos} alumnos · {cct}</p>
@@ -59,6 +58,16 @@ function formatearFecha(fechaISO: string): string {
   return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function SubSeccion({ titulo, descripcion, children }: { titulo: string; descripcion: string; children: React.ReactNode }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>{titulo}</p>
+      <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>{descripcion}</p>
+      {children}
+    </div>
+  )
+}
+
 export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -81,7 +90,7 @@ export default function MiGrupoPage() {
   const [historialVisible, setHistorialVisible] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
 
-  // 2 — Diagnóstico grupal
+  // 2A — Diagnóstico grupal
   const [diagnosticoTexto, setDiagnosticoTexto] = useState('')
   const [analizando, setAnalizando] = useState(false)
   const [pdas, setPdas] = useState<any[]>([])
@@ -89,11 +98,24 @@ export default function MiGrupoPage() {
   const [errorDiagnostico, setErrorDiagnostico] = useState('')
   const [archivoNombre, setArchivoNombre] = useState('')
 
-  // 3 — Evaluación individual
+  // 2B — Evaluación individual
   const [evaluacionIndividual, setEvaluacionIndividual] = useState<any>([])
   const [guardandoEval, setGuardandoEval] = useState(false)
-  const [guardadoEval, setGuardadoEval] = useState(false)
   const [errorEval, setErrorEval] = useState('')
+
+  // 3A — Observaciones del directivo
+  const [observacionesTexto, setObservacionesTexto] = useState('')
+  const [archivoObservacionesNombre, setArchivoObservacionesNombre] = useState('')
+  const [analizandoObservaciones, setAnalizandoObservaciones] = useState(false)
+  const [observacionesGuardadas, setObservacionesGuardadas] = useState(false)
+  const [errorObservaciones, setErrorObservaciones] = useState('')
+  const [resultadoObservaciones, setResultadoObservaciones] = useState<any>(null)
+
+  // 3B — PDAs del jardín
+  const [archivoJardinNombre, setArchivoJardinNombre] = useState('')
+  const [guardandoJardin, setGuardandoJardin] = useState(false)
+  const [guardadoJardin, setGuardadoJardin] = useState(false)
+  const [errorJardin, setErrorJardin] = useState('')
 
   // 4 — Estilo narrativo
   const [estiloTexto, setEstiloTexto] = useState('')
@@ -102,21 +124,6 @@ export default function MiGrupoPage() {
   const [estiloGuardado, setEstiloGuardado] = useState(false)
   const [errorEstilo, setErrorEstilo] = useState('')
   const [resultadoEstilo, setResultadoEstilo] = useState<any>(null)
-
-  // 5 — Observaciones del directivo
-  const [observacionesTexto, setObservacionesTexto] = useState('')
-  const [archivoObservacionesNombre, setArchivoObservacionesNombre] = useState('')
-  const [analizandoObservaciones, setAnalizandoObservaciones] = useState(false)
-  const [observacionesGuardadas, setObservacionesGuardadas] = useState(false)
-  const [errorObservaciones, setErrorObservaciones] = useState('')
-  const [resultadoObservaciones, setResultadoObservaciones] = useState<any>(null)
-
-  // 6 — PDAs del jardín
-  const [pdasJardinTexto, setPdasJardinTexto] = useState('')
-  const [archivoJardinNombre, setArchivoJardinNombre] = useState('')
-  const [guardandoJardin, setGuardandoJardin] = useState(false)
-  const [guardadoJardin, setGuardadoJardin] = useState(false)
-  const [errorJardin, setErrorJardin] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -136,7 +143,6 @@ export default function MiGrupoPage() {
         const total = data.total_students || data.total_alumnos || 24
         setEvaluacionIndividual(Array(total).fill(''))
       }
-      if (data.pdas_jardin && typeof data.pdas_jardin === 'string') setPdasJardinTexto(data.pdas_jardin)
       if (data.cct_primary) {
         const res = await fetch(`/api/analizar-programa-analitico?auth_uid=${session.user.id}&cct=${data.cct_primary}`)
         const json = await res.json()
@@ -185,47 +191,29 @@ export default function MiGrupoPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setArchivoPANombre(file.name)
-    setAnalizandoPA(true)
-    setErrorPA('')
+    setAnalizandoPA(true); setErrorPA('')
     const ext = file.name.split('.').pop()?.toLowerCase() || 'desconocido'
     try {
       const formData = new FormData()
       formData.append('file', file)
       const resTexto = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
       const dataTexto = await resTexto.json()
-      if (!dataTexto.texto) { setErrorPA('No se pudo leer el archivo. Intenta con otro formato.'); setAnalizandoPA(false); return }
+      if (!dataTexto.texto) { setErrorPA('No se pudo leer el archivo.'); setAnalizandoPA(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       const res = await fetch('/api/analizar-programa-analitico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          texto: dataTexto.texto,
-          auth_uid: session.user.id,
-          cct: profile.cct_primary,
-          archivo_formato: ext,
-          grado: profile.grado || '2°',
-        })
+        body: JSON.stringify({ texto: dataTexto.texto, auth_uid: session.user.id, cct: profile.cct_primary, archivo_formato: ext, grado: profile.grado || '2°' })
       })
       const data = await res.json()
       if (data.ok) {
-        const nuevaVersion = {
-          id: data.pa_id,
-          version_numero: data.version_numero,
-          fecha_carga: data.fecha_carga,
-          archivo_formato: ext,
-          activo: true,
-          pda_ponderacion: data.resultado,
-          nota_directivo: null,
-          nota_directivo_fecha: null,
-        }
+        const nuevaVersion = { id: data.pa_id, version_numero: data.version_numero, fecha_carga: data.fecha_carga, archivo_formato: ext, activo: true, pda_ponderacion: data.resultado, nota_directivo: null }
         setPaActivo(nuevaVersion)
         setHistorialPA(prev => [nuevaVersion, ...prev.map((v: any) => ({ ...v, activo: false }))])
         setHistorialVisible(false)
-      } else {
-        setErrorPA('Error al analizar el Programa Analítico. Intenta de nuevo.')
-      }
-    } catch { setErrorPA('Error de conexión. Intenta de nuevo.') }
+      } else { setErrorPA('Error al analizar el Programa Analítico.') }
+    } catch { setErrorPA('Error de conexión.') }
     finally { setAnalizandoPA(false); setArchivoPANombre('') }
   }
 
@@ -244,68 +232,6 @@ export default function MiGrupoPage() {
     }
   }
 
-  async function handleArchivoObservaciones(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setArchivoObservacionesNombre(file.name)
-    const formData = new FormData()
-    formData.append('file', file)
-    try {
-      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.texto) setObservacionesTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
-    } catch { setErrorObservaciones('No se pudo extraer el texto del archivo.') }
-  }
-
-  async function handleAnalizarObservaciones() {
-    if (!observacionesTexto.trim()) { setErrorObservaciones('Escribe o sube las observaciones.'); return }
-    setAnalizandoObservaciones(true); setErrorObservaciones('')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const res = await fetch('/api/analizar-observaciones-directivo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: observacionesTexto, auth_uid: session.user.id })
-      })
-      const data = await res.json()
-      if (data.ok) { setResultadoObservaciones(data.resultado); setObservacionesGuardadas(true) }
-      else setErrorObservaciones('Error al analizar. Intenta de nuevo.')
-    } catch { setErrorObservaciones('Error de conexión.') }
-    finally { setAnalizandoObservaciones(false) }
-  }
-
-  async function handleArchivoEstilo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setArchivoEstiloNombre(file.name)
-    const formData = new FormData()
-    formData.append('file', file)
-    try {
-      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.texto) setEstiloTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
-    } catch { setErrorEstilo('No se pudo extraer el texto del archivo.') }
-  }
-
-  async function handleAnalizarEstilo() {
-    if (!estiloTexto.trim()) { setErrorEstilo('Escribe o sube un texto para analizar.'); return }
-    setAnalizandoEstilo(true); setErrorEstilo('')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const res = await fetch('/api/analizar-estilo-narrativo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: estiloTexto, auth_uid: session.user.id })
-      })
-      const data = await res.json()
-      if (data.ok) { setResultadoEstilo(data.resultado); setEstiloGuardado(true) }
-      else setErrorEstilo('Error al analizar el texto. Intenta de nuevo.')
-    } catch { setErrorEstilo('Error de conexión.') }
-    finally { setAnalizandoEstilo(false) }
-  }
-
   async function handleArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0]
     if (!archivo) return
@@ -316,26 +242,12 @@ export default function MiGrupoPage() {
       const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
       const data = await res.json()
       if (data.texto) setDiagnosticoTexto(data.texto)
-      else setErrorDiagnostico('No se pudo extraer el texto del archivo.')
+      else setErrorDiagnostico('No se pudo extraer el texto.')
     } catch { setErrorDiagnostico('Error al procesar el archivo.') }
   }
 
-  async function handleArchivoJardin(e: React.ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0]
-    if (!archivo) return
-    setArchivoJardinNombre(archivo.name)
-    const formData = new FormData()
-    formData.append('file', archivo)
-    try {
-      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.texto) setPdasJardinTexto(data.texto)
-      else setErrorJardin('No se pudo extraer el texto del archivo.')
-    } catch { setErrorJardin('Error al procesar el archivo.') }
-  }
-
   async function handleAnalizar() {
-    if (!diagnosticoTexto.trim()) { setErrorDiagnostico('Escribe o sube tu diagnóstico antes de analizar.'); return }
+    if (!diagnosticoTexto.trim()) { setErrorDiagnostico('Sube tu diagnóstico antes de analizar.'); return }
     setAnalizando(true); setErrorDiagnostico(''); setPdas([]); setGuardado(false)
     try {
       const res = await fetch('/api/analizar-diagnostico', {
@@ -353,46 +265,123 @@ export default function MiGrupoPage() {
   async function handleArchivoEvaluacionIndividual(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setGuardandoEval(true); setErrorEval(''); setGuardadoEval(false)
+    setGuardandoEval(true); setErrorEval('')
     try {
       const formData = new FormData()
       formData.append('file', file)
       const resTexto = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
       const dataTexto = await resTexto.json()
-      if (dataTexto.error) { setErrorEval('Error al leer el archivo: ' + dataTexto.error); setGuardandoEval(false); return }
+      if (dataTexto.error) { setErrorEval('Error al leer el archivo.'); setGuardandoEval(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       const resAnalisis = await fetch('/api/analizar-evaluacion-individual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          texto_evaluacion: dataTexto.texto,
-          grado: profile.grado || '2°',
-          total_alumnos: profile.total_students || profile.total_alumnos || 24,
-          auth_uid: session?.user?.id
-        })
+        body: JSON.stringify({ texto_evaluacion: dataTexto.texto, grado: profile.grado || '2°', total_alumnos: profile.total_students || profile.total_alumnos || 24, auth_uid: session?.user?.id })
       })
       const dataAnalisis = await resAnalisis.json()
-      if (dataAnalisis.error) { setErrorEval('Error al analizar: ' + dataAnalisis.error); setGuardandoEval(false); return }
+      if (dataAnalisis.error) { setErrorEval('Error al analizar.'); setGuardandoEval(false); return }
       setEvaluacionIndividual(dataAnalisis.resultado)
-      setGuardadoEval(true)
-    } catch { setErrorEval('Error de conexión. Intenta de nuevo.') }
+    } catch { setErrorEval('Error de conexión.') }
     setGuardandoEval(false)
   }
 
-  async function handleGuardarJardin() {
-    setGuardandoJardin(true); setErrorJardin(''); setGuardadoJardin(false)
-    const { error } = await supabase.from('users').update({ pdas_jardin: pdasJardinTexto }).eq('auth_uid', profile.auth_uid)
-    if (error) setErrorJardin('No se pudo guardar. Intenta de nuevo.')
-    else setGuardadoJardin(true)
+  async function handleArchivoObservaciones(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setArchivoObservacionesNombre(file.name)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) setObservacionesTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
+    } catch { setErrorObservaciones('No se pudo extraer el texto.') }
+  }
+
+  async function handleAnalizarObservaciones() {
+    if (!observacionesTexto.trim()) { setErrorObservaciones('Escribe o sube las observaciones.'); return }
+    setAnalizandoObservaciones(true); setErrorObservaciones('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/analizar-observaciones-directivo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: observacionesTexto, auth_uid: session.user.id })
+      })
+      const data = await res.json()
+      if (data.ok) { setResultadoObservaciones(data.resultado); setObservacionesGuardadas(true) }
+      else setErrorObservaciones('Error al analizar.')
+    } catch { setErrorObservaciones('Error de conexión.') }
+    finally { setAnalizandoObservaciones(false) }
+  }
+
+  async function handleArchivoJardin(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0]
+    if (!archivo) return
+    setArchivoJardinNombre(archivo.name)
+    setGuardandoJardin(true); setErrorJardin('')
+    const formData = new FormData()
+    formData.append('file', archivo)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          await supabase.from('users').update({ pdas_jardin: data.texto }).eq('auth_uid', session.user.id)
+          setGuardadoJardin(true)
+        }
+      } else setErrorJardin('No se pudo extraer el texto.')
+    } catch { setErrorJardin('Error al procesar el archivo.') }
     setGuardandoJardin(false)
   }
 
+  async function handleArchivoEstilo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setArchivoEstiloNombre(file.name)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.texto) setEstiloTexto(prev => prev ? prev + '\n\n' + data.texto : data.texto)
+    } catch { setErrorEstilo('No se pudo extraer el texto.') }
+  }
+
+  async function handleAnalizarEstilo() {
+    if (!estiloTexto.trim()) { setErrorEstilo('Escribe o sube un texto.'); return }
+    setAnalizandoEstilo(true); setErrorEstilo('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/analizar-estilo-narrativo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: estiloTexto, auth_uid: session.user.id })
+      })
+      const data = await res.json()
+      if (data.ok) { setResultadoEstilo(data.resultado); setEstiloGuardado(true) }
+      else setErrorEstilo('Error al analizar.')
+    } catch { setErrorEstilo('Error de conexión.') }
+    finally { setAnalizandoEstilo(false) }
+  }
+
   const s = {
-    section: { background: 'white', borderRadius: 12, padding: 28, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
-    sectionTitle: { fontSize: 12, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 16, marginTop: 0 } as React.CSSProperties,
-    label: { display: 'block', marginBottom: 6, fontWeight: 600, color: '#1A1A2E', fontSize: 14 } as React.CSSProperties,
-    divider: { height: 1, background: '#EEEDF8', margin: '24px 0' } as React.CSSProperties,
-    subLabel: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 8, marginTop: 0 } as React.CSSProperties,
+    page: { maxWidth: 680, margin: '40px auto', padding: '0 16px' } as React.CSSProperties,
+    card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
+    cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px' } as React.CSSProperties,
+    cols: { display: 'flex', gap: 0, flexWrap: 'wrap' as const } as React.CSSProperties,
+    col: { flex: '1 1 200px', minWidth: 0, padding: '0 16px 0 0' } as React.CSSProperties,
+    colRight: { flex: '1 1 200px', minWidth: 0, padding: '0 0 0 16px', borderLeft: '1px solid #EEEDF8' } as React.CSSProperties,
+    subTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 4px' } as React.CSSProperties,
+    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 } as React.CSSProperties,
+    btn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
+    btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#00A896', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
+    ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px' } as React.CSSProperties,
+    okText: { margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 } as React.CSSProperties,
+    err: { background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 } as React.CSSProperties,
   }
 
   if (!profile) return (
@@ -402,22 +391,24 @@ export default function MiGrupoPage() {
   )
 
   const totalAlumnos = profile.total_students || profile.total_alumnos || 24
+  const evalCompleta = evaluacionIndividual && typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && (evaluacionIndividual as any).resumen_general
 
   return (
     <SidebarWrapper profile={profile}>
       {analizando ? (
         <PantallaAnimacion grado={profile.grado || '2°'} totalAlumnos={totalAlumnos} cct={profile.cct_primary || ''} />
       ) : (
-        <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 16px' }}>
+        <div style={s.page}>
 
-          <div style={s.section}>
-            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 22, fontWeight: 700 }}>Mi grupo</h2>
-            <p style={{ color: '#888', fontSize: 13, marginBottom: 24, marginTop: 0 }}>
+          {/* ── ENCABEZADO ── */}
+          <div style={s.card}>
+            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 20, fontWeight: 700 }}>Mi grupo</h2>
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 16, marginTop: 0 }}>
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}
               <strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#F4F3FB', borderRadius: 10, padding: '12px 16px' }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E', flexShrink: 0 }}>Cantidad de alumnos:</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F4F3FB', borderRadius: 8, padding: '10px 14px' }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', flexShrink: 0 }}>Cantidad de alumnos:</label>
               <input type="number" min="1" max="50" placeholder="Ej: 24"
                 value={profile.total_alumnos || ''}
                 onChange={async (e) => {
@@ -431,344 +422,309 @@ export default function MiGrupoPage() {
                     setTimeout(() => setAlumnosGuardado(false), 2000)
                   }
                 }}
-                style={{ width: 80, padding: '8px 12px', fontSize: 15, borderRadius: 8, border: profile.total_alumnos ? '1.5px solid #00A896' : '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none' }}
+                style={{ width: 72, padding: '6px 10px', fontSize: 14, borderRadius: 8, border: profile.total_alumnos ? '1.5px solid #00A896' : '1.5px solid #D8D6F0', textAlign: 'center', outline: 'none' }}
               />
-              {alumnosGuardado && <span style={{ fontSize: 12, color: '#00A896', fontWeight: 600 }}>✓ Guardado</span>}
+              {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600 }}>✓ Guardado</span>}
             </div>
           </div>
 
-          <div style={s.section}>
-            <p style={s.sectionTitle}>1 · Diagnóstico escolar</p>
+          {/* ── BLOQUE 1: DIAGNÓSTICO ESCOLAR ── */}
+          <div style={s.card}>
+            <p style={s.cardTitle}>1 · Diagnóstico escolar</p>
+            <div style={s.cols}>
 
-            <p style={s.subLabel}>1A · Programa de Mejora Continua (PMC)</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Sube tu PMC. MÍA extraerá el contexto institucional del jardín: entorno comunitario, organización escolar y recursos disponibles.
-            </p>
-            {!diagnosticoEscolarGuardado ? (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizandoEscolar ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar archivo'}
-                    <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
-                  </label>
-                  {archivoEscolarNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoEscolarNombre}</p>}
-                </div>
-                {diagnosticoEscolarTexto && !analizandoEscolar && (
-                  <button onClick={handleAnalizarPMC} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: 12 }}>
-                    ✨ Analizar PMC
-                  </button>
-                )}
-                {errorEscolar && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8 }}>{errorEscolar}</div>}
-              </div>
-            ) : (
-              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>
-                    ✅ PMC guardado
-                    {resultadoEscolar?.tipo_detectado && (
-                      <span style={{ marginLeft: 8, background: '#3D3A8C', color: 'white', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{resultadoEscolar.tipo_detectado}</span>
+              {/* 1A — PMC */}
+              <div style={s.col}>
+                <p style={s.subTitle}>1A · PMC</p>
+                <p style={s.desc}>Contexto institucional del jardín: entorno, organización y recursos.</p>
+                {!diagnosticoEscolarGuardado ? (
+                  <div>
+                    <label style={{ ...s.btn, opacity: analizandoEscolar ? 0.6 : 1 }}>
+                      {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar'}
+                      <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
+                    </label>
+                    {archivoEscolarNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '6px 0 0' }}>✓ {archivoEscolarNombre}</p>}
+                    {diagnosticoEscolarTexto && !analizandoEscolar && (
+                      <button onClick={handleAnalizarPMC} style={{ display: 'block', marginTop: 8, background: '#3D3A8C', color: 'white', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                        ✨ Analizar PMC
+                      </button>
                     )}
-                  </p>
-                  <button onClick={() => { setDiagnosticoEscolarGuardado(false); setResultadoEscolar(null); setDiagnosticoEscolarTexto(''); setArchivoEscolarNombre('') }}
-                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>Actualizar</button>
-                </div>
-                {resultadoEscolar?.contexto_social && (
-                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#444', lineHeight: 1.5 }}><strong>Contexto social:</strong> {resultadoEscolar.contexto_social}</p>
-                )}
-                {resultadoEscolar?.areas_oportunidad?.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    {resultadoEscolar.areas_oportunidad.map((area: string, i: number) => (
-                      <span key={i} style={{ display: 'inline-block', background: '#EEEDF8', color: '#3D3A8C', fontSize: 12, padding: '3px 10px', borderRadius: 20, marginRight: 6, marginBottom: 4, fontWeight: 500 }}>{area}</span>
-                    ))}
+                    {errorEscolar && <div style={s.err}>{errorEscolar}</div>}
+                  </div>
+                ) : (
+                  <div style={s.ok}>
+                    <p style={s.okText}>✅ PMC guardado</p>
+                    {resultadoEscolar?.contexto_social && <p style={{ fontSize: 11, color: '#444', margin: '4px 0 0', lineHeight: 1.4 }}>{resultadoEscolar.contexto_social}</p>}
+                    <button onClick={() => { setDiagnosticoEscolarGuardado(false); setResultadoEscolar(null); setDiagnosticoEscolarTexto(''); setArchivoEscolarNombre('') }}
+                      style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>Actualizar</button>
                   </div>
                 )}
               </div>
-            )}
 
-            <div style={s.divider} />
-
-            <p style={s.subLabel}>1B · Programa Analítico</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Sube el PA de tu jardín. MÍA identificará los contenidos y PDAs priorizados por tu colectivo. Acepta .docx, .pptx y .pdf.
-            </p>
-
-            {!paActivo ? (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizandoPA ? '#C4C2E8' : '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: analizandoPA ? 'default' : 'pointer' }}>
-                    {analizandoPA ? '🔍 Analizando PA...' : '📁 Seleccionar archivo'}
-                    <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
-                  </label>
-                  {archivoPANombre && !analizandoPA && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoPANombre}</p>}
-                </div>
-                {analizandoPA && <p style={{ fontSize: 13, color: '#3D3A8C', margin: '8px 0 0' }}>MÍA está leyendo tu Programa Analítico, esto tarda unos segundos...</p>}
-                {errorPA && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginTop: 8 }}>{errorPA}</div>}
-              </div>
-            ) : (
-              <div>
-                <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: historialVisible ? '10px 10px 0 0' : 10, padding: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ color: 'white', fontSize: 14 }}>✓</span>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>Programa Analítico cargado</p>
-                      <p style={{ margin: '3px 0 0', fontSize: 12, color: '#555' }}>
-                        {formatearFecha(paActivo.fecha_carga)} · .{paActivo.archivo_formato} ·{' '}
-                        <span style={{ background: '#C8EFE9', color: '#0F6E56', fontSize: 11, padding: '1px 8px', borderRadius: 20, fontWeight: 600 }}>Versión {paActivo.version_numero} activa</span>
-                      </p>
-                      {paActivo.pda_ponderacion?.resumen_pa && (
-                        <p style={{ margin: '8px 0 0', fontSize: 13, color: '#444', lineHeight: 1.5 }}>{paActivo.pda_ponderacion.resumen_pa}</p>
-                      )}
-                      {paActivo.nota_directivo && (
-                        <div style={{ marginTop: 8, background: '#EEF4FB', borderRadius: 8, padding: '8px 10px' }}>
-                          <p style={{ margin: 0, fontSize: 12, color: '#185FA5' }}>💬 <strong>Directivo:</strong> {paActivo.nota_directivo}</p>
-                        </div>
-                      )}
-                      {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
-                        <div style={{ marginTop: 8, background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 8, padding: '8px 10px' }}>
-                          <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#92400E' }}>
-                            ⚠ MÍA encontró {paActivo.pda_ponderacion.inconsistencias.length} observación{paActivo.pda_ponderacion.inconsistencias.length > 1 ? 'es' : ''}
-                          </p>
-                          {paActivo.pda_ponderacion.inconsistencias.map((inc: any, i: number) => (
-                            <p key={i} style={{ margin: '0 0 2px', fontSize: 12, color: '#78350F', lineHeight: 1.5 }}>• {inc.descripcion}</p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, marginTop: 12, alignItems: 'center' }}>
-                    <button onClick={toggleHistorial} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#0F6E56', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                      <span style={{ display: 'inline-block', transform: historialVisible ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▾</span>
-                      {historialVisible ? 'Ocultar historial' : 'Ver historial de versiones'}
-                    </button>
-                    <span style={{ color: '#A7F3D0' }}>·</span>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#0F6E56', fontSize: 12, fontWeight: 600, cursor: analizandoPA ? 'default' : 'pointer' }}>
-                      {analizandoPA ? '🔍 Analizando...' : '↑ Actualizar PA'}
+              {/* 1B — PA */}
+              <div style={s.colRight}>
+                <p style={s.subTitle}>1B · Programa Analítico</p>
+                <p style={s.desc}>PDAs y contenidos priorizados por tu colectivo. Acepta .docx, .pptx, .pdf.</p>
+                {!paActivo ? (
+                  <div>
+                    <label style={{ ...s.btn, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
+                      {analizandoPA ? '🔍 Analizando...' : '📁 Seleccionar'}
                       <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
                     </label>
+                    {analizandoPA && <p style={{ fontSize: 11, color: '#3D3A8C', margin: '6px 0 0' }}>MÍA está leyendo el PA...</p>}
+                    {errorPA && <div style={s.err}>{errorPA}</div>}
                   </div>
-                </div>
-                {historialVisible && (
-                  <div style={{ background: 'white', border: '1.5px solid #00A896', borderTop: 'none', borderRadius: '0 0 10px 10px', overflow: 'hidden' }}>
-                    <p style={{ margin: 0, padding: '8px 16px', fontSize: 11, fontWeight: 700, color: '#888', background: '#F8FFFE', borderBottom: '1px solid #E0F5F3', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Historial del ciclo escolar
-                    </p>
-                    {cargandoHistorial ? (
-                      <p style={{ padding: '16px', fontSize: 13, color: '#888', margin: 0 }}>Cargando historial...</p>
-                    ) : historialPA.length === 0 ? (
-                      <p style={{ padding: '16px', fontSize: 13, color: '#888', margin: 0 }}>Sin versiones anteriores.</p>
-                    ) : (
-                      historialPA.map((version: any, i: number) => (
-                        <div key={version.id} style={{ padding: '12px 16px', borderBottom: i < historialPA.length - 1 ? '1px solid #F0FDF9' : 'none', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: version.activo ? '#1D9E75' : '#D1D5DB', marginTop: 5, flexShrink: 0 }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Versión {version.version_numero}</span>
-                              {version.activo && <span style={{ fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '1px 8px', borderRadius: 20, fontWeight: 600 }}>activa</span>}
-                            </div>
-                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>{formatearFecha(version.fecha_carga)} · .{version.archivo_formato}</p>
-                            {version.nota_directivo && (
-                              <p style={{ margin: '6px 0 0', fontSize: 12, color: '#185FA5' }}>💬 <strong>Directivo:</strong> {version.nota_directivo}</p>
-                            )}
-                          </div>
+                ) : (
+                  <div>
+                    <div style={{ ...s.ok, borderRadius: historialVisible ? '8px 8px 0 0' : 8 }}>
+                      <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
+                      <p style={{ fontSize: 11, color: '#555', margin: '2px 0 0' }}>{formatearFecha(paActivo.fecha_carga)}</p>
+                      {paActivo.pda_ponderacion?.resumen_pa && (
+                        <p style={{ fontSize: 11, color: '#444', margin: '4px 0 0', lineHeight: 1.4 }}>{paActivo.pda_ponderacion.resumen_pa}</p>
+                      )}
+                      {paActivo.nota_directivo && (
+                        <p style={{ fontSize: 11, color: '#185FA5', margin: '4px 0 0' }}>💬 {paActivo.nota_directivo}</p>
+                      )}
+                      {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
+                        <div style={{ marginTop: 6, background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, padding: '6px 8px' }}>
+                          <p style={{ margin: 0, fontSize: 11, color: '#92400E', fontWeight: 700 }}>⚠ {paActivo.pda_ponderacion.inconsistencias.length} observación{paActivo.pda_ponderacion.inconsistencias.length > 1 ? 'es' : ''} de MÍA</p>
                         </div>
-                      ))
-                    )}
-                    {paActivo && (() => {
-                      const diasDesde = Math.floor((Date.now() - new Date(paActivo.fecha_carga).getTime()) / (1000 * 60 * 60 * 24))
-                      if (diasDesde < 30) return null
-                      return (
-                        <div style={{ margin: '0 12px 12px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '10px 12px', display: 'flex', gap: 8 }}>
-                          <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
-                          <p style={{ margin: 0, fontSize: 12, color: '#1E40AF', lineHeight: 1.5 }}>
-                            <strong>MÍA te recuerda:</strong> Han pasado {diasDesde} días desde tu última actualización. Si en tu último CTE se hicieron ajustes al Programa Analítico, este es un buen momento para subirlo.
-                          </p>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                )}
-                {errorPA && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginTop: 8 }}>{errorPA}</div>}
-              </div>
-            )}
-          </div>
-
-          <div style={s.section}>
-            <p style={s.sectionTitle}>2 · Diagnóstico grupal</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Describe las necesidades y áreas de oportunidad que detectaste en tu grupo. El sistema sugerirá los PDAs más relevantes para atenderlas.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: analizando ? '#C4C2E8' : '#00A896', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                {analizando ? '🔍 Analizando...' : '📁 Seleccionar archivo'}
-                <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
-              </label>
-              {archivoNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoNombre}</p>}
-            </div>
-            {diagnosticoTexto && !analizando && !guardado && (
-              <button onClick={handleAnalizar} style={{ background: '#00A896', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: 12 }}>
-                ✨ Analizar diagnóstico
-              </button>
-            )}
-            {errorDiagnostico && <p style={{ color: '#DC2626', fontSize: 13, marginBottom: 16, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorDiagnostico}</p>}
-            {guardado && <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6 }}>✅ Diagnóstico guardado.</p>}
-          </div>
-
-          {pdas.length > 0 && (() => {
-            const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
-            pdas.forEach((p) => {
-              const key = `${p.campo}||${p.contenido}`
-              if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
-              grupos[key].items.push(p)
-            })
-            return (
-              <div style={s.section}>
-                <p style={s.sectionTitle}>PDAs sugeridos para tu grupo</p>
-                {Object.values(grupos).map((grupo, gi) => (
-                  <div key={gi} style={{ border: '1.5px solid #E0F5F3', borderRadius: 10, padding: 16, marginBottom: 12 }}>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
-                      <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
-                      <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
-                    </div>
-                    <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.5 }}>{grupo.contenido}</p>
-                    {grupo.items.map((p, pi) => (
-                      <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: 12, marginBottom: 8 }}>
-                        <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, fontStyle: 'italic' }}>{p.pda}</p>
-                        <p style={{ margin: 0, fontSize: 12, color: '#444', lineHeight: 1.5 }}>{p.justificacion}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                        <button onClick={toggleHistorial} style={{ background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                          {historialVisible ? '▴ Ocultar' : '▾ Historial'}
+                        </button>
+                        <label style={{ color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                          ↑ Actualizar
+                          <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
+                        </label>
                       </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )
-          })()}
-
-          <div style={s.section}>
-            <p style={s.sectionTitle}>3 · Diagnóstico individual</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Sube tu evaluación individual (Word o PDF). MÍA extrae las observaciones pedagógicas, protege los nombres y detecta NEE automáticamente.
-            </p>
-            {!evaluacionIndividual || (Array.isArray(evaluacionIndividual) && evaluacionIndividual.every((x: any) => !x)) || (typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && !(evaluacionIndividual as any).resumen_general) ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: guardandoEval ? '#F0EFF8' : '#3D3A8C', color: guardandoEval ? '#3D3A8C' : 'white', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  {guardandoEval ? '✦ MÍA está analizando...' : '📁 Seleccionar archivo'}
-                  <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
-                </label>
-                <p style={{ fontSize: 11, color: '#aaa', margin: 0 }}>🔒 Los nombres reales nunca se almacenan</p>
-              </div>
-            ) : (
-              <div>
-                {typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && (evaluacionIndividual as any).resumen_general && (
-                  <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#065F46', margin: '0 0 6px', textTransform: 'uppercase' as const }}>✅ Análisis completado</p>
-                    <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{(evaluacionIndividual as any).resumen_general}</p>
+                    </div>
+                    {historialVisible && (
+                      <div style={{ background: 'white', border: '1.5px solid #00A896', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '8px 12px' }}>
+                        {cargandoHistorial ? <p style={{ fontSize: 11, color: '#888', margin: 0 }}>Cargando...</p> : historialPA.map((v: any, i: number) => (
+                          <div key={v.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingBottom: i < historialPA.length - 1 ? 6 : 0, marginBottom: i < historialPA.length - 1 ? 6 : 0, borderBottom: i < historialPA.length - 1 ? '1px solid #F0FDF9' : 'none' }}>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: v.activo ? '#1D9E75' : '#D1D5DB', marginTop: 4, flexShrink: 0 }} />
+                            <div>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>v{v.version_numero}</span>
+                              {v.activo && <span style={{ marginLeft: 6, fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: 10, fontWeight: 600 }}>activa</span>}
+                              <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>{formatearFecha(v.fecha_carga)}</p>
+                              {v.nota_directivo && <p style={{ margin: '3px 0 0', fontSize: 11, color: '#185FA5' }}>💬 {v.nota_directivo}</p>}
+                            </div>
+                          </div>
+                        ))}
+                        {paActivo && (() => {
+                          const dias = Math.floor((Date.now() - new Date(paActivo.fecha_carga).getTime()) / (1000 * 60 * 60 * 24))
+                          if (dias < 30) return null
+                          return (
+                            <div style={{ marginTop: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 10px', display: 'flex', gap: 6 }}>
+                              <span style={{ flexShrink: 0 }}>🔔</span>
+                              <p style={{ margin: 0, fontSize: 11, color: '#1E40AF', lineHeight: 1.5 }}>
+                                <strong>MÍA:</strong> Han pasado {dias} días. Si hubo ajustes en tu último CTE, actualiza el PA.
+                              </p>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    {errorPA && <div style={s.err}>{errorPA}</div>}
                   </div>
                 )}
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                  🔄 Actualizar evaluación
-                  <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
-                </label>
               </div>
-            )}
-            {errorEval && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginTop: 12 }}>{errorEval}</div>}
+            </div>
           </div>
 
-          <div style={s.section}>
-            <p style={s.sectionTitle}>4 · Tu estilo de narración</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti.
+          {/* ── BLOQUE 2: DIAGNÓSTICO ── */}
+          <div style={s.card}>
+            <p style={s.cardTitle}>2 · Diagnóstico</p>
+            <div style={s.cols}>
+
+              {/* 2A — Grupal */}
+              <div style={s.col}>
+                <p style={s.subTitle}>2A · Grupal</p>
+                <p style={s.desc}>Necesidades y áreas de oportunidad de tu grupo.</p>
+                {!guardado ? (
+                  <div>
+                    <label style={{ ...s.btnGreen, opacity: analizando ? 0.6 : 1 }}>
+                      {analizando ? '🔍 Analizando...' : '📁 Seleccionar'}
+                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
+                    </label>
+                    {archivoNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '6px 0 0' }}>✓ {archivoNombre}</p>}
+                    {diagnosticoTexto && !analizando && (
+                      <button onClick={handleAnalizar} style={{ display: 'block', marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                        ✨ Analizar
+                      </button>
+                    )}
+                    {errorDiagnostico && <div style={s.err}>{errorDiagnostico}</div>}
+                  </div>
+                ) : (
+                  <div style={s.ok}>
+                    <p style={s.okText}>✅ Diagnóstico guardado</p>
+                    <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
+                    <button onClick={() => { setGuardado(false); setDiagnosticoTexto(''); setPdas([]); setArchivoNombre('') }}
+                      style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>Actualizar</button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2B — Individual */}
+              <div style={s.colRight}>
+                <p style={s.subTitle}>2B · Individual</p>
+                <p style={s.desc}>Evaluación por alumno. MÍA protege nombres y detecta NEE.</p>
+                {!evalCompleta ? (
+                  <div>
+                    <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
+                      {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
+                      <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
+                    </label>
+                    <p style={{ fontSize: 10, color: '#aaa', margin: '5px 0 0' }}>🔒 Nombres nunca almacenados</p>
+                    {errorEval && <div style={s.err}>{errorEval}</div>}
+                  </div>
+                ) : (
+                  <div style={s.ok}>
+                    <p style={s.okText}>✅ Evaluación completa</p>
+                    <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}</p>
+                    <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>
+                      Actualizar
+                      <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* PDAs sugeridos — debajo de las columnas, full width */}
+            {pdas.length > 0 && (() => {
+              const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
+              pdas.forEach((p) => {
+                const key = `${p.campo}||${p.contenido}`
+                if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
+                grupos[key].items.push(p)
+              })
+              return (
+                <div style={{ marginTop: 16, borderTop: '1px solid #EEEDF8', paddingTop: 14 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>PDAs priorizados para tu grupo</p>
+                  {Object.values(grupos).map((grupo, gi) => (
+                    <div key={gi} style={{ border: '1px solid #E0F5F3', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
+                        <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
+                        <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
+                      </div>
+                      <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{grupo.contenido}</p>
+                      {grupo.items.map((p, pi) => (
+                        <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
+                          <p style={{ margin: '0 0 4px', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{p.pda}</p>
+                          <p style={{ margin: 0, fontSize: 11, color: '#666', lineHeight: 1.4 }}>{p.justificacion}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* ── BLOQUE 3: CONTEXTO PEDAGÓGICO ── */}
+          <div style={s.card}>
+            <p style={s.cardTitle}>3 · Contexto pedagógico</p>
+            <div style={s.cols}>
+
+              {/* 3A — Directivo */}
+              <div style={s.col}>
+                <p style={s.subTitle}>3A · Recomendaciones del directivo</p>
+                <p style={s.desc}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
+                {!observacionesGuardadas ? (
+                  <div>
+                    <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={3}
+                      placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
+                      style={{ display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8 }} />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                      <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
+                        style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
+                      </button>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        📎 Archivo
+                        <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                    {archivoObservacionesNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '5px 0 0' }}>✓ {archivoObservacionesNombre}</p>}
+                    {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
+                    <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Opcional</p>
+                  </div>
+                ) : (
+                  <div style={s.ok}>
+                    <p style={s.okText}>✅ Observaciones integradas</p>
+                    {resultadoObservaciones?.areas_mejora?.slice(0, 2).map((area: string, i: number) => (
+                      <p key={i} style={{ fontSize: 11, color: '#444', margin: '3px 0 0', lineHeight: 1.4 }}>• {area}</p>
+                    ))}
+                    <button onClick={() => { setObservacionesGuardadas(false); setResultadoObservaciones(null); setObservacionesTexto('') }}
+                      style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>Actualizar</button>
+                  </div>
+                )}
+              </div>
+
+              {/* 3B — PDAs jardín */}
+              <div style={s.colRight}>
+                <p style={s.subTitle}>3B · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
+                <p style={s.desc}>PDAs acordados por el colectivo este ciclo. El sistema los integrará con tu diagnóstico.</p>
+                {!guardadoJardin ? (
+                  <div>
+                    <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
+                      {guardandoJardin ? '⏳ Guardando...' : '📁 Seleccionar'}
+                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
+                    </label>
+                    {archivoJardinNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '6px 0 0' }}>✓ {archivoJardinNombre}</p>}
+                    {errorJardin && <div style={s.err}>{errorJardin}</div>}
+                  </div>
+                ) : (
+                  <div style={s.ok}>
+                    <p style={s.okText}>✅ PDAs del jardín guardados</p>
+                    <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>
+                      Actualizar
+                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── BLOQUE 4: ESTILO NARRATIVO ── */}
+          <div style={s.card}>
+            <p style={s.cardTitle}>4 · Tu estilo de narración</p>
+            <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
+              Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti para que tus planeaciones suenen a ti.
             </p>
             {!estiloGuardado ? (
               <div>
-                <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} rows={6}
+                <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} rows={4}
                   placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
-                  style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 12 } as React.CSSProperties}
+                  style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} id="archivo-estilo" />
-                  <label htmlFor="archivo-estilo" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                  <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
+                    style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar estilo'}
+                  </button>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                     📎 O sube un documento
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} />
                   </label>
-                  {archivoEstiloNombre && <span style={{ fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoEstiloNombre}</span>}
                 </div>
-                {errorEstilo && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 12 }}>{errorEstilo}</div>}
-                <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
-                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
-                  {analizandoEstilo ? '🔍 Analizando tu estilo...' : '✨ Analizar mi estilo de escritura'}
-                </button>
+                {archivoEstiloNombre && <p style={{ fontSize: 11, color: '#00A896', margin: '6px 0 0' }}>✓ {archivoEstiloNombre}</p>}
+                {errorEstilo && <div style={s.err}>{errorEstilo}</div>}
               </div>
             ) : (
-              <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 10, padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 14 }}>✅ Estilo de escritura guardado</p>
+              <div style={s.ok}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <p style={s.okText}>✅ Estilo de escritura guardado</p>
                   <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
-                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', padding: 0 }}>Actualizar</button>
+                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: 0 }}>Actualizar</button>
                 </div>
-                {resultadoEstilo?.tono && <p style={{ margin: 0, fontSize: 13, color: '#444' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
+                {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '4px 0 0' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
               </div>
             )}
-          </div>
-
-          <div style={s.section}>
-            <p style={s.sectionTitle}>5 · Recomendaciones del directivo</p>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Escribe lo que tu directora te comentó en la visita áulica. MÍA las integrará en tus planeaciones.
-            </p>
-            {!observacionesGuardadas ? (
-              <div>
-                <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={5}
-                  placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
-                  style={{ display: 'block', width: '100%', padding: '12px 14px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 12 }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} id="archivo-observaciones" />
-                  <label htmlFor="archivo-observaciones" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    📎 O sube un documento
-                  </label>
-                  {archivoObservacionesNombre && <span style={{ fontSize: 13, color: '#00A896', fontWeight: 500 }}>✓ {archivoObservacionesNombre}</span>}
-                </div>
-                {errorObservaciones && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 12 }}>{errorObservaciones}</div>}
-                <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
-                  style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
-                  {analizandoObservaciones ? '🔍 Analizando...' : '✨ Guardar observaciones del directivo'}
-                </button>
-                <p style={{ fontSize: 11, color: '#aaa', marginTop: 10, textAlign: 'center' as const }}>Esta sección es opcional</p>
-              </div>
-            ) : (
-              <div>
-                {resultadoObservaciones?.areas_mejora?.length > 0 && (
-                  <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#065F46', margin: '0 0 8px', textTransform: 'uppercase' as const }}>✅ Observaciones integradas</p>
-                    {resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
-                      <p key={i} style={{ fontSize: 12, color: '#444', margin: '0 0 3px' }}>• {area}</p>
-                    ))}
-                  </div>
-                )}
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                  🔄 Actualizar
-                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} />
-                </label>
-              </div>
-            )}
-          </div>
-
-          <div style={s.section}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <p style={{ ...s.sectionTitle, marginBottom: 0 }}>6 · PDAs del jardín de niños</p>
-              <span style={{ fontSize: 11, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>Opcional</span>
-            </div>
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Si tu directora compartió los PDAs que acordaron trabajar este ciclo, súbelos aquí.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#3D3A8C', color: 'white', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                📁 Seleccionar archivo
-                <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
-              </label>
-              {archivoJardinNombre && <p style={{ fontSize: 12, color: '#00A896', margin: 0, fontWeight: 500 }}>✓ {archivoJardinNombre}</p>}
-            </div>
-            {errorJardin && <p style={{ color: '#DC2626', fontSize: 13, marginTop: 12, background: '#FEF2F2', padding: '8px 12px', borderRadius: 6 }}>{errorJardin}</p>}
-            {guardadoJardin && <p style={{ fontSize: 13, color: '#065f46', background: '#d1fae5', padding: '8px 12px', borderRadius: 6, marginTop: 12 }}>✅ PDAs del jardín guardados.</p>}
           </div>
 
           <div style={{ height: 40 }} />
