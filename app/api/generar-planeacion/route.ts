@@ -159,7 +159,7 @@ Formato para cada transversal:
   }
 }
 
-REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.
+REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.`
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20251001',
