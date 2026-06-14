@@ -106,7 +106,7 @@ CONTEXTO DEL GRUPO:
 - CCT: ${profile.cct_primary}
 - Turno: ${profile.shift_primary}
 - Grado: ${profile.grade}
-- Número de alumnos: ${profile.total_students || 24}
+- Número de alumnos: ${profile.total_alumnos || profile.total_students || 'no registrado'}
 - Contexto: ${profile.contexto_grupo || 'Grupo de preescolar Fase 2'}
 
 DATOS DEL PROYECTO:

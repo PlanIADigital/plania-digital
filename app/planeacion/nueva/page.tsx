@@ -154,7 +154,7 @@ export default function NuevaPlaneacionPage() {
   const finalidadRef = useRef<HTMLTextAreaElement>(null)
   const gradoMap: Record<string, string> = { '1er Grado': '1°', '2do Grado': '2°', '3er Grado': '3°' }
   const gradoGrupo = gradoMap[profile?.grado || ''] || profile?.grado || '2°'
-  const totalAlumnos = profile?.total_alumnos || profile?.total_students || 24
+  const totalAlumnos = profile?.total_alumnos || profile?.total_students || null
   const pasosProgreso = getPasosProgreso(totalAlumnos)
   const todasPdasSeleccionadas = contenidosElegidos.flatMap(c => c.pdasSeleccionados)
   const hayPdasSeleccionados = todasPdasSeleccionadas.length > 0
@@ -462,7 +462,7 @@ export default function NuevaPlaneacionPage() {
               <div style={{ fontSize: 32, marginBottom: 10 }}>✨</div>
               <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 18 }}>Creando tu planeación</h3>
               <p style={{ color: '#666', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
-                Diseñada para tus <strong>{totalAlumnos} alumnos</strong> de <strong>{profile.grado || '2°'} grado</strong>
+                Diseñada para <strong>{profile.grado || '2°'} grado</strong>{totalAlumnos ? <> · <strong>{totalAlumnos} alumnos</strong></> : ''}
               </p>
             </div>
             <div style={{ background: '#EEEDF8', borderRadius: 99, height: 6, marginBottom: 8, overflow: 'hidden' }}>
