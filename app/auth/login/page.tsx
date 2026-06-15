@@ -33,7 +33,7 @@ export default function LoginPage() {
     const { data: userData } = await supabase
       .from('users')
       .select('is_super_admin, role')
-      .eq('id', data.user.id)
+      .eq('auth_uid', data.user.id)
       .single()
 
     // Verificar parámetro next (por si viene de /admin)
