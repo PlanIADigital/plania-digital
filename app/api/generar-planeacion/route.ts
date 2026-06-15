@@ -245,7 +245,7 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
     })
 
     const content = message.content[0].type === 'text' ? message.content[0].text : ''
-    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim()
     const planeacion = JSON.parse(cleanContent)
 
     return NextResponse.json({ planeacion })
