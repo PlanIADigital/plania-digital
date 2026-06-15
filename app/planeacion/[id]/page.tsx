@@ -203,7 +203,7 @@ export default function VerPlaneacionPage() {
               {index + 1}. {formatearTituloMomento(key)}
             </h4>
             <p style={{ fontSize: 14, lineHeight: 1.9, color: '#1A1A2E', margin: 0 }}>
-              {(valor as string).split(/(?=Actividad \d+:)/g).map((bloque, bi) => (
+              {(valor as string).split(/(?=Día \d+ —)/g).map((bloque, bi) => (
                 <span key={bi}>
                   {bi > 0 && <><br/><br/></>}
                   {bloque}
