@@ -29,14 +29,14 @@ export default function LoginPage() {
       return
     }
 
-    // Verificar si es super admin
-    const { data: userData } = await supabase
-      .from('users')
-      .select('is_super_admin, role')
-      .eq('auth_uid', data.user.id)
-      .single()
+    // Verificar rol via API server (bypasea RLS)
+    const res = await fetch('/api/auth/me', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auth_uid: data.user.id }),
+    })
+    const userData = await res.json()
 
-    // Verificar parámetro next (por si viene de /admin)
     const params = new URLSearchParams(window.location.search)
     const next = params.get('next')
 
@@ -52,7 +52,6 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
             <span style={{ color: '#00A896', fontWeight: 700, fontSize: 28 }}>✦</span>
@@ -66,7 +65,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
         <div style={{ background: 'white', borderRadius: 16, padding: 36, boxShadow: '0 4px 24px rgba(61,58,140,0.10)' }}>
           <h2 style={{ color: '#1A1A2E', margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>
             Iniciar sesión
