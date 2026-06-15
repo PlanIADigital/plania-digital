@@ -61,7 +61,7 @@ function formatearFecha(fechaISO: string): string {
 function SubSeccion({ titulo, descripcion, children }: { titulo: string; descripcion: string; children: React.ReactNode }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>{titulo}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px', textAlign: 'center' }}>{titulo}</p>
       <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>{descripcion}</p>
       {children}
     </div>
@@ -371,12 +371,12 @@ export default function MiGrupoPage() {
   const s = {
     page: { maxWidth: 680, margin: '40px auto', padding: '0 16px' } as React.CSSProperties,
     card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
-    cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px' } as React.CSSProperties,
+    cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px', textAlign: 'center' as const } as React.CSSProperties,
     cols: { display: 'flex', gap: 0, flexWrap: 'wrap' as const } as React.CSSProperties,
     col: { flex: '1 1 200px', minWidth: 0, padding: '0 16px 0 0', textAlign: 'center' as const } as React.CSSProperties,
     colRight: { flex: '1 1 200px', minWidth: 0, padding: '0 0 0 16px', borderLeft: '1px solid #EEEDF8', textAlign: 'center' as const } as React.CSSProperties,
     subTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 4px', textAlign: 'center' as const } as React.CSSProperties,
-    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5, textAlign: 'justify' as const } as React.CSSProperties,
+    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5, textAlign: 'center' as const } as React.CSSProperties,
     btn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
     btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
     ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px' } as React.CSSProperties,
@@ -402,8 +402,8 @@ export default function MiGrupoPage() {
 
           {/* ── ENCABEZADO ── */}
           <div style={s.card}>
-            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 20, fontWeight: 700 }}>Mi grupo</h2>
-            <p style={{ color: '#888', fontSize: 12, marginBottom: 16, marginTop: 0 }}>
+            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi grupo</h2>
+            <p style={{ color: '#888', fontSize: 12, marginBottom: 16, marginTop: 0, textAlign: 'center' }}>
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}
               <strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A
             </p>
@@ -638,7 +638,7 @@ export default function MiGrupoPage() {
                     <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={3}
                       placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
                       style={{ display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8 }} />
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                       <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
                         style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                         {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
@@ -692,8 +692,8 @@ export default function MiGrupoPage() {
 
           {/* ── BLOQUE 4: ESTILO NARRATIVO ── */}
           <div style={s.card}>
-            <p style={s.cardTitle}>4 · Tu estilo de narración</p>
-            <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
+            <p style={s.cardTitle}>4 · Mi estilo de narración</p>
+            <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
               Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti para que tus planeaciones suenen a ti.
             </p>
             {!estiloGuardado ? (
@@ -702,7 +702,7 @@ export default function MiGrupoPage() {
                   placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
                   style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
                 />
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                   <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
                     style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                     {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar estilo'}
