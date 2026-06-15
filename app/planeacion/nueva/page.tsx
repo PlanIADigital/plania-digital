@@ -14,9 +14,9 @@ const CAMPOS = [
 ]
 
 const DURACIONES = [
-  { label: '2 semanas (10 días hábiles)', dias: 15 },
-  { label: '3 semanas (15 días hábiles)', dias: 21 },
-  { label: '4 semanas (20 días hábiles)', dias: 28 },
+  { label: '2 semanas (10 días hábiles)', dias: 10 },
+  { label: '3 semanas (15 días hábiles)', dias: 15 },
+  { label: '4 semanas (20 días hábiles)', dias: 20 },
 ]
 
 function getPasosProgreso(totalAlumnos: number) {
@@ -31,10 +31,15 @@ function getPasosProgreso(totalAlumnos: number) {
   ]
 }
 
-function calcFechaFin(inicio: string, dias: number): string {
+function calcFechaFin(inicio: string, diasHabiles: number): string {
   if (!inicio) return ''
   const d = new Date(inicio + 'T12:00:00')
-  d.setDate(d.getDate() + dias)
+  let contados = 0
+  while (contados < diasHabiles) {
+    d.setDate(d.getDate() + 1)
+    const dia = d.getDay()
+    if (dia !== 0 && dia !== 6) contados++
+  }
   return d.toISOString().split('T')[0]
 }
 
@@ -108,7 +113,7 @@ export default function NuevaPlaneacionPage() {
     situacion_problema: '',
     finalidad: '',
     recursos_materiales: '',
-    duracion_dias: 15,
+    duracion_dias: 10,
     fecha_inicio: '',
     fecha_fin: '',
     metodologia: 'Proyectos',
