@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default function LoginPage() {
@@ -18,21 +18,40 @@ export default function LoginPage() {
   async function handleLogin() {
     setLoading(true)
     setError('')
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Correo o contraseña incorrectos'); setLoading(false); return }
+
     if (!data.user?.email_confirmed_at) {
       await supabase.auth.signOut()
       setError('Debes confirmar tu correo electrónico antes de entrar. Revisa tu bandeja de entrada.')
       setLoading(false)
       return
     }
-    router.push('/dashboard')
+
+    // Verificar si es super admin
+    const { data: userData } = await supabase
+      .from('users')
+      .select('is_super_admin, role')
+      .eq('id', data.user.id)
+      .single()
+
+    // Verificar parámetro next (por si viene de /admin)
+    const params = new URLSearchParams(window.location.search)
+    const next = params.get('next')
+
+    if (userData?.is_super_admin) {
+      router.push(next || '/admin')
+    } else if (userData?.role === 'directivo') {
+      router.push('/directivo/dashboard')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
-
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 2 }}>
@@ -79,16 +98,17 @@ export default function LoginPage() {
           />
 
           {error && (
-            <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
-              {error}
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+              <p style={{ color: '#DC2626', fontSize: 13, margin: 0 }}>{error}</p>
             </div>
           )}
 
           <button
             onClick={handleLogin}
             disabled={loading}
-            style={{ background: loading ? '#9b99c4' : '#3D3A8C', color: 'white', border: 'none', padding: '13px 24px', fontSize: 15, cursor: loading ? 'default' : 'pointer', width: '100%', borderRadius: 8, fontWeight: 600, transition: 'background 0.2s' }}>
-            {loading ? 'Entrando...' : 'Iniciar sesión'}
+            style={{ display: 'block', width: '100%', padding: '13px', fontSize: 15, fontWeight: 700, color: 'white', background: loading ? '#9CA3AF' : '#3D3A8C', border: 'none', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'sans-serif' }}
+          >
+            {loading ? 'Verificando...' : 'Iniciar sesión'}
           </button>
 
           <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#888' }}>
@@ -99,7 +119,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 11, color: '#aaa' }}>
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: '#9CA3AF' }}>
           PlanIA Digital no es una entidad afiliada ni respaldada por la SEP.
         </p>
       </div>
