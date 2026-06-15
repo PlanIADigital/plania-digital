@@ -248,6 +248,50 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim()
     const planeacion = JSON.parse(cleanContent)
 
+    // Inyectar fechas del sistema en el contenido generado
+    const MOMENTOS_DESARROLLO: Record<string, string> = {
+      'Proyectos': 'a_trabajar',
+      'ABJ': 'desarrollo_de_las_actividades',
+      'Taller crítico': 'puesta_en_marcha',
+      'Rincones': 'exploracion_de_los_rincones',
+      'Centros de interés': 'identificacion_e_integracion',
+      'Unidad didáctica': 'exploracion_y_descubrimiento',
+    }
+    const ORDEN_MOMENTOS_MODALIDAD: Record<string, string[]> = {
+      'Proyectos': ['situacion_inicial', 'organizacion_de_las_acciones', 'a_trabajar', 'comunicamos_nuestros_logros', 'reflexion_sobre_el_aprendizaje'],
+      'ABJ': ['planteamiento_del_juego', 'desarrollo_de_las_actividades', 'compartimos_la_experiencia', 'comunidad_de_juego'],
+      'Taller crítico': ['situacion_inicial', 'puesta_en_marcha', 'valoramos_lo_aprendido', 'reflexion'],
+      'Rincones': ['asamblea_inicial_y_planeacion', 'exploracion_de_los_rincones', 'compartimos_lo_aprendido', 'reflexion_sobre_el_aprendizaje'],
+      'Centros de interés': ['contacto_con_la_realidad', 'identificacion_e_integracion', 'expresion'],
+      'Unidad didáctica': ['lectura_de_la_realidad', 'identificacion_de_la_trama_y_complejidad', 'planificacion_y_organizacion', 'exploracion_y_descubrimiento', 'participacion_activa_y_horizontal', 'valoracion_de_la_experiencia'],
+    }
+    const momentoDesarrollo = MOMENTOS_DESARROLLO[form.metodologia] || 'a_trabajar'
+    const ordenMomentos = ORDEN_MOMENTOS_MODALIDAD[form.metodologia] || ORDEN_MOMENTOS_MODALIDAD['Proyectos']
+    let diaActual = 0
+    for (const momento of ordenMomentos) {
+      if (!planeacion[momento]) continue
+      if (momento === momentoDesarrollo) {
+        // Separar actividades por ACTIVIDAD_N: y asignar un día a cada una
+        const partes = planeacion[momento].split(/ACTIVIDAD_\d+:/g).filter((p: string) => p.trim())
+        const conFechas = partes.map((parte: string) => {
+          if (diaActual < diasHabiles.length) {
+            const fecha = `Día ${diaActual + 1} — ${diasHabiles[diaActual]}:`
+            diaActual++
+            return fecha + ' ' + parte.trim()
+          }
+          return parte.trim()
+        })
+        planeacion[momento] = conFechas.join('\n\n')
+      } else {
+        if (diaActual < diasHabiles.length) {
+          const fecha = `Día ${diaActual + 1} — ${diasHabiles[diaActual]}:`
+          diaActual++
+          planeacion[momento] = fecha + ' ' + planeacion[momento]
+        }
+      }
+    }
+
+
     return NextResponse.json({ planeacion })
 
   } catch (error: unknown) {
