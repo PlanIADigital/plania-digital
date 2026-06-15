@@ -844,7 +844,12 @@ export default function NuevaPlaneacionPage() {
                 </div>
                 <div>
                   <label style={{ ...s.label, color: '#888' }}>Fecha fin (calculada)</label>
-                  <input type="date" value={form.fecha_fin} readOnly style={{ ...s.input, background: '#F5F5F5', color: '#888', cursor: 'default' }} />
+                  <div>
+                  <input type="date" value={form.fecha_fin} readOnly style={{ ...s.input, background: '#F5F5F5', color: '#888', cursor: 'default', marginBottom: 4 }} />
+                  <p style={{ fontSize: 11, color: '#AAA', margin: 0, lineHeight: 1.4 }}>
+                    Fecha estimada sin días de CTE ni festivos. La educadora ajusta según su calendario escolar.
+                  </p>
+                </div>
                 </div>
               </div>
             </div>
