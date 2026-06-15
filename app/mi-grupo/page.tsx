@@ -407,7 +407,7 @@ export default function MiGrupoPage() {
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}
               <strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F4F3FB', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F4F3FB', borderRadius: 8, padding: '10px 14px', justifyContent: 'center' }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', flexShrink: 0 }}>Cantidad de alumnos:</label>
               <input type="number" min="1" max="50" placeholder="Ej: 24"
                 value={profile.total_alumnos || ''}
