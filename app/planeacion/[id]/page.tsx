@@ -159,7 +159,17 @@ export default function VerPlaneacionPage() {
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px' }}>Contenido principal</p>
               <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px', textAlign: 'center' }}>{planeacion.pda_contenido}</p>
               <div style={{ height: 1, background: '#D8D6F0', margin: '0 0 10px' }} />
-              <p style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.7, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{planeacion.pda_literal}</p>
+              {planeacion.pda_literal.split(' | ').map((pda: string, idx: number) => (
+                <div key={idx} style={{ marginBottom: idx < planeacion.pda_literal.split(' | ').length - 1 ? 10 : 0 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px', textAlign: 'center' }}>
+                    {idx === 0 ? 'PDA Principal' : `PDA Secundario ${idx}`}
+                  </p>
+                  <p style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.7, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{pda.trim()}</p>
+                  {idx < planeacion.pda_literal.split(' | ').length - 1 && (
+                    <div style={{ height: 1, background: '#E0DFF5', margin: '8px 0' }} />
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
