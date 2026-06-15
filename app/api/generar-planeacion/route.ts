@@ -271,8 +271,12 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
     for (const momento of ordenMomentos) {
       if (!planeacion[momento]) continue
       if (momento === momentoDesarrollo) {
-        // Separar actividades por ACTIVIDAD_N: y asignar un día a cada una
-        const partes = planeacion[momento].split(/ACTIVIDAD_\d+:/g).filter((p: string) => p.trim())
+        // Separar actividades por párrafo doble y asignar un día a cada una
+        // Primero limpiar cualquier fecha que el agente haya puesto
+        const textoLimpio = planeacion[momento].replace(/Día \d+ —[^:]+:/g, '').trim()
+        // Separar por párrafo doble — cada actividad es un bloque
+        const partes = textoLimpio.split(/\n\n+/).filter((p: string) => p.trim().length > 50)
+        // Si el agente generó las actividades correctamente habrá diasDesarrollo partes
         const conFechas = partes.map((parte: string) => {
           if (diaActual < diasHabiles.length) {
             const fecha = `Día ${diaActual + 1} — ${diasHabiles[diaActual]}:`
@@ -286,7 +290,9 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
         if (diaActual < diasHabiles.length) {
           const fecha = `Día ${diaActual + 1} — ${diasHabiles[diaActual]}:`
           diaActual++
-          planeacion[momento] = fecha + ' ' + planeacion[momento]
+          // Limpiar fechas que el agente haya puesto y reemplazar con la del sistema
+          const textoSinFecha = planeacion[momento].replace(/^Día \d+ —[^:]+:\s*/g, '').trim()
+          planeacion[momento] = fecha + ' ' + textoSinFecha
         }
       }
     }
