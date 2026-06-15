@@ -3,28 +3,43 @@
 //  app/admin/layout.tsx
 // ============================================================
 import { redirect } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
-async function getSuperAdmin() {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const cookieStore = await cookies()
+  const allCookies = cookieStore.getAll()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-      },
-    }
+  // Buscar el token de acceso en las cookies de Supabase
+  const accessTokenCookie = allCookies.find(c =>
+    c.name.includes('auth-token') && !c.name.includes('code-verifier')
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!accessTokenCookie) {
+    redirect('/auth/login?next=/admin')
+  }
 
+  // Parsear el token
+  let userId: string | null = null
+  try {
+    const tokenData = JSON.parse(decodeURIComponent(accessTokenCookie.value))
+    const accessToken = Array.isArray(tokenData) ? tokenData[0]?.access_token : tokenData?.access_token
+    if (accessToken) {
+      // Decodificar el JWT para obtener el user id
+      const payload = JSON.parse(atob(accessToken.split('.')[1]))
+      userId = payload.sub
+    }
+  } catch {
+    redirect('/auth/login?next=/admin')
+  }
+
+  if (!userId) redirect('/auth/login?next=/admin')
+
+  // Verificar is_super_admin con service role
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SECRET_KEY!
@@ -32,21 +47,13 @@ async function getSuperAdmin() {
 
   const { data } = await supabaseAdmin
     .from('users')
-    .select('is_super_admin, full_name')
-    .eq('id', user.id)
+    .select('is_super_admin')
+    .eq('auth_uid', userId)
     .single()
 
-  if (!data?.is_super_admin) redirect('/dashboard')
-
-  return data
-}
-
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  await getSuperAdmin()
+  if (!data?.is_super_admin) {
+    redirect('/dashboard')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
