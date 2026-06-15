@@ -70,6 +70,24 @@ export async function POST(request: NextRequest) {
       ? diasHabiles.map((d, i) => `Día ${i + 1} — ${d}`).join('\n')
       : 'No se definieron fechas.'
 
+    // Calcular distribución de días por momento
+    const totalDias = diasHabiles.length
+    // Proyectos: Situación inicial=1, Organización=1, A trabajar=N, Comunicamos=1, Reflexión=1
+    // ABJ: Planteamiento=1, Desarrollo=N, Compartimos=1, Comunidad=1
+    // Resto: primer momento=1, momentos intermedios=N, penúltimo=1, último=1
+    const momentosModalidad: Record<string, number> = {
+      'Proyectos': 5,
+      'ABJ': 4,
+      'Taller crítico': 4,
+      'Rincones': 4,
+      'Centros de interés': 3,
+      'Unidad didáctica': 6,
+    }
+    const totalMomentos = momentosModalidad[form.metodologia] || 5
+    const diasDesarrollo = Math.max(1, totalDias - (totalMomentos - 1))
+    const distribucionDias = `El proyecto tiene ${totalDias} días hábiles totales. Distribución OBLIGATORIA:
+- Momentos de apertura y cierre (todos excepto el de desarrollo): 1 día cada uno = ${totalMomentos - 1} días
+- Momento de desarrollo principal (¡A trabajar! / Desarrollo / Exploración): ${diasDesarrollo} días = ${diasDesarrollo} actividades, UNA por día`
     const recursosTexto = form.recursos_materiales
       ? `RECURSOS O MATERIALES ESPECÍFICOS INDICADOS POR LA DIRECTORA:\n${form.recursos_materiales}\n\nIMPORTANTE: Estos materiales DEBEN aparecer integrados naturalmente en al menos una actividad del Momento 3. No los menciones como lista — incorpóralos dentro del flujo narrativo de la actividad donde sean más pertinentes pedagógicamente.`
       : ''
