@@ -13,6 +13,37 @@ export async function POST(request: NextRequest) {
         ).join('\n\n')
       : 'No se definieron campos transversales.'
 
+    // Días inhábiles SEP Nuevo León 2025-2026 (CTE, festivos, recesos)
+    const DIAS_INHABILES_SEP = new Set([
+      // Septiembre 2025
+      '2025-09-08', '2025-09-15', '2025-09-26',
+      // Octubre 2025
+      '2025-10-31',
+      // Noviembre 2025
+      '2025-11-17', '2025-11-20',
+      '2025-11-24', '2025-11-25', '2025-11-26', '2025-11-27', '2025-11-28',
+      // Diciembre 2025 - vacaciones
+      '2025-12-25',
+      '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-25', '2025-12-26',
+      '2025-12-29', '2025-12-30', '2025-12-31',
+      // Enero 2026
+      '2026-01-01', '2026-01-02', '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09',
+      '2026-01-07', '2026-01-30',
+      // Febrero 2026
+      '2026-02-02', '2026-02-24', '2026-02-27',
+      // Marzo 2026
+      '2026-03-16', '2026-03-20',
+      '2026-03-23', '2026-03-24', '2026-03-25', '2026-03-26', '2026-03-27',
+      // Abril 2026
+      '2026-04-30',
+      // Mayo 2026
+      '2026-05-01', '2026-05-05', '2026-05-15', '2026-05-29',
+      // Junio 2026
+      '2026-06-26',
+      // Julio 2026
+      '2026-07-08',
+    ])
+
     // Calcular días hábiles entre fecha_inicio y fecha_fin
     function calcularDiasHabiles(inicio: string, fin: string): string[] {
       const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -23,7 +54,8 @@ export async function POST(request: NextRequest) {
       const fecha = new Date(fechaInicio)
       while (fecha <= fechaFin) {
         const diaSemana = fecha.getDay()
-        if (diaSemana !== 0 && diaSemana !== 6) {
+        const fechaStr = fecha.toISOString().split('T')[0]
+        if (diaSemana !== 0 && diaSemana !== 6 && !DIAS_INHABILES_SEP.has(fechaStr)) {
           dias.push(`${diasSemana[diaSemana]} ${fecha.getDate()} de ${meses[fecha.getMonth()]}`)
         }
         fecha.setDate(fecha.getDate() + 1)
