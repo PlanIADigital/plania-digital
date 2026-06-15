@@ -225,7 +225,7 @@ export default function MiAvancePage() {
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 60px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Centro de Control Pedagógico</h1>
-          <p style={{ fontSize: 12, color: '#888', margin: 0 }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
+          <p style={{ fontSize: 12, color: '#888', margin: 0, textAlign: 'center' }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 20 }}>
           <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />

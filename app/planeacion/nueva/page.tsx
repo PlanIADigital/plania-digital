@@ -510,7 +510,7 @@ export default function NuevaPlaneacionPage() {
         {!generating && !result && (
           <div style={{ background: 'white', borderRadius: 14, padding: '32px 24px', boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nueva Planeación</h2>
-            <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>
+            <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0, textAlign: 'center' }}>
               {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
             </p>
 

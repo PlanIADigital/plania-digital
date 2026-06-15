@@ -87,7 +87,7 @@ export default function ConfiguracionPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ maxWidth: 600, margin: '40px auto', padding: '0 32px' }}>
 
-        <h2 style={{ color: '#3D3A8C', marginBottom: 24, fontSize: 22, fontWeight: 700 }}>Configuración</h2>
+        <h2 style={{ color: '#3D3A8C', marginBottom: 24, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Configuración</h2>
 
         {/* Foto de perfil */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
