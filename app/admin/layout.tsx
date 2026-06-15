@@ -1,58 +1,45 @@
-// ============================================================
-//  PlanIA Digital — Layout Super Admin
-//  app/admin/layout.tsx
-// ============================================================
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+'use client'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const cookieStore = await cookies()
-  const allCookies = cookieStore.getAll()
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-  // Buscar el token de acceso en las cookies de Supabase
-  const accessTokenCookie = allCookies.find(c =>
-    c.name.includes('auth-token') && !c.name.includes('code-verifier')
-  )
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const [verificado, setVerificado] = useState(false)
 
-  if (!accessTokenCookie) {
-    redirect('/auth/login?next=/admin')
-  }
+  useEffect(() => {
+    async function verificarAdmin() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) { router.replace('/auth/login?next=/admin'); return }
 
-  // Parsear el token
-  let userId: string | null = null
-  try {
-    const tokenData = JSON.parse(decodeURIComponent(accessTokenCookie.value))
-    const accessToken = Array.isArray(tokenData) ? tokenData[0]?.access_token : tokenData?.access_token
-    if (accessToken) {
-      // Decodificar el JWT para obtener el user id
-      const payload = JSON.parse(atob(accessToken.split('.')[1]))
-      userId = payload.sub
+        const res = await fetch('/api/auth/me-session', {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        })
+        if (!res.ok) { router.replace('/auth/login?next=/admin'); return }
+
+        const data = await res.json()
+        if (!data?.is_super_admin) { router.replace('/dashboard'); return }
+
+        setVerificado(true)
+      } catch {
+        router.replace('/auth/login?next=/admin')
+      }
     }
-  } catch {
-    redirect('/auth/login?next=/admin')
-  }
+    verificarAdmin()
+  }, [router])
 
-  if (!userId) redirect('/auth/login?next=/admin')
-
-  // Verificar is_super_admin con service role
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
-  )
-
-  const { data } = await supabaseAdmin
-    .from('users')
-    .select('is_super_admin')
-    .eq('auth_uid', userId)
-    .single()
-
-  if (!data?.is_super_admin) {
-    redirect('/dashboard')
+  if (!verificado) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
+        <p style={{ color: '#6B7280', fontSize: 14 }}>Verificando acceso...</p>
+      </div>
+    )
   }
 
   return (
