@@ -626,18 +626,18 @@ export default function MiGrupoPage() {
 
           {/* ── BLOQUE 3: CONTEXTO PEDAGÓGICO ── */}
           <div style={s.card}>
-            <p style={s.cardTitle}>3 · Contexto pedagógico</p>
+            <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
             <div style={s.cols}>
 
               {/* 3A — Directivo */}
               <div style={s.col}>
-                <p style={s.subTitle}>3.1 · Recomendaciones del directivo</p>
+                <p style={s.subTitle}>3.1 · Áreas de Oportunidad</p>
                 <p style={{ ...s.desc, textAlign: 'center' as const }}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
                 {!observacionesGuardadas ? (
                   <div>
                     <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={3}
                       placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
-                      style={{ display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8 }} />
+                      style={{ display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'vertical' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8, textAlign: 'left' as const }} />
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                       <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
                         style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
