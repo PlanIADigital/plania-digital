@@ -436,7 +436,7 @@ export default function MiGrupoPage() {
               {/* 1A — PMC */}
               <div style={s.col}>
                 <p style={s.subTitle}>1.1 · PMC</p>
-                <p style={s.desc}>Contexto institucional del jardín: entorno, organización y recursos.</p>
+                <p style={s.desc}>Contexto institucional del jardín:<br/>Entorno, organización y recursos.</p>
                 {!diagnosticoEscolarGuardado ? (
                   <div>
                     <label style={{ ...s.btn, opacity: analizandoEscolar ? 0.6 : 1 }}>
