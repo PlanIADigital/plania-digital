@@ -157,8 +157,8 @@ export default function VerPlaneacionPage() {
           {planeacion.pda_literal && (
             <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px' }}>PDA principal</p>
-              <p style={{ fontSize: 11, color: '#666', margin: '0 0 8px' }}>{planeacion.pda_contenido}</p>
-              <p style={{ fontSize: 14, color: '#1A1A2E', lineHeight: 1.6, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{planeacion.pda_literal}</p>
+              <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px', textAlign: 'center' }}>{planeacion.pda_contenido}</p>
+              <p style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{planeacion.pda_literal}</p>
             </div>
           )}
 
@@ -174,7 +174,7 @@ export default function VerPlaneacionPage() {
                   <div key={i} style={{ background: '#F8F8FE', border: '1px solid #E0DFF5', borderRadius: 8, padding: '10px 12px' }}>
                     <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>{t.campo}</p>
                     {t.contenido && <p style={{ margin: '0 0 6px', fontSize: 12, color: '#555', lineHeight: 1.4, textAlign: 'center' }}>{t.contenido}</p>}
-                    {t.pda && <><div style={{ height: 1, background: '#E0DFF5', margin: '6px 0' }} /><p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>PDA</p><p style={{ margin: 0, fontSize: 11, color: '#777', lineHeight: 1.4, fontStyle: 'italic', textAlign: 'center' }}>{t.pda}</p></>}
+                    {t.pda && <><div style={{ height: 1, background: '#E0DFF5', margin: '6px 0' }} /><p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>PDA</p><p style={{ margin: 0, fontSize: 11, color: '#777', lineHeight: 1.4, fontStyle: 'italic', textAlign: 'center' }}>{t.pda}</p></>}
                   </div>
                 ))}
               </div>
@@ -259,16 +259,16 @@ export default function VerPlaneacionPage() {
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
               <div style={{ background: '#EAF3DE', borderRadius: 8, padding: '12px 14px' }}>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 3 — Logrado</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_3}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Nivel 3 — Logrado</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, textAlign: 'center' }}>{rubrica.nivel_3}</p>
               </div>
               <div style={{ background: '#FFF8E7', borderRadius: 8, padding: '12px 14px' }}>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#854F0B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 2 — En proceso</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_2}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#854F0B', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Nivel 2 — En proceso</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, textAlign: 'center' }}>{rubrica.nivel_2}</p>
               </div>
               <div style={{ background: '#FCEBEB', borderRadius: 8, padding: '12px 14px' }}>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 1 — Requiere Apoyo</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6 }}>{rubrica.nivel_1}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>Nivel 1 — Requiere Apoyo</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.6, textAlign: 'center' }}>{rubrica.nivel_1}</p>
               </div>
             </div>
             <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
