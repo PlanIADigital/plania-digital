@@ -156,8 +156,9 @@ export default function VerPlaneacionPage() {
 
           {planeacion.pda_literal && (
             <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>PDA principal · {planeacion.pda_contenido}</p>
-              <p style={{ fontSize: 14, color: '#1A1A2E', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>{planeacion.pda_literal}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px' }}>PDA principal</p>
+              <p style={{ fontSize: 11, color: '#666', margin: '0 0 8px' }}>{planeacion.pda_contenido}</p>
+              <p style={{ fontSize: 14, color: '#1A1A2E', lineHeight: 1.6, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{planeacion.pda_literal}</p>
             </div>
           )}
 
@@ -171,9 +172,9 @@ export default function VerPlaneacionPage() {
                   { campo: planeacion.transversal_3_campo, contenido: planeacion.transversal_3_contenido, pda: planeacion.transversal_3_pda },
                 ].filter(t => t.campo).map((t, i) => (
                   <div key={i} style={{ background: '#F8F8FE', border: '1px solid #E0DFF5', borderRadius: 8, padding: '10px 12px' }}>
-                    <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.campo}</p>
-                    {t.contenido && <p style={{ margin: '0 0 4px', fontSize: 12, color: '#555', lineHeight: 1.4 }}>{t.contenido}</p>}
-                    {t.pda && <p style={{ margin: 0, fontSize: 11, color: '#777', lineHeight: 1.4, fontStyle: 'italic' }}>{t.pda}</p>}
+                    <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>{t.campo}</p>
+                    {t.contenido && <p style={{ margin: '0 0 6px', fontSize: 12, color: '#555', lineHeight: 1.4, textAlign: 'center' }}>{t.contenido}</p>}
+                    {t.pda && <><div style={{ height: 1, background: '#E0DFF5', margin: '6px 0' }} /><p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>PDA</p><p style={{ margin: 0, fontSize: 11, color: '#777', lineHeight: 1.4, fontStyle: 'italic', textAlign: 'center' }}>{t.pda}</p></>}
                   </div>
                 ))}
               </div>
@@ -182,7 +183,7 @@ export default function VerPlaneacionPage() {
 
           <div style={{ borderTop: '1px solid #EEEDF8', paddingTop: 10, marginTop: 4 }}>
             <p style={{ margin: 0, fontSize: 10, color: '#C4C2E8', textAlign: 'center' }}>
-              ✦ Generada con MÍA · PlanIA Digital · Programa NEM 2022 Fase 2 · PlanIA Digital no es una entidad afiliada ni respaldada por la SEP
+              ✦ Programa de Preescolar 2022 · NEM · PlanIA Digital no es una entidad afiliada ni respaldada por la SEP
             </p>
           </div>
         </div>
@@ -200,8 +201,13 @@ export default function VerPlaneacionPage() {
             <h4 style={{ color: '#00A896', marginTop: 0, marginBottom: 14, fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {index + 1}. {formatearTituloMomento(key)}
             </h4>
-            <p style={{ fontSize: 14, lineHeight: 1.9, color: '#1A1A2E', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {valor as string}
+            <p style={{ fontSize: 14, lineHeight: 1.9, color: '#1A1A2E', margin: 0 }}>
+              {(valor as string).split(/(?=Actividad \d+:)/g).map((bloque, bi) => (
+                <span key={bi}>
+                  {bi > 0 && <><br/><br/></>}
+                  {bloque}
+                </span>
+              ))}
             </p>
           </div>
             )
@@ -245,9 +251,12 @@ export default function VerPlaneacionPage() {
                 PDA: {rubrica.pda}
               </p>
             )}
-            <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, fontStyle: 'italic' }}>
-              {rubrica.indicador}
-            </p>
+            {rubrica.indicador && (
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Indicador de evaluación</p>
+                <p style={{ fontSize: 13, color: '#666', margin: 0, fontStyle: 'italic' }}>{rubrica.indicador}</p>
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
               <div style={{ background: '#EAF3DE', borderRadius: 8, padding: '12px 14px' }}>
                 <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nivel 3 — Logrado</p>
