@@ -570,7 +570,7 @@ export default function MiGrupoPage() {
               {/* 2B — Individual */}
               <div style={s.colRight}>
                 <p style={s.subTitle}>2.2 · Individual</p>
-                <p style={s.desc}>Evaluación por alumno. MÍA protege nombres y detecta NEE.</p>
+                <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NEE.</p>
                 {!evalCompleta ? (
                   <div>
                     <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
@@ -632,7 +632,7 @@ export default function MiGrupoPage() {
               {/* 3A — Directivo */}
               <div style={s.col}>
                 <p style={s.subTitle}>3.1 · Áreas de Oportunidad</p>
-                <p style={{ ...s.desc, textAlign: 'center' as const }}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
+                <p style={{ ...s.desc, textAlign: 'center' as const }}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
                 {!observacionesGuardadas ? (
                   <div>
                     <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={3}
@@ -667,7 +667,7 @@ export default function MiGrupoPage() {
               {/* 3B — PDAs jardín */}
               <div style={s.colRight}>
                 <p style={s.subTitle}>3.2 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
-                <p style={s.desc}>PDAs acordados por el colectivo este ciclo. El sistema los integrará con tu diagnóstico.</p>
+                <p style={s.desc}>PDAs acordados por el colectivo este ciclo.<br/>El sistema los integrará con tu diagnóstico.</p>
                 {!guardadoJardin ? (
                   <div>
                     <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
@@ -694,7 +694,7 @@ export default function MiGrupoPage() {
           <div style={s.card}>
             <p style={s.cardTitle}>4 · Mi estilo de narración</p>
             <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
-              Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo. MÍA aprenderá de ti para que tus planeaciones suenen a ti.
+              Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti.
             </p>
             {!estiloGuardado ? (
               <div>
