@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       ? calcularDiasHabiles(form.fecha_inicio, form.fecha_fin)
       : []
     const diasHabilesTexto = diasHabiles.length > 0
-      ? diasHabiles.map((d, i) => `Día ${i + 1} — ${d}`).join('\n')
+      ? `TOTAL DE DÍAS HÁBILES: ${diasHabiles.length}\n` + diasHabiles.map((d, i) => `Día ${i + 1} — ${d}`).join('\n') + `\nFIN DE LA LISTA. Solo existen ${diasHabiles.length} días hábiles en este proyecto.`
       : 'No se definieron fechas.'
 
     // Calcular distribución de días por momento
