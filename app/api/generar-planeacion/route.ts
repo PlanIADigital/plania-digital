@@ -227,6 +227,10 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
     })
 
     const content = message.content[0].type === 'text' ? message.content[0].text : ''
+    console.log('TOKENS USADOS:', JSON.stringify(message.usage))
+    console.log('STOP REASON:', message.stop_reason)
+    console.log('TOKENS USADOS:', message.usage)
+    console.log('STOP REASON:', message.stop_reason)
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const planeacion = JSON.parse(cleanContent)
 
