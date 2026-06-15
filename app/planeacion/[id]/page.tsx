@@ -156,7 +156,7 @@ export default function VerPlaneacionPage() {
 
           {planeacion.pda_literal && (
             <div style={{ background: '#EEEDF8', borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px' }}>PDA principal</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 2px' }}>Contenido principal</p>
               <p style={{ fontSize: 13, color: '#555', margin: '0 0 10px', textAlign: 'center' }}>{planeacion.pda_contenido}</p>
               <div style={{ height: 1, background: '#D8D6F0', margin: '0 0 10px' }} />
               <p style={{ fontSize: 13, color: '#1A1A2E', lineHeight: 1.7, margin: 0, fontStyle: 'italic', textAlign: 'center' }}>{planeacion.pda_literal}</p>
