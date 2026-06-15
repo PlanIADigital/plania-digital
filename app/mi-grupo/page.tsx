@@ -536,7 +536,7 @@ export default function MiGrupoPage() {
 
           {/* ── BLOQUE 2: DIAGNÓSTICO ── */}
           <div style={s.card}>
-            <p style={s.cardTitle}>2 · Diagnóstico</p>
+            <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
             <div style={s.cols}>
 
               {/* 2A — Grupal */}
@@ -632,7 +632,7 @@ export default function MiGrupoPage() {
               {/* 3A — Directivo */}
               <div style={s.col}>
                 <p style={s.subTitle}>3.1 · Recomendaciones del directivo</p>
-                <p style={s.desc}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
+                <p style={{ ...s.desc, textAlign: 'center' as const }}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
                 {!observacionesGuardadas ? (
                   <div>
                     <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} rows={3}
