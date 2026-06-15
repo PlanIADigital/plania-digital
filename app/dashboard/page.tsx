@@ -23,6 +23,7 @@ export default function DashboardPage() {
         .from('users').select('*')
         .eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
+      if (data?.is_super_admin) { router.push('/admin'); return }
       if (data?.role === 'directivo') { router.push('/directivo/dashboard'); return }
       setProfile(data)
       const { data: plans } = await supabase
