@@ -13,6 +13,31 @@ export async function POST(request: NextRequest) {
         ).join('\n\n')
       : 'No se definieron campos transversales.'
 
+    // Calcular días hábiles entre fecha_inicio y fecha_fin
+    function calcularDiasHabiles(inicio: string, fin: string): string[] {
+      const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+      const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+      const fechaInicio = new Date(inicio + 'T12:00:00')
+      const fechaFin = new Date(fin + 'T12:00:00')
+      const dias: string[] = []
+      const fecha = new Date(fechaInicio)
+      while (fecha <= fechaFin) {
+        const diaSemana = fecha.getDay()
+        if (diaSemana !== 0 && diaSemana !== 6) {
+          dias.push(`${diasSemana[diaSemana]} ${fecha.getDate()} de ${meses[fecha.getMonth()]}`)
+        }
+        fecha.setDate(fecha.getDate() + 1)
+      }
+      return dias
+    }
+
+    const diasHabiles = form.fecha_inicio && form.fecha_fin
+      ? calcularDiasHabiles(form.fecha_inicio, form.fecha_fin)
+      : []
+    const diasHabilesTexto = diasHabiles.length > 0
+      ? diasHabiles.map((d, i) => `Día ${i + 1} — ${d}`).join('\n')
+      : 'No se definieron fechas.'
+
     const recursosTexto = form.recursos_materiales
       ? `RECURSOS O MATERIALES ESPECÍFICOS INDICADOS POR LA DIRECTORA:\n${form.recursos_materiales}\n\nIMPORTANTE: Estos materiales DEBEN aparecer integrados naturalmente en al menos una actividad del Momento 3. No los menciones como lista — incorpóralos dentro del flujo narrativo de la actividad donde sean más pertinentes pedagógicamente.`
       : ''
@@ -32,7 +57,7 @@ R6 — ESTRUCTURA DE TRES MOMENTOS: Cada actividad tiene Apertura, Desarrollo y 
 R7 — INTENCIÓN PEDAGÓGICA ENTRE PARÉNTESIS: Al menos una vez por actividad, incluye el propósito pedagógico entre paréntesis con voz de maestra.
 R8 — EVALUACIÓN IMPLÍCITA: Cada actividad incluye al menos una acción observable que permita evaluar sin instrumento separado.
 R4-PDA — EL PDA COMO ACCIÓN EJECUTADA: Identifica el verbo de acción central del PDA. Ese verbo debe aparecer EJECUTADO en la narrativa en todos los momentos posibles. No como mención: como acción que los niños están realizando.
-R9 — DÍAS HÁBILES Y FECHAS REALES: Toda actividad o momento debe iniciar con su día y fecha real. Calcula los días hábiles del proyecto excluyendo sábados y domingos. Distribuye los momentos y actividades en esos días en orden cronológico. Formato obligatorio al inicio de cada momento o actividad: "Día N — [Día de la semana] [DD] de [mes]:" seguido del texto narrativo. Ejemplo: "Día 1 — Lunes 15 de junio: Los niños llegan al salón y...".
+R9 — DÍAS HÁBILES Y FECHAS REALES: El sistema te proporcionará la lista EXACTA de días hábiles del proyecto. Usa esa lista en orden estricto, un día por actividad o momento. NUNCA calcules fechas por tu cuenta. NUNCA saltes un día. NUNCA repitas un día. El formato obligatorio al inicio de cada momento o actividad es: "Día N — [día y fecha exactos de la lista]:" seguido del texto narrativo.
 
 TONO: Cálido, directo, concreto. Como cuando una maestra le cuenta a otra lo que va a hacer con su grupo. NUNCA suena a documento de la SEP ni a planeación genérica.
 
