@@ -41,7 +41,7 @@ export default function LoginPage() {
     const next = params.get('next')
 
     if (userData?.is_super_admin) {
-      router.push(next || '/admin')
+      window.location.href = next || '/admin'
     } else if (userData?.role === 'directivo') {
       router.push('/directivo/dashboard')
     } else {
