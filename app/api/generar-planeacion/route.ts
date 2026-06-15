@@ -32,6 +32,7 @@ R6 — ESTRUCTURA DE TRES MOMENTOS: Cada actividad tiene Apertura, Desarrollo y 
 R7 — INTENCIÓN PEDAGÓGICA ENTRE PARÉNTESIS: Al menos una vez por actividad, incluye el propósito pedagógico entre paréntesis con voz de maestra.
 R8 — EVALUACIÓN IMPLÍCITA: Cada actividad incluye al menos una acción observable que permita evaluar sin instrumento separado.
 R4-PDA — EL PDA COMO ACCIÓN EJECUTADA: Identifica el verbo de acción central del PDA. Ese verbo debe aparecer EJECUTADO en la narrativa en todos los momentos posibles. No como mención: como acción que los niños están realizando.
+R9 — DÍAS HÁBILES Y FECHAS REALES: Toda actividad o momento debe iniciar con su día y fecha real. Calcula los días hábiles del proyecto excluyendo sábados y domingos. Distribuye los momentos y actividades en esos días en orden cronológico. Formato obligatorio al inicio de cada momento o actividad: "Día N — [Día de la semana] [DD] de [mes]:" seguido del texto narrativo. Ejemplo: "Día 1 — Lunes 15 de junio: Los niños llegan al salón y...".
 
 TONO: Cálido, directo, concreto. Como cuando una maestra le cuenta a otra lo que va a hacer con su grupo. NUNCA suena a documento de la SEP ni a planeación genérica.
 
