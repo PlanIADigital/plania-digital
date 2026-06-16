@@ -2,57 +2,98 @@
 //  PlanIA Digital — Dashboard Super Admin
 //  app/admin/page.tsx
 // ============================================================
+'use client'
+import { useEffect, useState } from 'react'
+
 export default function AdminDashboard() {
+  const [calendarioOk, setCalendarioOk] = useState<boolean | null>(null)
+  const [usuarios, setUsuarios] = useState({ total: 0, educadoras: 0, directivos: 0, trials: 0 })
+
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const [calRes, usrRes] = await Promise.all([
+          fetch('/api/admin/calendario-estado'),
+          fetch('/api/admin/usuarios'),
+        ])
+        const calData = await calRes.json()
+        const usrData = await usrRes.json()
+        setCalendarioOk(calData.federal && calData.estatal)
+        const u = usrData.usuarios || []
+        setUsuarios({
+          total: u.length,
+          educadoras: u.filter((x: any) => ['educadora','educador'].includes(x.role)).length,
+          directivos: u.filter((x: any) => x.role === 'directivo').length,
+          trials: u.filter((x: any) => x.subscription_status === 'trial').length,
+        })
+      } catch {}
+    }
+    cargar()
+  }, [])
+
   return (
     <div>
-      <h1 className="text-lg font-medium text-gray-900 mb-1">Dashboard</h1>
-      <p className="text-sm text-gray-500 mb-6">Estado general de PlanIA al día de hoy</p>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Dashboard</h1>
+      <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>Estado general de PlanIA al día de hoy</p>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 mb-4">
-        <span className="text-amber-500 mt-0.5">⚠️</span>
-        <p className="text-sm text-gray-700">
-          <strong>Calendario SEP no cargado</strong> — el generador no puede excluir festivos ni sesiones CTE.{' '}
-          <a href="/admin/calendario" className="text-indigo-600 underline">Cargarlo ahora</a>
-        </p>
-      </div>
+      {/* Alerta calendario solo si no está cargado */}
+      {calendarioOk === false && (
+        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
+          <span>⚠️</span>
+          <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
+            <strong>Calendario SEP no cargado</strong> — el generador no puede excluir festivos ni sesiones CTE.{' '}
+            <a href="/admin/calendario" style={{ color: '#92400E', fontWeight: 600 }}>Cargarlo ahora</a>
+          </p>
+        </div>
+      )}
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { label: 'Usuarios activos', value: '0', color: 'text-indigo-700' },
-          { label: 'Planeaciones generadas', value: '0', color: 'text-gray-900' },
-          { label: 'Costo API este mes', value: '$0.00', color: 'text-green-600' },
-          { label: 'Alertas pendientes', value: '1', color: 'text-amber-600' },
-        ].map((kpi) => (
-          <div key={kpi.label} className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
-            <p className={`text-2xl font-medium ${kpi.color}`}>{kpi.value}</p>
+          { label: 'Usuarios activos', value: usuarios.total, color: '#3D3A8C' },
+          { label: 'Educadoras', value: usuarios.educadoras, color: '#111827' },
+          { label: 'Directivos', value: usuarios.directivos, color: '#111827' },
+          { label: 'Trial activos', value: usuarios.trials, color: '#D97706' },
+        ].map(k => (
+          <div key={k.label} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 6px' }}>{k.label}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: k.color, margin: 0 }}>{k.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+      {/* Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>📅</span>
-              <span className="text-sm font-medium">Calendario SEP</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Calendario SEP</span>
             </div>
-            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+            {calendarioOk === null ? (
+              <span style={{ fontSize: 11, color: '#9CA3AF' }}>Verificando...</span>
+            ) : calendarioOk ? (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#D1FAE5', color: '#065F46' }}>✅ Completo</span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>Pendiente</span>
+            )}
           </div>
-          <p className="text-xs text-gray-500 mb-3">Ciclo 2025–2026 sin cargar. Necesario para calcular días hábiles.</p>
-          <a href="/admin/calendario" className="text-xs text-indigo-600 font-medium">Ir a Calendario →</a>
+          <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
+            {calendarioOk ? 'Ciclo 2025–2026 cargado. Federal + Nuevo León.' : 'Ciclo 2025–2026 sin cargar. Necesario para calcular días hábiles.'}
+          </p>
+          <a href="/admin/calendario" style={{ fontSize: 12, fontWeight: 600, color: '#3D3A8C', textDecoration: 'none' }}>Ir a Calendario →</a>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+        <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>🤖</span>
-              <span className="text-sm font-medium">Modelos IA</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Modelos IA</span>
             </div>
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Al día</span>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#D1FAE5', color: '#065F46' }}>Al día</span>
           </div>
-          <p className="text-xs text-gray-500 mb-3">Sonnet 4.6 · Haiku 4.5 activos en Vercel.</p>
-          <a href="/admin/modelos" className="text-xs text-indigo-600 font-medium">Ver modelos →</a>
+          <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>Sonnet 4.6 · Haiku 4.5 activos en Vercel.</p>
+          <a href="/admin/modelos" style={{ fontSize: 12, fontWeight: 600, color: '#3D3A8C', textDecoration: 'none' }}>Ver modelos →</a>
         </div>
       </div>
     </div>

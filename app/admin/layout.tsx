@@ -137,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Footer */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid #F3F4F6' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <div style={{
               width: 32, height: 32, borderRadius: '50%',
               background: '#3D3A8C',
@@ -149,6 +149,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF' }}>Super Admin</p>
             </div>
           </div>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              window.location.href = '/auth/login'
+            }}
+            style={{
+              width: '100%', padding: '7px', fontSize: 12, fontWeight: 500,
+              color: '#6B7280', background: '#F9FAFB', border: '1px solid #E5E7EB',
+              borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+            }}
+          >
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 
