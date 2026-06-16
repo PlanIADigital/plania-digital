@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {group.items.map(item => {
                 const isActive = pathname === item.href
                 return (
-                  
+                  <a
                     key={item.href}
                     href={item.href}
                     style={{
