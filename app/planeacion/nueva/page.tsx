@@ -13,11 +13,7 @@ const CAMPOS = [
   'De lo Humano y lo Comunitario',
 ]
 
-const DURACIONES = [
-  { label: '2 semanas (10 días hábiles)', dias: 10 },
-  { label: '3 semanas (15 días hábiles)', dias: 15 },
-  { label: '4 semanas (20 días hábiles)', dias: 20 },
-]
+
 
 function getPasosProgreso(totalAlumnos: number) {
   return [
@@ -31,16 +27,19 @@ function getPasosProgreso(totalAlumnos: number) {
   ]
 }
 
-function calcFechaFin(inicio: string, diasHabiles: number): string {
-  if (!inicio) return ''
-  const d = new Date(inicio + 'T12:00:00')
-  let contados = 0
-  while (contados < diasHabiles) {
-    d.setDate(d.getDate() + 1)
-    const dia = d.getDay()
-    if (dia !== 0 && dia !== 6) contados++
+function contarDiasHabiles(inicio: string, fin: string): number {
+  if (!inicio || !fin) return 0
+  const start = new Date(inicio + 'T12:00:00')
+  const end = new Date(fin + 'T12:00:00')
+  if (end < start) return 0
+  let count = 0
+  const cur = new Date(start)
+  while (cur <= end) {
+    const dia = cur.getDay()
+    if (dia !== 0 && dia !== 6) count++
+    cur.setDate(cur.getDate() + 1)
   }
-  return d.toISOString().split('T')[0]
+  return count
 }
 
 interface PdaItem {
@@ -113,7 +112,6 @@ export default function NuevaPlaneacionPage() {
     situacion_problema: '',
     finalidad: '',
     recursos_materiales: '',
-    duracion_dias: 10,
     fecha_inicio: '',
     fecha_fin: '',
     metodologia: 'Proyectos',
@@ -244,11 +242,7 @@ export default function NuevaPlaneacionPage() {
     }))
   }
 
-  useEffect(() => {
-    if (form.fecha_inicio) {
-      setForm(prev => ({ ...prev, fecha_fin: calcFechaFin(form.fecha_inicio, prev.duracion_dias) }))
-    }
-  }, [form.fecha_inicio, form.duracion_dias])
+
 
   useEffect(() => {
     if (!generating) return
@@ -415,7 +409,7 @@ export default function NuevaPlaneacionPage() {
           transversal_3_activo: !!transversalesActivos[2],
           starts_on: form.fecha_inicio || null,
           ends_on: form.fecha_fin || null,
-          duration_days: form.duracion_dias,
+          duration_days: contarDiasHabiles(form.fecha_inicio, form.fecha_fin),
           grade: profile.grado || '2°',
           content_json: data.planeacion,
           eje_principal: ejePrincipal || null,
@@ -826,32 +820,33 @@ export default function NuevaPlaneacionPage() {
             )}
 
             <div style={{ marginBottom: 28 }}>
-              <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '6' : '5') : (transversales.length > 0 ? '5' : '4')} · Duración del proyecto</p>
-              <label style={s.label}>¿Cuánto durará el proyecto? *</label>
-              <select
-                value={form.duracion_dias}
-                onChange={e => update('duracion_dias', Number(e.target.value))}
-                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 20, background: 'white', cursor: 'pointer' } as React.CSSProperties}
-              >
-                {DURACIONES.map(d => (
-                  <option key={d.dias} value={d.dias}>{d.label}</option>
-                ))}
-              </select>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '6' : '5') : (transversales.length > 0 ? '5' : '4')} · Período de aplicación</p>
+              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
+                Elige la fecha en que inicias y la fecha en que terminas. El sistema calculará los días hábiles de aplicación.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
                 <div>
                   <label style={s.label}>Fecha de inicio *</label>
                   <input type="date" value={form.fecha_inicio} onChange={e => update('fecha_inicio', e.target.value)} style={s.input} />
                 </div>
                 <div>
-                  <label style={{ ...s.label, color: '#888' }}>Fecha fin (calculada)</label>
-                  <div>
-                  <input type="date" value={form.fecha_fin} readOnly style={{ ...s.input, background: '#F5F5F5', color: '#888', cursor: 'default', marginBottom: 4 }} />
-                  <p style={{ fontSize: 11, color: '#AAA', margin: 0, lineHeight: 1.4 }}>
-                    Fecha estimada sin días de CTE ni festivos. La educadora ajusta según su calendario escolar.
-                  </p>
-                </div>
+                  <label style={s.label}>Fecha de término *</label>
+                  <input type="date" value={form.fecha_fin} onChange={e => update('fecha_fin', e.target.value)} style={s.input} />
                 </div>
               </div>
+              {form.fecha_inicio && form.fecha_fin && contarDiasHabiles(form.fecha_inicio, form.fecha_fin) > 0 && (
+                <div style={{ background: '#E8F5F2', border: '1px solid #00A896', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>📅</span>
+                  <p style={{ fontSize: 13, color: '#065F46', margin: 0, fontWeight: 500 }}>
+                    Tu proyecto tendrá <strong>{contarDiasHabiles(form.fecha_inicio, form.fecha_fin)} días hábiles</strong> de aplicación.
+                  </p>
+                </div>
+              )}
+              {form.fecha_inicio && form.fecha_fin && contarDiasHabiles(form.fecha_inicio, form.fecha_fin) === 0 && (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px' }}>
+                  <p style={{ fontSize: 13, color: '#DC2626', margin: 0 }}>La fecha de término debe ser posterior a la fecha de inicio.</p>
+                </div>
+              )}
             </div>
 
             <button onClick={handleGenerar} disabled={generating || !hayPdasSeleccionados}
