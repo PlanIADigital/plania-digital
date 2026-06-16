@@ -1,15 +1,25 @@
-// ============================================================
-//  PlanIA Digital — Super Admin: Calendario SEP
-//  app/admin/calendario/page.tsx
-// ============================================================
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function CalendarioPage() {
   const [uploadingFederal, setUploadingFederal] = useState(false)
   const [uploadingEstatal, setUploadingEstatal] = useState(false)
   const [mensajeFederal, setMensajeFederal] = useState('')
   const [mensajeEstatal, setMensajeEstatal] = useState('')
+  const [federalCargado, setFederalCargado] = useState(false)
+  const [estatalCargado, setEstatalCargado] = useState(false)
+
+  useEffect(() => {
+    async function verificarEstado() {
+      try {
+        const res = await fetch('/api/admin/calendario-estado')
+        const data = await res.json()
+        setFederalCargado(data.federal || false)
+        setEstatalCargado(data.estatal || false)
+      } catch {}
+    }
+    verificarEstado()
+  }, [])
 
   async function handleUpload(tipo: 'federal' | 'estatal', file: File) {
     if (tipo === 'federal') setUploadingFederal(true)
@@ -27,8 +37,8 @@ export default function CalendarioPage() {
 
       const data = await res.json()
       if (data.ok) {
-        if (tipo === 'federal') setMensajeFederal('✅ Calendario federal cargado correctamente')
-        else setMensajeEstatal('✅ Calendario estatal cargado correctamente')
+        if (tipo === 'federal') { setMensajeFederal('✅ Calendario federal cargado correctamente'); setFederalCargado(true) }
+        else { setMensajeEstatal('✅ Calendario estatal cargado correctamente'); setEstatalCargado(true) }
       } else {
         if (tipo === 'federal') setMensajeFederal('❌ Error: ' + (data.error || 'inténtalo de nuevo'))
         else setMensajeEstatal('❌ Error: ' + (data.error || 'inténtalo de nuevo'))
@@ -42,102 +52,103 @@ export default function CalendarioPage() {
     else setUploadingEstatal(false)
   }
 
+  const Badge = ({ cargado }: { cargado: boolean }) => (
+    <span style={{
+      fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+      background: cargado ? '#D1FAE5' : '#FEF3C7',
+      color: cargado ? '#065F46' : '#92400E',
+    }}>
+      {cargado ? '✅ Cargado' : 'Pendiente'}
+    </span>
+  )
+
   return (
     <div>
-      <h1 className="text-lg font-medium text-gray-900 mb-1">Calendario SEP</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Calendario SEP</h1>
+      <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>
         Gestión del calendario escolar oficial. Define días hábiles, festivos y sesiones CTE para el generador de planeaciones.
       </p>
 
-      {/* Alerta pendiente */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 flex gap-3">
-        <span className="text-amber-500 mt-0.5">⚠️</span>
-        <p className="text-sm text-amber-800">
-          <strong>Ciclo 2025–2026 sin cargar.</strong> El generador no puede excluir festivos ni sesiones CTE del cálculo de días hábiles hasta que cargues el calendario.
-        </p>
-      </div>
-
-      {/* Cómo convertir PDF a JSON */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-base">💡</span>
-          <h2 className="text-sm font-medium text-indigo-900">Cómo convertir el PDF del calendario SEP a JSON</h2>
+      {/* Alerta solo si alguno está pendiente */}
+      {(!federalCargado || !estatalCargado) && (
+        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
+          <span style={{ color: '#D97706' }}>⚠️</span>
+          <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
+            <strong>Ciclo 2025–2026 incompleto.</strong> El generador no puede excluir festivos ni sesiones CTE hasta que ambos calendarios estén cargados.
+          </p>
         </div>
-        <ol className="space-y-2 text-xs text-indigo-800">
-          <li className="flex gap-2"><span className="font-bold w-4">1.</span> Descarga el PDF oficial del calendario desde educacionbasica.sep.gob.mx</li>
-          <li className="flex gap-2"><span className="font-bold w-4">2.</span> Abre un chat nuevo en Claude.ai y sube el PDF</li>
-          <li className="flex gap-2"><span className="font-bold w-4">3.</span> Pide: <em>"Extrae todas las fechas en formato JSON con esta estructura: {`{"ciclo":"2025-2026","inicio_clases":"YYYY-MM-DD","fin_clases":"YYYY-MM-DD","dias_inhabiles":[],"sesiones_cte":[]}`}"</em></li>
-          <li className="flex gap-2"><span className="font-bold w-4">4.</span> Copia el JSON, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
+      )}
+
+      {/* Ambos cargados */}
+      {federalCargado && estatalCargado && (
+        <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
+          <span>✅</span>
+          <p style={{ fontSize: 13, color: '#065F46', margin: 0 }}>
+            <strong>Ciclo 2025–2026 completo.</strong> Ambos calendarios están cargados. El generador puede calcular días hábiles correctamente.
+          </p>
+        </div>
+      )}
+
+      {/* Instrucciones */}
+      <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <span>💡</span>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#3730A3', margin: 0 }}>Cómo convertir el PDF del calendario SEP a JSON</h2>
+        </div>
+        <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8 }}>
+          <li>Descarga el PDF oficial desde educacionbasica.sep.gob.mx</li>
+          <li>Abre un chat nuevo en Claude.ai y sube el PDF</li>
+          <li>Pide: <em>"Extrae todas las fechas en formato JSON con ciclo, inicio_clases, fin_clases, dias_inhabiles y sesiones_cte"</em></li>
+          <li>Copia el JSON, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
         </ol>
-        <div className="mt-3 flex gap-2">
-          <a href="https://educacionbasica.sep.gob.mx" target="_blank"
-            className="text-xs font-medium text-indigo-700 underline">
-            Ir a SEP →
-          </a>
-          <span className="text-indigo-300">·</span>
-          <a href="https://claude.ai" target="_blank"
-            className="text-xs font-medium text-indigo-700 underline">
-            Abrir Claude.ai →
-          </a>
+        <div style={{ marginTop: 10, display: 'flex', gap: 12 }}>
+          <a href="https://educacionbasica.sep.gob.mx" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Ir a SEP →</a>
+          <a href="https://claude.ai" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Abrir Claude.ai →</a>
         </div>
       </div>
 
-      {/* Upload Federal */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-base">🇲🇽</span>
-          <h2 className="text-sm font-medium text-gray-900">Calendario SEP Federal</h2>
-          <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+      {/* Federal */}
+      <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🇲🇽</span>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Federal</h2>
+          </div>
+          <Badge cargado={federalCargado} />
         </div>
-        <p className="text-xs text-gray-400 mb-4">Aplica a todos los estados. Cargar al inicio de cada ciclo escolar.</p>
-        <label className="block border-2 border-dashed border-gray-200 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-300 transition-colors">
-          <span className="text-2xl block mb-2">📂</span>
-          <span className="text-sm text-gray-500">
+        <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Aplica a todos los estados. Cargar al inicio de cada ciclo escolar.</p>
+        <label style={{ display: 'block', border: '2px dashed #E5E7EB', borderRadius: 10, padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
+          <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>📂</span>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>
             {uploadingFederal ? 'Cargando...' : 'Selecciona el archivo JSON del calendario federal'}
           </span>
-          <span className="text-xs text-gray-300 block mt-1">Formato: .json · Máx. 1 MB</span>
-          <input
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) handleUpload('federal', file)
-            }}
-          />
+          <span style={{ fontSize: 11, color: '#D1D5DB', display: 'block', marginTop: 4 }}>Formato: .json · Máx. 1 MB</span>
+          <input type="file" accept=".json" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload('federal', f) }} />
         </label>
-        {mensajeFederal && (
-          <p className="mt-3 text-xs font-medium text-gray-700">{mensajeFederal}</p>
-        )}
+        {mensajeFederal && <p style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: '#374151' }}>{mensajeFederal}</p>}
       </div>
 
-      {/* Upload Estatal */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-base">🏛️</span>
-          <h2 className="text-sm font-medium text-gray-900">Calendario SEP Nuevo León</h2>
-          <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+      {/* Estatal */}
+      <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🏛️</span>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Nuevo León</h2>
+          </div>
+          <Badge cargado={estatalCargado} />
         </div>
-        <p className="text-xs text-gray-400 mb-4">Ajustes estatales de Nuevo León. Coordinación SENL / SEP NL.</p>
-        <label className="block border-2 border-dashed border-gray-200 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-300 transition-colors">
-          <span className="text-2xl block mb-2">📂</span>
-          <span className="text-sm text-gray-500">
+        <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Ajustes estatales de Nuevo León. Coordinación SENL / SEP NL.</p>
+        <label style={{ display: 'block', border: '2px dashed #E5E7EB', borderRadius: 10, padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
+          <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>📂</span>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>
             {uploadingEstatal ? 'Cargando...' : 'Selecciona el archivo JSON del calendario estatal'}
           </span>
-          <span className="text-xs text-gray-300 block mt-1">Formato: .json · Máx. 1 MB</span>
-          <input
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) handleUpload('estatal', file)
-            }}
-          />
+          <span style={{ fontSize: 11, color: '#D1D5DB', display: 'block', marginTop: 4 }}>Formato: .json · Máx. 1 MB</span>
+          <input type="file" accept=".json" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload('estatal', f) }} />
         </label>
-        {mensajeEstatal && (
-          <p className="mt-3 text-xs font-medium text-gray-700">{mensajeEstatal}</p>
-        )}
+        {mensajeEstatal && <p style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: '#374151' }}>{mensajeEstatal}</p>}
       </div>
     </div>
   )

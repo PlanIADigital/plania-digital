@@ -52,54 +52,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!verificado) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F4FF' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#3D3A8C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 22 }}>✦</div>
-          <p style={{ color: '#3D3A8C', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>PlanIA Digital</p>
-          <p style={{ color: '#9CA3AF', fontSize: 13 }}>Verificando acceso...</p>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#3D3A8C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', color: 'white', fontSize: 18 }}>✦</div>
+          <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 600, margin: '0 0 4px' }}>PlanIA Digital</p>
+          <p style={{ color: '#9CA3AF', fontSize: 12 }}>Verificando acceso...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F4FF', display: 'flex', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       {/* Sidebar */}
       <aside style={{
-        width: 230,
-        minWidth: 230,
+        width: 240,
+        minWidth: 240,
         minHeight: '100vh',
         background: 'white',
-        borderRight: '1px solid #E8E7F5',
+        borderRight: '1px solid #F3F4F6',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '2px 0 8px rgba(61,58,140,0.06)',
+        boxShadow: '1px 0 0 #F3F4F6',
       }}>
         {/* Logo */}
-        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #F0EFF8' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid #F3F4F6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 8,
-              background: 'linear-gradient(135deg, #3D3A8C, #5956B8)',
+              width: 36, height: 36, borderRadius: 10,
+              background: '#3D3A8C',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, color: 'white', fontWeight: 700, flexShrink: 0
+              color: '#00A896', fontSize: 16, fontWeight: 700, flexShrink: 0
             }}>✦</div>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1A1A2E', lineHeight: 1.2 }}>PlanIA Digital</p>
-              <p style={{ margin: 0, fontSize: 10, color: '#9CA3AF', lineHeight: 1.2 }}>Centro de Control</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111827' }}>PlanIA Digital</p>
+              <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF' }}>Centro de Control</p>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 10px' }}>
+        <nav style={{ flex: 1, padding: '8px 8px' }}>
           {navItems.map(group => (
             <div key={group.section} style={{ marginBottom: 4 }}>
               <p style={{
-                padding: '8px 10px 4px',
+                padding: '10px 8px 4px',
                 fontSize: 10,
-                fontWeight: 600,
-                color: '#C4C2D8',
+                fontWeight: 700,
+                color: '#9CA3AF',
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 margin: 0,
@@ -109,26 +109,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {group.items.map(item => {
                 const isActive = pathname === item.href
                 return (
-                  <a
+                  
                     key={item.href}
                     href={item.href}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
-                      padding: '9px 12px',
+                      padding: '8px 12px',
                       fontSize: 13,
-                      color: isActive ? '#3D3A8C' : '#6B7280',
+                      color: isActive ? '#3D3A8C' : '#4B5563',
                       background: isActive ? '#EEEDF8' : 'transparent',
                       borderRadius: 8,
-                      borderLeft: isActive ? '3px solid #3D3A8C' : '3px solid transparent',
                       textDecoration: 'none',
                       fontWeight: isActive ? 600 : 400,
-                      marginBottom: 2,
-                      transition: 'all 0.15s',
+                      marginBottom: 1,
                     }}
                   >
-                    <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+                    <span style={{ fontSize: 16 }}>{item.icon}</span>
                     {item.label}
                   </a>
                 )
@@ -138,30 +136,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Footer */}
-        <div style={{
-          margin: '0 10px 12px',
-          padding: '12px',
-          background: '#F8F7FF',
-          borderRadius: 10,
-          border: '1px solid #E8E7F5',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid #F3F4F6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 30, height: 30, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #3D3A8C, #00A896)',
+              width: 32, height: 32, borderRadius: '50%',
+              background: '#3D3A8C',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, color: 'white', fontWeight: 700, flexShrink: 0
+              fontSize: 13, color: 'white', fontWeight: 700, flexShrink: 0
             }}>A</div>
             <div>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: '#1A1A2E' }}>Alfredo</p>
-              <p style={{ margin: 0, fontSize: 10, color: '#9CA3AF' }}>Super Admin</p>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#111827' }}>Alfredo</p>
+              <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF' }}>Super Admin</p>
             </div>
           </div>
         </div>
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, padding: '28px 36px', overflowY: 'auto' }}>
+      <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
         {children}
       </main>
     </div>
