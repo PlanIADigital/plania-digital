@@ -218,7 +218,7 @@ CAMPOS FORMATIVOS TRANSVERSALES:
 ${transversalesTexto}
 ${recursosTexto ? '\n' + recursosTexto : ''}
 
-Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El momento de desarrollo principal debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.
+Genera EXACTAMENTE los momentos que corresponden a la modalidad ${form.metodologia} según la estructura indicada arriba. Usa los nombres exactos de cada momento como títulos en el JSON. Respeta el número de momentos de esa modalidad — no agregues ni quites. El momento de desarrollo principal debe incluir 3 actividades narrativas completas con apertura, desarrollo y cierre cada una. SEPARACION OBLIGATORIA: cada actividad DEBE comenzar con doble salto de linea antes de su titulo ACTIVIDAD N. Formato: \n\nACTIVIDAD 1 — nombre: texto...\n\nACTIVIDAD 2 — nombre: texto...\n\nACTIVIDAD 3 — nombre: texto... NUNCA pegues el inicio de una actividad al final de la anterior. Integra los campos transversales de manera natural en las actividades — no los menciones como lista, sino como acciones que enriquecen el proyecto.
 
 Además del contenido narrativo, agrega al final del JSON las siguientes claves de rúbricas:
 
