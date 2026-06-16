@@ -83,7 +83,7 @@ export default function CostosPage() {
           Revisar mensualmente y comparar contra los estimados de arriba.
         </p>
         
-          href="https://console.anthropic.com"
+<a href="https://console.anthropic.com"
           target="_blank"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg"
           style={{ background: '#3D3A8C' }}
