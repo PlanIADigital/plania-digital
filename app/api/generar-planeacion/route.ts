@@ -13,36 +13,53 @@ export async function POST(request: NextRequest) {
         ).join('\n\n')
       : 'No se definieron campos transversales.'
 
-    // Días inhábiles SEP Nuevo León 2025-2026 (CTE, festivos, recesos)
-    const DIAS_INHABILES_SEP = new Set([
-      // Septiembre 2025
-      '2025-09-08', '2025-09-15', '2025-09-26',
-      // Octubre 2025
-      '2025-10-31',
-      // Noviembre 2025
-      '2025-11-17', '2025-11-20',
-      '2025-11-24', '2025-11-25', '2025-11-26', '2025-11-27', '2025-11-28',
-      // Diciembre 2025 - vacaciones
-      '2025-12-25',
-      '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-25', '2025-12-26',
-      '2025-12-29', '2025-12-30', '2025-12-31',
-      // Enero 2026
-      '2026-01-01', '2026-01-02', '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09',
-      '2026-01-07', '2026-01-30',
-      // Febrero 2026
-      '2026-02-02', '2026-02-24', '2026-02-27',
-      // Marzo 2026
-      '2026-03-16', '2026-03-20',
-      '2026-03-23', '2026-03-24', '2026-03-25', '2026-03-26', '2026-03-27',
-      // Abril 2026
-      '2026-04-30',
-      // Mayo 2026
-      '2026-05-01', '2026-05-05', '2026-05-15', '2026-05-29',
-      // Junio 2026
-      '2026-06-26',
-      // Julio 2026
-      '2026-07-08',
-    ])
+    // Días inhábiles: leer desde Supabase (calendarios_sep)
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SECRET_KEY!
+    )
+    // Obtener calendario estatal NL (prioridad) o federal como fallback
+    const { data: calData } = await supabaseAdmin
+      .from('calendarios_sep')
+      .select('datos')
+      .eq('ciclo', '2025-2026')
+      .in('tipo', ['estatal', 'federal'])
+      .order('tipo', { ascending: true }) // estatal primero
+      .limit(1)
+      .single()
+
+    const calDatos = calData?.datos || {}
+    const diasInhabilesArray: string[] = []
+
+    // Extraer días inhábiles del calendario
+    if (calDatos.dias_inhabiles) {
+      for (const d of calDatos.dias_inhabiles) {
+        if (d.fecha) diasInhabilesArray.push(d.fecha)
+      }
+    }
+    // Extraer sesiones CTE
+    if (calDatos.sesiones_cte) {
+      for (const s of calDatos.sesiones_cte) {
+        if (s.fecha) diasInhabilesArray.push(s.fecha)
+        if (s.fechas) diasInhabilesArray.push(...s.fechas)
+      }
+    }
+    // Extraer períodos de vacaciones
+    if (calDatos.periodos_vacaciones) {
+      for (const v of calDatos.periodos_vacaciones) {
+        if (v.inicio && v.fin) {
+          const start = new Date(v.inicio + 'T12:00:00')
+          const end = new Date(v.fin + 'T12:00:00')
+          const cur = new Date(start)
+          while (cur <= end) {
+            diasInhabilesArray.push(cur.toISOString().split('T')[0])
+            cur.setDate(cur.getDate() + 1)
+          }
+        }
+      }
+    }
+    const DIAS_INHABILES_SEP = new Set(diasInhabilesArray)
 
     // Calcular días hábiles entre fecha_inicio y fecha_fin
     function calcularDiasHabiles(inicio: string, fin: string): string[] {
