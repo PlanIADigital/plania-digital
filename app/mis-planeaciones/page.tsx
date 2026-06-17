@@ -11,12 +11,7 @@ const supabase = createClient(
 
 function nombreCorto(nombre: string | null): string {
   if (!nombre) return ''
-  return nombre
-    .replace(/^Jardín de Niños Indígena\s*/i, '')
-    .replace(/^Jardín de Niños\s*/i, '')
-    .replace(/^Jardin de Niños\s*/i, '')
-    .replace(/^Centro de Educación Preescolar\s*/i, '')
-    .trim()
+  return nombre.replace(/^Jardín de Niños Indígena\s*/i, '').replace(/^Jardín de Niños\s*/i, '').replace(/^Jardin de Niños\s*/i, '').replace(/^Centro de Educación Preescolar\s*/i, '').trim()
 }
 
 const CAMPOS_COLORES: Record<string, { bg: string; color: string }> = {
@@ -26,12 +21,17 @@ const CAMPOS_COLORES: Record<string, { bg: string; color: string }> = {
   'De lo Humano y lo Comunitario': { bg: '#EDE9FE', color: '#7C3AED' },
 }
 
+type SortKey = 'project_name' | 'pda_campo' | 'eje_principal' | 'starts_on'
+type SortDir = 'asc' | 'desc'
+
 export default function MisPlaneacionesPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [planeaciones, setPlaneaciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<'todas' | 'active' | 'closed'>('todas')
+  const [sortKey, setSortKey] = useState<SortKey>('starts_on')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   useEffect(() => {
     async function load() {
@@ -42,7 +42,7 @@ export default function MisPlaneacionesPage() {
       setProfile(data)
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, situacion_problema, finalidad, starts_on, ends_on, pda_campo, pda_contenido, pda_literal, eje_principal, status, created_at')
+        .select('id, project_name, finalidad, starts_on, ends_on, pda_campo, eje_principal, status, created_at')
         .eq('user_id', data.id)
         .order('created_at', { ascending: false })
       setPlaneaciones(plans || [])
@@ -51,12 +51,27 @@ export default function MisPlaneacionesPage() {
     load()
   }, [])
 
-  const filtradas = planeaciones.filter(p => {
-    if (filtro === 'todas') return true
-    if (filtro === 'active') return p.status === 'active'
-    if (filtro === 'closed') return p.status !== 'active'
-    return true
-  })
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+  }
+
+  const filtradas = planeaciones
+    .filter(p => {
+      if (filtro === 'active') return p.status === 'active'
+      if (filtro === 'closed') return p.status !== 'active'
+      return true
+    })
+    .sort((a, b) => {
+      const va = a[sortKey] || ''
+      const vb = b[sortKey] || ''
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <span style={{ color: '#CCC', marginLeft: 4 }}>↕</span>
+    return <span style={{ color: '#3D3A8C', marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+  }
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -68,11 +83,12 @@ export default function MisPlaneacionesPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '32px 40px 60px' }}>
 
+        {/* Encabezado */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Planeaciones</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>MIS PLANEACIONES</h1>
           <p style={{ fontSize: 12, color: '#888', margin: 0, textAlign: 'center' }}>
             {profile.school_name && <>{nombreCorto(profile.school_name)} · </>}
-            CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026
+            CCT {profile.cct_primary} · {profile.grado || '2do'} Grado · Ciclo 2025–2026
           </p>
         </div>
 
@@ -81,10 +97,11 @@ export default function MisPlaneacionesPage() {
           <div style={{ display: 'flex', gap: 8 }}>
             {(['todas', 'active', 'closed'] as const).map(f => {
               const labels = { todas: 'Todas', active: 'Activas', closed: 'Cerradas' }
+              const count = f === 'todas' ? planeaciones.length : f === 'active' ? planeaciones.filter(p => p.status === 'active').length : planeaciones.filter(p => p.status !== 'active').length
               return (
                 <button key={f} onClick={() => setFiltro(f)}
                   style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: filtro === f ? 700 : 400, cursor: 'pointer', border: `1.5px solid ${filtro === f ? '#3D3A8C' : '#E0DFF5'}`, background: filtro === f ? '#EEEDF8' : 'white', color: filtro === f ? '#3D3A8C' : '#888' }}>
-                  {labels[f]} {f === 'todas' ? `(${planeaciones.length})` : f === 'active' ? `(${planeaciones.filter(p => p.status === 'active').length})` : `(${planeaciones.filter(p => p.status !== 'active').length})`}
+                  {labels[f]} ({count})
                 </button>
               )
             })}
@@ -107,51 +124,74 @@ export default function MisPlaneacionesPage() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtradas.map(p => {
-              const colores = CAMPOS_COLORES[p.pda_campo] || { bg: '#F0EFF8', color: '#3D3A8C' }
-              return (
-                <div key={p.id} style={{ background: 'white', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', border: `1px solid ${p.status === 'active' ? '#E0DFF5' : '#F0EFF8'}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                        <p style={{ margin: 0, fontWeight: 700, color: '#1A1A2E', fontSize: 15 }}>{p.project_name}</p>
-                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600, flexShrink: 0 }}>
-                          {p.status === 'active' ? 'Activa' : 'Cerrada'}
+          <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F8F7FF', borderBottom: '2px solid #EEEDF8' }}>
+                  {[
+                    { label: 'Nombre del Proyecto', key: 'project_name' as SortKey, width: '28%' },
+                    { label: 'Finalidad', key: null, width: '25%' },
+                    { label: 'Campo Formativo', key: 'pda_campo' as SortKey, width: '18%' },
+                    { label: 'Eje Articulador', key: 'eje_principal' as SortKey, width: '15%' },
+                    { label: 'Período', key: 'starts_on' as SortKey, width: '10%' },
+                    { label: '', key: null, width: '4%' },
+                  ].map((col, i) => (
+                    <th key={i} onClick={() => col.key && handleSort(col.key)}
+                      style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', width: col.width, cursor: col.key ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}>
+                      {col.label}{col.key && <SortIcon col={col.key} />}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtradas.map((p, idx) => {
+                  const colores = CAMPOS_COLORES[p.pda_campo] || { bg: '#F0EFF8', color: '#3D3A8C' }
+                  return (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #F0EFF8', background: idx % 2 === 0 ? 'white' : '#FAFAFE' }}>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{p.project_name}</span>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600, flexShrink: 0 }}>
+                            {p.status === 'active' ? 'Activa' : 'Cerrada'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        <span style={{ fontSize: 12, color: '#555', lineHeight: 1.4 }}>
+                          {p.finalidad ? `${p.finalidad.substring(0, 80)}${p.finalidad.length > 80 ? '...' : ''}` : '—'}
                         </span>
-                      </div>
-                      {p.finalidad && (
-                        <p style={{ margin: '0 0 10px', color: '#555', fontSize: 13, lineHeight: 1.5 }}>
-                          {p.finalidad.substring(0, 100)}{p.finalidad.length > 100 ? '...' : ''}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {p.pda_campo && (
-                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: colores.bg, color: colores.color }}>
+                      </td>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        {p.pda_campo ? (
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: colores.bg, color: colores.color, whiteSpace: 'nowrap' }}>
                             {p.pda_campo}
                           </span>
-                        )}
-                        {p.eje_principal && (
-                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 500, background: '#F0FFF8', color: '#059669', border: '1px solid #6EE7B7' }}>
-                            🔗 {p.eje_principal}
+                        ) : <span style={{ color: '#CCC' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        {p.eje_principal ? (
+                          <span style={{ fontSize: 11, color: '#059669', fontWeight: 500 }}>{p.eje_principal}</span>
+                        ) : <span style={{ color: '#CCC' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        {p.starts_on ? (
+                          <span style={{ fontSize: 11, color: '#888' }}>
+                            {new Date(p.starts_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                            {p.ends_on && <><br />{new Date(p.ends_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</>}
                           </span>
-                        )}
-                        {p.starts_on && (
-                          <span style={{ color: '#aaa', fontSize: 11 }}>
-                            📅 {new Date(p.starts_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                            {p.ends_on && ` → ${new Date(p.ends_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button onClick={() => router.push(`/planeacion/${p.id}`)}
-                      style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      Ver →
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+                        ) : <span style={{ color: '#CCC' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
+                        <button onClick={() => router.push(`/planeacion/${p.id}`)}
+                          style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          Ver →
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
         <div style={{ height: 40 }} />
