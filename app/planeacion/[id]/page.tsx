@@ -67,7 +67,7 @@ export default function VerPlaneacionPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F0F4FF', display: 'flex' }}>
-      {profile && <Sidebar profile={profile} />}
+      {profile && <Sidebar profile={profile}>
       <main style={{ flex: 1, padding: '32px 40px', maxWidth: 900, margin: '0 auto' }}>
 
         {/* Encabezado */}
@@ -189,6 +189,7 @@ export default function VerPlaneacionPage() {
         )}
 
       </main>
+      </Sidebar>}
     </div>
   )
 }
