@@ -44,7 +44,7 @@ export default function VerPlaneacionPage() {
     </div>
   )
 
-  const content = planeacion?.content || {}
+  const content = planeacion?.content_json || planeacion?.content || {}
   const dias: any[] = content.dias || []
   const diasEspeciales: any[] = content.dias_especiales || []
   const rubrica = content.rubrica || null
