@@ -85,7 +85,7 @@ export default function ConfiguracionPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '32px 40px' }}>
+      <div style={{ maxWidth: 700, margin: '40px auto', padding: '0 32px' }}>
 
         <h2 style={{ color: '#3D3A8C', marginBottom: 24, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Configuración</h2>
 
