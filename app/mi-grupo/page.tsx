@@ -401,11 +401,11 @@ export default function MiGrupoPage() {
         <div style={s.page}>
 
           {/* ── ENCABEZADO ── */}
-          <div style={s.card}>
-            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi grupo</h2>
-            <p style={{ color: '#888', fontSize: 12, marginBottom: 16, marginTop: 0, textAlign: 'center' }}>
-              {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-              <strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong>Grupo:</strong> {profile.grado || '2°'} A
+          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center' }}>
+            <h2 style={{ color: 'white', margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
+            <p style={{ color: 'rgba(255,255,255,0.75)', margin: '0 0 16px', fontSize: 13 }}>
+              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong> {profile.grado || '2°'} A
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F4F3FB', borderRadius: 8, padding: '10px 14px', justifyContent: 'center' }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', flexShrink: 0 }}>Cantidad de alumnos:</label>

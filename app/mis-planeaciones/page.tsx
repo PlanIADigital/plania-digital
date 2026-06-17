@@ -84,11 +84,11 @@ export default function MisPlaneacionesPage() {
       <div style={{ padding: '32px 40px 60px' }}>
 
         {/* Encabezado */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>MIS PLANEACIONES</h1>
-          <p style={{ fontSize: 12, color: '#888', margin: 0, textAlign: 'center' }}>
-            {profile.school_name && <>{nombreCorto(profile.school_name)} · </>}
-            CCT {profile.cct_primary} · {profile.grado || '2do'} Grado · Ciclo 2025–2026
+        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
+          <h1 style={{ color: 'white', margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MIS PLANEACIONES</h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13 }}>
+            {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>{nombreCorto(profile.school_name)}</strong> · </>}
+            <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT</strong> {profile.cct_primary} · {profile.grado || '2do'} Grado · Ciclo 2025–2026
           </p>
         </div>
 

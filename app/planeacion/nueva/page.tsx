@@ -507,10 +507,10 @@ export default function NuevaPlaneacionPage() {
         )}
 
         {!generating && !result && (
-          <div style={{ background: 'white', borderRadius: 14, padding: '32px 24px', boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
-            <h2 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nueva Planeación</h2>
-            <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0, textAlign: 'center' }}>
-              {profile.school_name && <><strong>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong>CCT:</strong> {profile.cct_primary} · <strong>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
+          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
+            <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, textAlign: 'center', letterSpacing: '0.05em' }}>NUEVA PLANEACIÓN</h2>
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginBottom: 0, marginTop: 0, textAlign: 'center' }}>
+              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
             </p>
 
             <div style={s.section}>
