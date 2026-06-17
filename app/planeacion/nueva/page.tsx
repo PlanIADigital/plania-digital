@@ -514,7 +514,7 @@ export default function NuevaPlaneacionPage() {
             </p>
           </div>
 
-            <div style={s.section}>
+          <div style={s.section}>
               <p style={s.sectionTitle}>1 · Datos del proyecto</p>
               <label style={s.label}>Nombre del proyecto *</label>
               <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
