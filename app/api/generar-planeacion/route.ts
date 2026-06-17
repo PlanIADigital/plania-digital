@@ -120,7 +120,7 @@ R6 — ESTRUCTURA DE TRES MOMENTOS: Cada actividad tiene Apertura, Desarrollo y 
 R7 — INTENCIÓN PEDAGÓGICA ENTRE PARÉNTESIS: Al menos una vez por actividad, incluye el propósito pedagógico entre paréntesis con voz de maestra.
 R8 — EVALUACIÓN IMPLÍCITA: Cada actividad incluye al menos una acción observable que permita evaluar sin instrumento separado.
 R4-PDA — EL PDA COMO ACCIÓN EJECUTADA: Identifica el verbo de acción central del PDA. Ese verbo debe aparecer EJECUTADO en la narrativa en todos los momentos posibles. No como mención: como acción que los niños están realizando.
-R9 — ETIQUETAS DE ESTRUCTURA: Para que el sistema pueda inyectar fechas correctamente, usa estas etiquetas exactas al inicio de cada bloque. Para momentos de apertura/cierre (un solo día): escribe "[MOMENTO]" al inicio. Para el momento de desarrollo principal, cada actividad debe iniciar con "[ACT]". NUNCA escribas fechas ni "Día N" — el sistema los inyecta automáticamente.
+R9 — ETIQUETAS DE ESTRUCTURA: Para que el sistema pueda inyectar fechas correctamente, usa estas etiquetas exactas al inicio de cada bloque. Para momentos de apertura/cierre (un solo día): escribe "|||MOMENTO|||" al inicio. Para el momento de desarrollo principal, cada actividad debe iniciar con "|||ACT|||". NUNCA escribas fechas ni "Día N" — el sistema los inyecta automáticamente.
 
 TONO: Cálido, directo, concreto. Como cuando una maestra le cuenta a otra lo que va a hacer con su grupo. NUNCA suena a documento de la SEP ni a planeación genérica.
 
@@ -288,7 +288,7 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
       if (!planeacion[momento]) continue
       if (momento === momentoDesarrollo) {
         const texto = planeacion[momento]
-        const partes = texto.split(/\[ACT\]/).map((p: string) => p.trim()).filter((p: string) => p.length > 20)
+        const partes = texto.split('|||ACT|||').map((p: string) => p.trim()).filter((p: string) => p.length > 20)
         const diasPorActividad = Math.floor(diasDesarrollo / partes.length)
         const diasExtra = diasDesarrollo % partes.length
         const conFechas = partes.map((parte: string, i: number) => {
@@ -299,7 +299,7 @@ REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben der
               const fecha = `Día ${diaIdx + 1} — ${diasHabiles[diaIdx]}:`
               diaIdx++
               if (d === 0) {
-                const textoLimpio = parte.replace(/^\[MOMENTO\]\s*/g, '').trim()
+                const textoLimpio = parte.replace(/^\|\|\|MOMENTO\|\|\|\s*/g, '').trim()
                 resultado += fecha + ' ' + textoLimpio
               } else {
                 resultado += `
@@ -315,7 +315,7 @@ Día ${diaIdx} — ${diasHabiles[diaIdx - 1]}: (continuación)`
         if (diaIdx < diasHabiles.length) {
           const fecha = `Día ${diaIdx + 1} — ${diasHabiles[diaIdx]}:`
           diaIdx++
-          const textoLimpio = planeacion[momento].replace(/^\[MOMENTO\]\s*/g, '').trim()
+          const textoLimpio = planeacion[momento].replace(/^\|\|\|MOMENTO\|\|\|\s*/g, '').trim()
           planeacion[momento] = fecha + ' ' + textoLimpio
         }
       }
