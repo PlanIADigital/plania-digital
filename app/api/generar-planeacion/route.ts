@@ -100,11 +100,7 @@ export async function POST(request: NextRequest) {
       'Centros de interés': 3,
       'Unidad didáctica': 6,
     }
-    const totalMomentos = momentosModalidad[form.metodologia] || 5
-    const diasDesarrollo = Math.max(1, totalDias - (totalMomentos - 1))
-    const distribucionDias = `El proyecto tiene ${totalDias} días hábiles totales. Distribución OBLIGATORIA:
-- Momentos de apertura y cierre (todos excepto el de desarrollo): 1 día cada uno = ${totalMomentos - 1} días
-- Momento de desarrollo principal (¡A trabajar! / Desarrollo / Exploración): ${diasDesarrollo} días = ${diasDesarrollo} actividades, UNA por día`
+
     const recursosTexto = form.recursos_materiales
       ? `RECURSOS O MATERIALES ESPECÍFICOS INDICADOS POR LA DIRECTORA:\n${form.recursos_materiales}\n\nIMPORTANTE: Estos materiales DEBEN aparecer integrados naturalmente en al menos una actividad del Momento 3. No los menciones como lista — incorpóralos dentro del flujo narrativo de la actividad donde sean más pertinentes pedagógicamente.`
       : ''
