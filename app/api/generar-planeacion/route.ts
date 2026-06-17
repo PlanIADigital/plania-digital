@@ -314,9 +314,7 @@ Día ${diaIdx} — ${diasHabiles[diaIdx - 1]}: (continuación)`
           }
           return resultado
         })
-        planeacion[momento] = conFechas.join('
-
-')
+        planeacion[momento] = conFechas.join('\n\n')
       } else {
         if (diaIdx < diasHabiles.length) {
           const fecha = `Día ${diaIdx + 1} — ${diasHabiles[diaIdx]}:`
