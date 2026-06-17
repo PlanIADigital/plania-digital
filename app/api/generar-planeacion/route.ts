@@ -124,7 +124,7 @@ R6 — ESTRUCTURA DE TRES MOMENTOS: Cada actividad tiene Apertura, Desarrollo y 
 R7 — INTENCIÓN PEDAGÓGICA ENTRE PARÉNTESIS: Al menos una vez por actividad, incluye el propósito pedagógico entre paréntesis con voz de maestra.
 R8 — EVALUACIÓN IMPLÍCITA: Cada actividad incluye al menos una acción observable que permita evaluar sin instrumento separado.
 R4-PDA — EL PDA COMO ACCIÓN EJECUTADA: Identifica el verbo de acción central del PDA. Ese verbo debe aparecer EJECUTADO en la narrativa en todos los momentos posibles. No como mención: como acción que los niños están realizando.
-R9 — DÍAS HÁBILES Y FECHAS REALES: El sistema te proporcionará la lista EXACTA de días hábiles del proyecto. Usa esa lista en orden estricto, un día por actividad o momento. NUNCA calcules fechas por tu cuenta. NUNCA saltes un día. NUNCA repitas un día. El formato obligatorio al inicio de cada momento o actividad es: "Día N — [día y fecha exactos de la lista]:" seguido del texto narrativo.
+R9 — ETIQUETAS DE ESTRUCTURA: Para que el sistema pueda inyectar fechas correctamente, usa estas etiquetas exactas al inicio de cada bloque. Para momentos de apertura/cierre (un solo día): escribe "[MOMENTO]" al inicio. Para el momento de desarrollo principal, cada actividad debe iniciar con "[ACT]". NUNCA escribas fechas ni "Día N" — el sistema los inyecta automáticamente.
 
 TONO: Cálido, directo, concreto. Como cuando una maestra le cuenta a otra lo que va a hacer con su grupo. NUNCA suena a documento de la SEP ni a planeación genérica.
 
@@ -253,11 +253,7 @@ Formato para cada transversal:
 }
 
 REGLA R4-PDA PARA TODAS LAS RÚBRICAS: El indicador y los tres niveles deben derivarse EXCLUSIVAMENTE de lo que los alumnos hicieron en las actividades narrativas. Nunca evalúes desde el PDA abstracto — evalúa desde las acciones concretas que aparecen en el texto generado.
-
-LISTA OFICIAL DE DÍAS HÁBILES DEL PROYECTO — USA EXACTAMENTE ESTOS, EN ESTE ORDEN:
-${diasHabilesTexto}
-
-INSTRUCCIÓN CRÍTICA: Usa esta lista en orden estricto. Día 1 es el primero de la lista, Día 2 el segundo, etc. NUNCA inventes fechas. NUNCA calcules por tu cuenta. NUNCA repitas ni saltes un día de esta lista.`
+`
 
     const message = await client.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6',
@@ -270,9 +266,66 @@ INSTRUCCIÓN CRÍTICA: Usa esta lista en orden estricto. Día 1 es el primero de
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim()
     const planeacion = JSON.parse(cleanContent)
 
-    // Las fechas las maneja el agente directamente via R9 y diasHabilesTexto en el prompt
+    // Inyectar fechas del sistema de forma controlada
+    const MOMENTOS_DESARROLLO: Record<string, string> = {
+      'Proyectos': 'a_trabajar',
+      'ABJ': 'desarrollo_de_las_actividades',
+      'Taller crítico': 'puesta_en_marcha',
+      'Rincones': 'exploracion_de_los_rincones',
+      'Centros de interés': 'identificacion_e_integracion',
+      'Unidad didáctica': 'exploracion_y_descubrimiento',
+    }
+    const ORDEN_MOMENTOS: Record<string, string[]> = {
+      'Proyectos': ['situacion_inicial', 'organizacion_de_las_acciones', 'a_trabajar', 'comunicamos_nuestros_logros', 'reflexion_sobre_el_aprendizaje'],
+      'ABJ': ['planteamiento_del_juego', 'desarrollo_de_las_actividades', 'compartimos_la_experiencia', 'comunidad_de_juego'],
+      'Taller crítico': ['situacion_inicial', 'puesta_en_marcha', 'valoramos_lo_aprendido', 'reflexion'],
+      'Rincones': ['asamblea_inicial_y_planeacion', 'exploracion_de_los_rincones', 'compartimos_lo_aprendido', 'reflexion_sobre_el_aprendizaje'],
+      'Centros de interés': ['contacto_con_la_realidad', 'identificacion_e_integracion', 'expresion'],
+      'Unidad didáctica': ['lectura_de_la_realidad', 'identificacion_de_la_trama_y_complejidad', 'planificacion_y_organizacion', 'exploracion_y_descubrimiento', 'participacion_activa_y_horizontal', 'valoracion_de_la_experiencia'],
+    }
+    const momentoDesarrollo = MOMENTOS_DESARROLLO[form.metodologia] || 'a_trabajar'
+    const ordenMomentos = ORDEN_MOMENTOS[form.metodologia] || ORDEN_MOMENTOS['Proyectos']
+    const totalMomentosFijos = ordenMomentos.length - 1
+    const diasDesarrollo = Math.max(1, diasHabiles.length - totalMomentosFijos)
+    let diaIdx = 0
+    for (const momento of ordenMomentos) {
+      if (!planeacion[momento]) continue
+      if (momento === momentoDesarrollo) {
+        const texto = planeacion[momento]
+        const partes = texto.split(/\[ACT\]/).map((p: string) => p.trim()).filter((p: string) => p.length > 20)
+        const diasPorActividad = Math.floor(diasDesarrollo / partes.length)
+        const diasExtra = diasDesarrollo % partes.length
+        const conFechas = partes.map((parte: string, i: number) => {
+          const diasEstaActividad = diasPorActividad + (i < diasExtra ? 1 : 0)
+          let resultado = ''
+          for (let d = 0; d < diasEstaActividad; d++) {
+            if (diaIdx < diasHabiles.length) {
+              const fecha = `Día ${diaIdx + 1} — ${diasHabiles[diaIdx]}:`
+              diaIdx++
+              if (d === 0) {
+                const textoLimpio = parte.replace(/^\[MOMENTO\]\s*/g, '').trim()
+                resultado += fecha + ' ' + textoLimpio
+              } else {
+                resultado += `
 
+Día ${diaIdx} — ${diasHabiles[diaIdx - 1]}: (continuación)`
+              }
+            }
+          }
+          return resultado
+        })
+        planeacion[momento] = conFechas.join('
 
+')
+      } else {
+        if (diaIdx < diasHabiles.length) {
+          const fecha = `Día ${diaIdx + 1} — ${diasHabiles[diaIdx]}:`
+          diaIdx++
+          const textoLimpio = planeacion[momento].replace(/^\[MOMENTO\]\s*/g, '').trim()
+          planeacion[momento] = fecha + ' ' + textoLimpio
+        }
+      }
+    }
     return NextResponse.json({ planeacion })
 
   } catch (error: unknown) {
