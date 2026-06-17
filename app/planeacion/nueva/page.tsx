@@ -453,13 +453,13 @@ export default function NuevaPlaneacionPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 16px' }}>
+      <div style={{ padding: '0 32px' }}>
 
         {generating && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)', marginBottom: 24 }}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>✨</div>
-              <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 18 }}>Creando tu planeación</h3>
+              <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 18 }}>CREANDO TU PLANEACIÓN</h3>
               <p style={{ color: '#666', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
                 Diseñada para <strong>{gradoGrupo || '2°'}</strong>{totalAlumnos ? <> &middot; <strong>{totalAlumnos} alumnos</strong></> : null}
               </p>

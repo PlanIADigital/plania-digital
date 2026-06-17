@@ -77,7 +77,7 @@ export default function DashboardPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 800, margin: '40px auto', padding: '0 32px' }}>
+      <div style={{ padding: '32px 40px' }}>
 
         {/* Bienvenida */}
         <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>

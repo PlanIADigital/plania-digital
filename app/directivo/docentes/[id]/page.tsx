@@ -104,7 +104,7 @@ export default function DocenteDetallePage() {
 
   return (
     <SidebarDirectivo profile={profile}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 16px 60px' }}>
+      <div style={{ padding: '32px 40px 60px' }}>
 
         {/* Volver */}
         <button onClick={() => router.push('/directivo/dashboard')}

@@ -113,7 +113,7 @@ export default function DirectivoDashboardPage() {
 
   return (
     <SidebarDirectivo profile={profile}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px 60px' }}>
+      <div style={{ padding: '32px 40px 60px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>Panel institucional</h1>
           <p style={{ fontSize: 12, color: '#888', margin: 0 }}>

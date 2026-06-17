@@ -369,7 +369,7 @@ export default function MiGrupoPage() {
   }
 
   const s = {
-    page: { maxWidth: 680, margin: '40px auto', padding: '0 16px' } as React.CSSProperties,
+    page: { padding: '32px 40px' } as React.CSSProperties,
     card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
     cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px', textAlign: 'center' as const } as React.CSSProperties,
     cols: { display: 'flex', gap: 0, flexWrap: 'wrap' as const } as React.CSSProperties,

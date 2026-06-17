@@ -66,7 +66,7 @@ export default function MisPlaneacionesPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 60px' }}>
+      <div style={{ padding: '32px 40px 60px' }}>
 
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mis Planeaciones</h1>

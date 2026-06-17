@@ -198,7 +198,7 @@ export default function MiAvancePage() {
 
   if (totalPlanes === 0) return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 640, margin: '40px auto', padding: '0 16px' }}>
+      <div style={{ padding: '32px 40px' }}>
         <div style={{ background: 'white', borderRadius: 16, padding: '48px 32px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', textAlign: 'center' }}>
           <div style={{ fontSize: 52, marginBottom: 20 }}>🗺️</div>
           <h2 style={{ color: '#3D3A8C', fontSize: 20, fontWeight: 700, marginTop: 0, marginBottom: 12 }}>Tu centro de control está listo para crecer</h2>
@@ -222,7 +222,7 @@ export default function MiAvancePage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 60px' }}>
+      <div style={{ padding: '32px 40px 60px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#3D3A8C', margin: '0 0 4px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Centro de Control Pedagógico</h1>
           <p style={{ fontSize: 12, color: '#888', margin: 0, textAlign: 'center' }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
