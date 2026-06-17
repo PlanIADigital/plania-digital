@@ -512,6 +512,7 @@ export default function NuevaPlaneacionPage() {
             <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginBottom: 0, marginTop: 0, textAlign: 'center' }}>
               {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}<strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
             </p>
+          </div>
 
             <div style={s.section}>
               <p style={s.sectionTitle}>1 · Datos del proyecto</p>
