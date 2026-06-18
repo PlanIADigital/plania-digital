@@ -62,10 +62,10 @@ export default function DashboardPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '0 40px' }}>
+      <div style={{ padding: '0 32px' }}>
 
         {/* FILA 1 — Saludo completo */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center', minHeight: 88 }}>
+        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center', minHeight: 100 }}>
           <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, letterSpacing: '0.02em' }}>
             ¡HOLA, {profile?.full_name?.toUpperCase()}! 👋
           </h2>

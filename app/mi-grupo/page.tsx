@@ -398,10 +398,10 @@ export default function MiGrupoPage() {
       {analizando ? (
         <PantallaAnimacion grado={profile.grado || '2°'} totalAlumnos={totalAlumnos} cct={profile.cct_primary || ''} />
       ) : (
-        <div style={s.page}>
+        <div style={{ padding: '0 32px' }}>
 
           {/* ENCABEZADO */}
-          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center', minHeight: 88 }}>
+          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center', minHeight: 100 }}>
             <h2 style={{ color: 'white', margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
             <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' as const }}>
               {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong>&nbsp;{nombreCorto(profile.school_name)}&nbsp;·&nbsp;</>}
