@@ -505,9 +505,8 @@ export default function NuevaPlaneacionPage() {
             </p>
           </div>
         )}
-        {!generating && !result && (
+        {!generating && !result ? (
           <>
-
           <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
             <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, textAlign: 'center', letterSpacing: '0.05em' }}>NUEVA PLANEACIÓN</h2>
             <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginBottom: 0, marginTop: 0, textAlign: 'center' }}>
@@ -858,8 +857,7 @@ export default function NuevaPlaneacionPage() {
           </div>
 
           </>
-        )}
-
+        ) : null}
         {result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>Planeación generada</h3>
