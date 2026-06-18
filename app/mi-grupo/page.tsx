@@ -605,7 +605,7 @@ export default function MiGrupoPage() {
                 <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={s.subTitle}>2.1 · Grupal</p>
+                    <p style={s.subTitle}>2.1 · Diagnóstico Grupal</p>
                     <p style={s.desc}>Necesidades y áreas de oportunidad del Grupo,<br/>para personalizar tu planeaciones.</p>
                     {!guardado ? (
                       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -631,7 +631,7 @@ export default function MiGrupoPage() {
                     )}
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={s.subTitle}>2.2 · Individual</p>
+                    <p style={s.subTitle}>2.2 · Diagnóstico Individual</p>
                     <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NNE.</p>
                     {!evalCompleta ? (
                       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -639,7 +639,7 @@ export default function MiGrupoPage() {
                           {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
                         </label>
-                        <p style={{ fontSize: 10, color: '#aaa', margin: '5px 0 0' }}>🔒 Nombres nunca almacenados</p>
+                        <p style={{ fontSize: 10, color: '#aaa', margin: '8px 0 0', textAlign: 'center' }}>🔒 Nombres nunca almacenados</p>
                         {errorEval && <div style={s.err}>{errorEval}</div>}
                       </div>
                     ) : (
