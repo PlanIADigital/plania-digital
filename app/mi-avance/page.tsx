@@ -231,10 +231,10 @@ export default function MiAvancePage() {
         </div>
 
         {/* GRID 2 COLUMNAS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24, alignItems: 'stretch' }}>
 
           {/* COLUMNA IZQUIERDA: KPIs + Progreso */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, height: '100%' }}>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
@@ -269,7 +269,7 @@ export default function MiAvancePage() {
           {/* COLUMNA DERECHA: Tabs + MÍA + Planeaciones */}
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, minHeight: '100%' }}>
 
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden', minHeight: 400 }}>
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden', minHeight: 520, flex: 1 }}>
               <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
                 {(['cobertura','ejes','mapa','nee'] as const).map((key, idx) => {
                   const labels = ['📊 Campos','🔗 Ejes','🗺️ PDAs','♿ Diversidad']
