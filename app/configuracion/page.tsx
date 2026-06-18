@@ -45,7 +45,7 @@ export default function ConfiguracionPage() {
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ avatar_url: urlData.publicUrl })
+      .update({ avatar_url: urlData.publicUrl + '?t=' + Date.now() })
       .eq('auth_uid', profile.auth_uid)
     if (updateErr) { setSaveMsg('⚠️ Error al guardar: ' + updateErr.message); setUploading(false); return }
     setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
