@@ -88,7 +88,7 @@ export default function ConfiguracionPage() {
       <div style={{ padding: '0 32px' }}>
 
         {/* ENCABEZADO */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '32px 32px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '32px 32px', marginBottom: 24, minHeight: 116, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
         </div>
 
