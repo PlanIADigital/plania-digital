@@ -48,7 +48,7 @@ export default function ConfiguracionPage() {
       .update({ avatar_url: urlData.publicUrl })
       .eq('auth_uid', profile.auth_uid)
     if (updateErr) { setSaveMsg('⚠️ Error al guardar: ' + updateErr.message); setUploading(false); return }
-    setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl }))
+    setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
     setSaveMsg('✅ Foto actualizada correctamente')
     setUploading(false)
   }
