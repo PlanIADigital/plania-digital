@@ -864,8 +864,8 @@ export default function NuevaPlaneacionPage() {
 
             </div>
             </div>
-            </div>{/* fin columna derecha */}
-          </div>{/* fin grid 2 columnas */}
+            </div>
+          </div>
 
           </>
         )}
