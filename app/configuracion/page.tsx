@@ -92,7 +92,7 @@ export default function ConfiguracionPage() {
           <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24, alignItems: 'stretch' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'stretch' }}>
 
           {/* FOTO DE PERFIL */}
           <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, textAlign: 'center' }}>
