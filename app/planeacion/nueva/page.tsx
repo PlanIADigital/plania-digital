@@ -510,9 +510,9 @@ export default function NuevaPlaneacionPage() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'stretch' }}>
 
-              <div style={s.card}>
+              <div style={{ ...s.card, height: '100%', boxSizing: 'border-box' }}>
                 <p style={s.sectionTitle}>1 · Datos del proyecto</p>
                 <label style={s.label}>Nombre del proyecto *</label>
                 <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
