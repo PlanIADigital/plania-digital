@@ -531,9 +531,8 @@ export default function NuevaPlaneacionPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
-
-                <div style={s.card}>
+              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24 }}>
+                <div style={{ marginBottom: 24 }}>
                   <p style={s.sectionTitle}>2 · Modalidad de trabajo</p>
                   <label style={s.label}>
                     Modalidad didáctica *
@@ -558,7 +557,7 @@ export default function NuevaPlaneacionPage() {
                   </p>
                 </div>
 
-                <div style={s.card}>
+                <div style={{ marginBottom: 24 }}>
                   <p style={s.sectionTitle}>3 · Campo formativo principal</p>
                   <label style={s.label}>Campo formativo *</label>
                   <select value={principalCampo} onChange={e => setPrincipalCampo(e.target.value)}
@@ -707,7 +706,7 @@ export default function NuevaPlaneacionPage() {
                 </div>
 
                 {transversales.length > 0 && (
-                  <div style={s.card}>
+                  <div style={{ marginBottom: 24 }}>
                     <p style={s.sectionTitle}>Campos transversales sugeridos</p>
                     <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
                       El sistema analizó tu proyecto y sugirió estos campos. Puedes descartar los que no apliquen.
@@ -737,7 +736,7 @@ export default function NuevaPlaneacionPage() {
                 )}
 
                 {ejePrincipal && (
-                  <div style={s.card}>
+                  <div style={{ marginBottom: 24 }}>
                     <p style={s.sectionTitle}>{transversales.length > 0 ? '5' : '4'} · Ejes articuladores</p>
                     <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
                       El sistema determinó los ejes que mejor articulan todos tus campos y contenidos.
@@ -816,7 +815,7 @@ export default function NuevaPlaneacionPage() {
                   </div>
                 )}
 
-                <div style={s.card}>
+                <div style={{ marginBottom: 24 }}>
                   <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '6' : '5') : (transversales.length > 0 ? '5' : '4')} · Período de aplicación</p>
                   <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
                     Elige la fecha en que inicias y la fecha en que terminas.
