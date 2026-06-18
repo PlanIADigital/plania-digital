@@ -92,7 +92,7 @@ export default function ConfiguracionPage() {
           <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24, alignItems: 'stretch' }}>
 
           {/* FOTO DE PERFIL */}
           <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, textAlign: 'center' }}>
@@ -100,9 +100,9 @@ export default function ConfiguracionPage() {
             <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16 }}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Foto de perfil"
-                  style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
+                  style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
               ) : (
-                <div style={{ width: 90, height: 90, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: 'white' }}>
+                <div style={{ width: 120, height: 120, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, fontWeight: 700, color: 'white' }}>
                   {iniciales}
                 </div>
               )}
@@ -128,7 +128,7 @@ export default function ConfiguracionPage() {
           </div>
 
           {/* DATOS DE CUENTA */}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24 }}>
+          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS DE CUENTA</p>
             {[
               { label: 'Nombre completo', value: profile?.full_name },
