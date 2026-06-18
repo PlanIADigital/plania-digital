@@ -403,12 +403,12 @@ export default function MiGrupoPage() {
           {/* ENCABEZADO */}
           <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center', minHeight: 88 }}>
             <h2 style={{ color: 'white', margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
-            <p style={{ color: 'rgba(255,255,255,0.75)', margin: '0 0 10px', fontSize: 13 }}>
-              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong> {profile.grado || '2°'} A
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cantidad de alumnos:</span>
+            <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' as const }}>
+              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong>&nbsp;{nombreCorto(profile.school_name)}&nbsp;·&nbsp;</>}
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong>&nbsp;{profile.cct_primary}&nbsp;·&nbsp;
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong>&nbsp;{profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}&nbsp;·&nbsp;
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong>&nbsp;{profile.grado || '2°'} A&nbsp;·&nbsp;
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Alumnos:</strong>&nbsp;
               <input type="number" min="1" max="50" placeholder="24"
                 value={profile.total_alumnos || ''}
                 onChange={async (e) => {
@@ -422,10 +422,10 @@ export default function MiGrupoPage() {
                     setTimeout(() => setAlumnosGuardado(false), 2000)
                   }
                 }}
-                style={{ width: 60, padding: '5px 8px', fontSize: 14, fontWeight: 700, borderRadius: 8, border: '2px solid rgba(255,255,255,0.5)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
+                style={{ width: 48, padding: '2px 6px', fontSize: 13, fontWeight: 700, borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.4)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
               />
               {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600 }}>✓</span>}
-            </div>
+            </p>
 
           </div>
 
