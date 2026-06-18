@@ -505,7 +505,8 @@ export default function NuevaPlaneacionPage() {
             </p>
           </div>
         )}
-        {!generating && !result ? (
+
+        {!generating && !result && (
           <>
           <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
             <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, textAlign: 'center', letterSpacing: '0.05em' }}>NUEVA PLANEACIÓN</h2>
@@ -514,7 +515,7 @@ export default function NuevaPlaneacionPage() {
             </p>
           </div>
 
-          <div style={s.section}>
+            <div style={s.section}>
               <p style={s.sectionTitle}>1 · Datos del proyecto</p>
               <label style={s.label}>Nombre del proyecto *</label>
               <input placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={s.input} />
@@ -852,11 +853,11 @@ export default function NuevaPlaneacionPage() {
 
             <button onClick={handleGenerar} disabled={generating || !hayPdasSeleccionados}
               style={{ background: hayPdasSeleccionados ? '#00A896' : '#D0D0D0', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: hayPdasSeleccionados ? 'pointer' : 'default', width: '100%', borderRadius: 8, fontWeight: 600, transition: 'background 0.2s' }}>
-              Generar planeacion con IA
+              ✨ Generar planeación con IA
             </button>
-          </div>
           </>
-        ) : null}
+        )}
+
         {result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
             <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>Planeación generada</h3>
