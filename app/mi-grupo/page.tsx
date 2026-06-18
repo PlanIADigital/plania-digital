@@ -438,7 +438,7 @@ export default function MiGrupoPage() {
                 <p style={s.cardTitle}>1 · Diagnóstico Escolar</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={s.subTitle}>1.1 · PMC</p>
+                    <p style={s.subTitle}>1.1 · PROGRAMA DE MEJORA CONTINUA</p>
                     <p style={s.desc}>Contexto Institucional del Jardín:<br/>Entorno, Organización y Recursos.</p>
                     {!diagnosticoEscolarGuardado ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
