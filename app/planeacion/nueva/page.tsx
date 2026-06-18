@@ -851,11 +851,11 @@ export default function NuevaPlaneacionPage() {
             </div>
 
             <button onClick={handleGenerar} disabled={generating || !hayPdasSeleccionados}
+            <button onClick={handleGenerar} disabled={generating || !hayPdasSeleccionados}
               style={{ background: hayPdasSeleccionados ? '#00A896' : '#D0D0D0', color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: hayPdasSeleccionados ? 'pointer' : 'default', width: '100%', borderRadius: 8, fontWeight: 600, transition: 'background 0.2s' }}>
-              ✨ Generar planeación con IA
+              Generar planeacion con IA
             </button>
           </div>
-
           </>
         ) : null}
         {result && (
