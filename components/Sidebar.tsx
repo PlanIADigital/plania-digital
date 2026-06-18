@@ -113,7 +113,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="foto"
-                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid white' }} />
             ) : (
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
