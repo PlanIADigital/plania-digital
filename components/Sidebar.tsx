@@ -134,10 +134,10 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             </div>
           </div>
           <button onClick={handleLogout} style={{
-            width: '100%', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: 'white', padding: '7px 12px', background: '#00A896', borderRadius: 8, fontWeight: 600,
-            borderRadius: 6, cursor: 'pointer', fontSize: 12,
+            width: '100%', background: '#00A896',
+            border: 'none',
+            color: 'white', padding: '7px 12px', borderRadius: 8, fontWeight: 600,
+            cursor: 'pointer', fontSize: 12,
           }}>
             Cerrar sesión
           </button>
