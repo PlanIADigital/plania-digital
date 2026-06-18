@@ -109,29 +109,24 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         </nav>
 
         {/* Perfil */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="foto"
-                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <div style={{
-                width: 36, height: 36, borderRadius: '50%',
+                width: 56, height: 56, borderRadius: '50%',
                 background: '#00A896',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0
+                color: 'white', fontSize: 18, fontWeight: 700
               }}>
                 {iniciales}
               </div>
             )}
-            <div style={{ overflow: 'hidden' }}>
-              <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {profile?.full_name}
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, margin: 0 }}>
-
-              </p>
-            </div>
+            <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0 }}>
+              {profile?.full_name}
+            </p>
           </div>
           <button onClick={handleLogout} style={{
             width: '100%', background: '#00A896',
