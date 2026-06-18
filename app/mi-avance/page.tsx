@@ -101,7 +101,7 @@ function KpiCard({ label, value, delta, deltaColor = '#0F6E56', icon }: {
 }) {
   return (
     <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 10, padding: '14px 16px', textAlign: 'center' as const }}>
-      <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <span>{icon}</span>{label}
       </p>
       <p style={{ fontSize: 28, fontWeight: 800, color: '#1A1A2E', margin: '0 0 4px' }}>{value}</p>
@@ -254,10 +254,17 @@ export default function MiAvancePage() {
               </div>
             </div>
 
+
+            {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
+              {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
+              <button onClick={() => router.push('/planeacion/nueva')} style={{ marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>✨ Nueva planeación con MÍA</button>
+            </div>}
+
           </div>
 
           {/* COLUMNA DERECHA: Tabs + MÍA + Planeaciones */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, minHeight: '100%' }}>
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
@@ -335,12 +342,6 @@ export default function MiAvancePage() {
                 </div>}
               </div>
             </div>
-
-            {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
-              {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
-              <button onClick={() => router.push('/planeacion/nueva')} style={{ marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>✨ Nueva planeación con MÍA</button>
-            </div>}
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 14px', textAlign: 'center' as const }}>PLANEACIONES DEL CICLO ESCOLAR</p>
