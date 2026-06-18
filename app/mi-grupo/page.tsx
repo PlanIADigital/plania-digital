@@ -400,6 +400,11 @@ export default function MiGrupoPage() {
       ) : (
         <div style={{ padding: '0 32px' }}>
 
+          <style>{`
+            input[type=number]::-webkit-inner-spin-button,
+            input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+            input[type=number] { -moz-appearance: textfield; }
+          `}</style>
           {/* ENCABEZADO */}
           <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '14px 32px', marginBottom: 20, textAlign: 'center' }}>
             <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
