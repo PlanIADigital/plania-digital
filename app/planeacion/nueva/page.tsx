@@ -531,7 +531,7 @@ export default function NuevaPlaneacionPage() {
                 </div>
               </div>
 
-              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24 }}>
+              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
                 <div style={{ marginBottom: 24 }}>
                   <p style={s.sectionTitle}>2 · Modalidad de trabajo</p>
                   <label style={s.label}>
