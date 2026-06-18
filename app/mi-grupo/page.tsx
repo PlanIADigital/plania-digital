@@ -437,11 +437,11 @@ export default function MiGrupoPage() {
               <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
                 <p style={s.cardTitle}>1 · Diagnóstico Escolar</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>1.1 · PMC</p>
                     <p style={s.desc}>Contexto institucional del jardín: Entorno, organización y recursos.</p>
                     {!diagnosticoEscolarGuardado ? (
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <label style={{ ...s.btn, opacity: analizandoEscolar ? 0.6 : 1 }}>
                           {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
@@ -463,11 +463,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>1.2 · Programa Analítico</p>
                     <p style={s.desc}>PDAs y contenidos priorizados por tu colectivo. Acepta .docx, .pptx, .pdf.</p>
                     {!paActivo ? (
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <label style={{ ...s.btn, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
                           {analizandoPA ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
@@ -538,7 +538,7 @@ export default function MiGrupoPage() {
               <div>
                 <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>3.1 · Áreas de Oportunidad</p>
                     <p style={s.desc}>Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.</p>
                     {!observacionesGuardadas ? (
@@ -571,11 +571,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>3.2 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
                     <p style={s.desc}>PDAs acordados por el colectivo este ciclo. El sistema los integrará con tu diagnóstico.</p>
                     {!guardadoJardin ? (
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
                           {guardandoJardin ? '⏳ Guardando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
@@ -604,11 +604,11 @@ export default function MiGrupoPage() {
               <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
                 <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>2.1 · Grupal</p>
                     <p style={s.desc}>Necesidades y áreas de oportunidad de tu grupo.</p>
                     {!guardado ? (
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <label style={{ ...s.btnGreen, opacity: analizando ? 0.6 : 1 }}>
                           {analizando ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
@@ -630,11 +630,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div style={{ textAlign: 'center' }}>
                     <p style={s.subTitle}>2.2 · Individual</p>
                     <p style={s.desc}>Evaluación por alumno. MÍA protege nombres y detecta NEE.</p>
                     {!evalCompleta ? (
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
                           {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
