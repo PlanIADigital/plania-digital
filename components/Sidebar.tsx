@@ -47,8 +47,8 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         zIndex: 100,
       }}>
         {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4 }}>
+        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4, justifyContent: 'center' }}>
             <span style={{ color: '#00A896', fontWeight: 700, fontSize: 18 }}>✦</span>
             <span style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Plan</span>
             <span style={{ color: '#00A896', fontWeight: 900, fontSize: 18 }}>IA</span>
@@ -136,7 +136,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           <button onClick={handleLogout} style={{
             width: '100%', background: 'transparent',
             border: '1px solid rgba(255,255,255,0.2)',
-            color: 'rgba(255,255,255,0.6)', padding: '7px 12px',
+            color: 'white', padding: '7px 12px', background: '#00A896', borderRadius: 8, fontWeight: 600,
             borderRadius: 6, cursor: 'pointer', fontSize: 12,
           }}>
             Cerrar sesión
