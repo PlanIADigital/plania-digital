@@ -401,32 +401,30 @@ export default function MiGrupoPage() {
         <div style={s.page}>
 
           {/* ENCABEZADO */}
-          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 20, textAlign: 'center', minHeight: 88 }}>
             <h2 style={{ color: 'white', margin: '0 0 6px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0 0' }}>
-              <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13 }}>
-                {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-                <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong> {profile.grado || '2°'} A
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CANTIDAD DE ALUMNOS</label>
-                <input type="number" min="1" max="50" placeholder="24"
-                  value={profile.total_alumnos || ''}
-                  onChange={async (e) => {
-                    const val = parseInt(e.target.value)
-                    if (!val || val < 1) return
-                    setProfile((prev: any) => ({ ...prev, total_alumnos: val }))
-                    const { data: { session } } = await supabase.auth.getSession()
-                    if (session) {
-                      await supabase.from('users').update({ total_alumnos: val }).eq('auth_uid', session.user.id)
-                      setAlumnosGuardado(true)
-                      setTimeout(() => setAlumnosGuardado(false), 2000)
-                    }
-                  }}
-                  style={{ width: 60, padding: '5px 8px', fontSize: 14, fontWeight: 700, borderRadius: 8, border: '2px solid rgba(255,255,255,0.5)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
-                />
-                {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600 }}>✓</span>}
-              </div>
+            <p style={{ color: 'rgba(255,255,255,0.75)', margin: '0 0 10px', fontSize: 13 }}>
+              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong> {profile.grado || '2°'} A
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cantidad de alumnos:</span>
+              <input type="number" min="1" max="50" placeholder="24"
+                value={profile.total_alumnos || ''}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value)
+                  if (!val || val < 1) return
+                  setProfile((prev: any) => ({ ...prev, total_alumnos: val }))
+                  const { data: { session } } = await supabase.auth.getSession()
+                  if (session) {
+                    await supabase.from('users').update({ total_alumnos: val }).eq('auth_uid', session.user.id)
+                    setAlumnosGuardado(true)
+                    setTimeout(() => setAlumnosGuardado(false), 2000)
+                  }
+                }}
+                style={{ width: 60, padding: '5px 8px', fontSize: 14, fontWeight: 700, borderRadius: 8, border: '2px solid rgba(255,255,255,0.5)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
+              />
+              {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600 }}>✓</span>}
             </div>
 
           </div>

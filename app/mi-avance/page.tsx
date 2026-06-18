@@ -225,7 +225,7 @@ export default function MiAvancePage() {
       <div style={{ padding: '0 32px 60px' }}>
 
         {/* ENCABEZADO */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center', minHeight: 88 }}>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: '0 0 6px', letterSpacing: '0.05em' }}>CENTRO DE CONTROL PEDAGÓGICO</h1>
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', margin: 0 }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
         </div>
