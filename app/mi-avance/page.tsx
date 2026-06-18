@@ -258,7 +258,10 @@ export default function MiAvancePage() {
             {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
               {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
-              <button onClick={() => router.push('/planeacion/nueva')} style={{ marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>✨ Nueva planeación con MÍA</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, flex: 1 }}>✨ Nueva planeación con MÍA</button>
+                <button onClick={() => router.push('/mis-planeaciones')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, flex: 1 }}>📋 Mis planeaciones</button>
+              </div>
             </div>}
 
           </div>
@@ -266,7 +269,7 @@ export default function MiAvancePage() {
           {/* COLUMNA DERECHA: Tabs + MÍA + Planeaciones */}
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, minHeight: '100%' }}>
 
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden', minHeight: 400 }}>
               <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
                 {(['cobertura','ejes','mapa','nee'] as const).map((key, idx) => {
                   const labels = ['📊 Campos','🔗 Ejes','🗺️ PDAs','♿ Diversidad']
@@ -343,22 +346,7 @@ export default function MiAvancePage() {
               </div>
             </div>
 
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 14px', textAlign: 'center' as const }}>PLANEACIONES DEL CICLO ESCOLAR</p>
-              {plannings.slice(0, 5).map((p, i) => (
-                <div key={i} onClick={() => router.push(`/planeacion/${p.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', marginBottom: 6, background: p.status === 'active' ? '#EEEDF8' : '#F8F8FE', border: `1px solid ${p.status === 'active' ? '#3D3A8C22' : '#EEEDF8'}` }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 14 }}>{p.status === 'active' ? '▶' : '✓'}</span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace:'nowrap' }}>{p.project_name}</p>
-                    <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{campoCorto(p.pda_campo || '')} · {p.eje_principal || 'sin eje'}</p>
-                  </div>
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600 }}>{p.status === 'active' ? 'Activa' : 'Cerrada'}</span>
-                </div>
-              ))}
-              {plannings.length > 5 && <button onClick={() => router.push('/mis-planeaciones')} style={{ fontSize: 12, color: '#3D3A8C', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4, padding: 0, fontWeight: 600 }}>Ver todas ({plannings.length}) →</button>}
-            </div>
+
 
           </div>
         </div>
