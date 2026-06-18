@@ -100,11 +100,11 @@ function KpiCard({ label, value, delta, deltaColor = '#0F6E56', icon }: {
   label: string; value: string | number; delta: string; deltaColor?: string; icon: string
 }) {
   return (
-    <div style={{ background: '#F8F8FE', borderRadius: 10, padding: '14px 16px' }}>
+    <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 10, padding: '14px 16px', textAlign: 'center' as const }}>
       <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
         <span>{icon}</span>{label}
       </p>
-      <p style={{ fontSize: 24, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{value}</p>
+      <p style={{ fontSize: 28, fontWeight: 800, color: '#1A1A2E', margin: '0 0 4px' }}>{value}</p>
       <p style={{ fontSize: 11, color: deltaColor, margin: 0 }}>{delta}</p>
     </div>
   )
@@ -343,7 +343,7 @@ export default function MiAvancePage() {
             </div>}
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 14px' }}>Planeaciones del ciclo</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 14px', textAlign: 'center' as const }}>PLANEACIONES DEL CICLO ESCOLAR</p>
               {plannings.slice(0, 5).map((p, i) => (
                 <div key={i} onClick={() => router.push(`/planeacion/${p.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', marginBottom: 6, background: p.status === 'active' ? '#EEEDF8' : '#F8F8FE', border: `1px solid ${p.status === 'active' ? '#3D3A8C22' : '#EEEDF8'}` }}>
                   <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
