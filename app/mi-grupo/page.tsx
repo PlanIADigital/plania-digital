@@ -422,7 +422,7 @@ export default function MiGrupoPage() {
                     setTimeout(() => setAlumnosGuardado(false), 2000)
                   }
                 }}
-                style={{ width: 48, padding: '2px 6px', fontSize: 13, fontWeight: 700, borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.4)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white' }}
+                style={{ width: 48, padding: '2px 6px', fontSize: 13, fontWeight: 700, borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.4)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', MozAppearance: 'textfield' as any }}
               />
               {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600 }}>✓</span>}
             </p>

@@ -502,7 +502,7 @@ export default function NuevaPlaneacionPage() {
 
         {!generating && !result && (
           <>
-            <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center', minHeight: 100 }}>
+            <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '32px 32px', marginBottom: 24, textAlign: 'center' }}>
               <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>NUEVA PLANEACIÓN</h2>
               <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
                 {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
