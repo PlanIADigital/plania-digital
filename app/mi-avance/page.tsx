@@ -222,123 +222,144 @@ export default function MiAvancePage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '32px 40px 60px' }}>
+      <div style={{ padding: '0 32px 60px' }}>
+
+        {/* ENCABEZADO */}
         <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: '0 0 6px', textAlign: 'center', letterSpacing: '0.05em' }}>CENTRO DE CONTROL PEDAGÓGICO</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', margin: 0, textAlign: 'center' }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: '0 0 6px', letterSpacing: '0.05em' }}>CENTRO DE CONTROL PEDAGÓGICO</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', margin: 0 }}>{profile.school_name && <>{nombreCorto(profile.school_name)} · </>}CCT {profile.cct_primary} · {profile.grado || '2°'} grado · Ciclo 2025–2026</p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 20 }}>
-          <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
-          <KpiCard label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'todas cerradas'} icon="📋" />
-          <KpiCard label="Ejes articuladores" value={`${Object.keys(ejesConteo).length}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
-          <KpiCard label="PDAs prioritarios" value={pdasPrioritarios} delta={pdasPrioritariosPendientes > 0 ? `${pdasPrioritariosPendientes} del diagnóstico pendientes` : 'diagnóstico atendido ✓'} deltaColor={pdasPrioritariosPendientes > 0 ? '#D97706' : '#0F6E56'} icon="⭐" />
-        </div>
-        <div style={{ background: 'white', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>Progreso del ciclo escolar 2025–2026</p>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {MESES.map((mes, i) => (
-              <span key={mes} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, fontWeight: i === mesActual ? 700 : 400, background: i < mesActual ? '#E0F5F3' : i === mesActual ? '#3D3A8C' : '#F3F3F3', color: i < mesActual ? '#0F6E56' : i === mesActual ? 'white' : '#AAA', border: `1px solid ${i < mesActual ? '#9FE1CB' : i === mesActual ? '#3D3A8C' : '#E5E5E5'}` }}>
-                {mes}{i === mesActual ? ' ▶' : ''}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 20 }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
-            {(['cobertura','ejes','mapa','nee'] as const).map((key, idx) => {
-              const labels = ['📊 Campos','🔗 Ejes','🗺️ PDAs','♿ Diversidad']
-              return <button key={key} onClick={() => setTabActivo(key)} style={{ flex: 1, padding: '12px 6px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tabActivo === key ? 700 : 400, background: tabActivo === key ? '#EEEDF8' : 'white', color: tabActivo === key ? '#3D3A8C' : '#888', borderBottom: tabActivo === key ? '2px solid #3D3A8C' : '2px solid transparent' }}>{labels[idx]}</button>
-            })}
-          </div>
-          <div style={{ padding: '20px 24px' }}>
-            {tabActivo === 'cobertura' && <div>{pdaUnicosPorCampo.map(cf => (
-              <div key={cf.nombre} style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconoCampo nombre={cf.nombre} size={20} /><span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span></div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: cf.color }}>{cf.trabajados}/{cf.total} PDAs</span>
-                </div>
-                <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: cf.color, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                  <span style={{ fontSize: 11, color: '#888' }}>{cf.porcentaje}% del ciclo</span>
-                  {cf.porcentaje < 20 && <button onClick={() => router.push('/planeacion/nueva')} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
-                </div>
+
+        {/* GRID 2 COLUMNAS */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24, alignItems: 'start' }}>
+
+          {/* COLUMNA IZQUIERDA: KPIs + Progreso */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
+              <KpiCard label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'todas cerradas'} icon="📋" />
+              <KpiCard label="Ejes articuladores" value={`${Object.keys(ejesConteo).length}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
+              <KpiCard label="PDAs prioritarios" value={pdasPrioritarios} delta={pdasPrioritariosPendientes > 0 ? `${pdasPrioritariosPendientes} del diagnóstico pendientes` : 'diagnóstico atendido ✓'} deltaColor={pdasPrioritariosPendientes > 0 ? '#D97706' : '#0F6E56'} icon="⭐" />
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '16px 20px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 10px' }}>Progreso del ciclo escolar 2025–2026</p>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
+                {MESES.map((mes, i) => (
+                  <span key={mes} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, fontWeight: i === mesActual ? 700 : 400, background: i < mesActual ? '#E0F5F3' : i === mesActual ? '#3D3A8C' : '#F3F3F3', color: i < mesActual ? '#0F6E56' : i === mesActual ? 'white' : '#AAA', border: `1px solid ${i < mesActual ? '#9FE1CB' : i === mesActual ? '#3D3A8C' : '#E5E5E5'}` }}>
+                    {mes}{i === mesActual ? ' ▶' : ''}
+                  </span>
+                ))}
               </div>
-            ))}</div>}
-            {tabActivo === 'ejes' && <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {EJES.map(eje => {
-                  const count = ejesConteo[eje] || 0
-                  const sinUsar = count === 0
-                  return <div key={eje} style={{ padding: '10px 12px', borderRadius: 10, background: sinUsar ? '#FFF7ED' : '#F8F8FE', border: `1px solid ${sinUsar ? '#FDE68A' : '#EEEDF8'}` }}>
-                    <p style={{ fontSize: 11, color: sinUsar ? '#92400E' : '#888', margin: '0 0 6px', lineHeight: 1.4 }}>{eje.length > 42 ? eje.substring(0, 42) + '…' : eje}</p>
-                    <div style={{ background: sinUsar ? '#FDE68A' : '#E8E8F8', borderRadius: 99, height: 4 }}><div style={{ background: sinUsar ? '#F59E0B' : '#3D3A8C', height: '100%', borderRadius: 99, width: `${Math.round((count / maxEje) * 100)}%` }} /></div>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? '#92400E' : '#3D3A8C', margin: '4px 0 0' }}>{count === 0 ? '⚠️ Sin abordar' : `${count} planeación${count > 1 ? 'es' : ''}`}</p>
-                  </div>
+            </div>
+
+          </div>
+
+          {/* COLUMNA DERECHA: Tabs + MÍA + Planeaciones */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
+                {(['cobertura','ejes','mapa','nee'] as const).map((key, idx) => {
+                  const labels = ['📊 Campos','🔗 Ejes','🗺️ PDAs','♿ Diversidad']
+                  return <button key={key} onClick={() => setTabActivo(key)} style={{ flex: 1, padding: '12px 6px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tabActivo === key ? 700 : 400, background: tabActivo === key ? '#EEEDF8' : 'white', color: tabActivo === key ? '#3D3A8C' : '#888', borderBottom: tabActivo === key ? '2px solid #3D3A8C' : '2px solid transparent' }}>{labels[idx]}</button>
                 })}
               </div>
-              {ejesSinUsar.length > 0 && <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 16 }}>✨ Crear planeación y equilibrar ejes</button>}
-            </div>}
-            {tabActivo === 'mapa' && <div>
-              {CAMPOS_CONFIG.map(cf => {
-                const pdasDelCampo = [...new Set(coverage.filter(c => c.campo === cf.nombre).map(c => c.pda_literal))]
-                const celdas = Array.from({ length: Math.min(cf.total, 48) }, (_, i) => {
-                  const trabajado = i < pdasDelCampo.length
-                  const esPrioritario = trabajado && prioritariosPDA.has(pdasDelCampo[i])
-                  const veces = trabajado ? (pdaCoverageMap[pdasDelCampo[i]] || 1) : 0
-                  return { trabajado, esPrioritario, veces }
-                })
-                return <div key={cf.nombre} style={{ marginBottom: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span>
-                    <span style={{ fontSize: 11, color: '#888' }}>{pdasDelCampo.length}/{cf.total} PDAs</span>
+              <div style={{ padding: '20px 24px' }}>
+                {tabActivo === 'cobertura' && <div>{pdaUnicosPorCampo.map(cf => (
+                  <div key={cf.nombre} style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconoCampo nombre={cf.nombre} size={20} /><span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span></div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: cf.color }}>{cf.trabajados}/{cf.total} PDAs</span>
+                    </div>
+                    <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: cf.color, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: '#888' }}>{cf.porcentaje}% del ciclo</span>
+                      {cf.porcentaje < 20 && <button onClick={() => router.push('/planeacion/nueva')} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
+                    </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 3 }}>
-                    {celdas.map((c, i) => <div key={i} style={{ height: 14, borderRadius: 2, background: c.veces >= 3 ? cf.color : c.veces === 2 ? cf.bg : c.veces === 1 ? `${cf.bg}CC` : '#F0EFF8', border: c.esPrioritario && !c.trabajado ? '1.5px solid #F59E0B' : 'none' }} />)}
+                ))}</div>}
+                {tabActivo === 'ejes' && <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    {EJES.map(eje => {
+                      const count = ejesConteo[eje] || 0
+                      const sinUsar = count === 0
+                      return <div key={eje} style={{ padding: '10px 12px', borderRadius: 10, background: sinUsar ? '#FFF7ED' : '#F8F8FE', border: `1px solid ${sinUsar ? '#FDE68A' : '#EEEDF8'}` }}>
+                        <p style={{ fontSize: 11, color: sinUsar ? '#92400E' : '#888', margin: '0 0 6px', lineHeight: 1.4 }}>{eje.length > 42 ? eje.substring(0, 42) + '…' : eje}</p>
+                        <div style={{ background: sinUsar ? '#FDE68A' : '#E8E8F8', borderRadius: 99, height: 4 }}><div style={{ background: sinUsar ? '#F59E0B' : '#3D3A8C', height: '100%', borderRadius: 99, width: `${Math.round((count / maxEje) * 100)}%` }} /></div>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? '#92400E' : '#3D3A8C', margin: '4px 0 0' }}>{count === 0 ? '⚠️ Sin abordar' : `${count} planeación${count > 1 ? 'es' : ''}`}</p>
+                      </div>
+                    })}
                   </div>
-                </div>
-              })}
-            </div>}
-            {tabActivo === 'nee' && <div>
-              {alumnosConNEE.length === 0 ? <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
-                <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>No has registrado observaciones de diversidad en Mi Grupo todavía.</p>
-                <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
-              </div> : <div>{alumnosConNEE.map((alumno: any, i: number) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent:'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>
-                    {String(alumno.referencia || i + 1).replace('Alumno ', '')}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 4px' }}>{alumno.nee?.join(' · ')}</p>
-                    <p style={{ fontSize: 11, color: '#888', margin: '0 0 2px' }}>{alumno.observaciones || ''}</p>
-                    <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{alumno.pdas_sugeridos?.length || 0} PDAs adaptados</p>
-                  </div>
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>Activo</span>
-                </div>
-              ))}</div>}
-            </div>}
-          </div>
-        </div>
-        {alertas.length > 0 && <div style={{ background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
-          {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
-          <button onClick={() => router.push('/planeacion/nueva')} style={{ marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>✨ Nueva planeación con MÍA</button>
-        </div>}
-        <div style={{ background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 14px' }}>Planeaciones del ciclo</p>
-          {plannings.slice(0, 5).map((p, i) => (
-            <div key={i} onClick={() => router.push(`/planeacion/${p.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', marginBottom: 6, background: p.status === 'active' ? '#EEEDF8' : '#F8F8FE', border: `1px solid ${p.status === 'active' ? '#3D3A8C22' : '#EEEDF8'}` }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 14 }}>{p.status === 'active' ? '▶' : '✓'}</span>
+                  {ejesSinUsar.length > 0 && <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#3D3A8C', color: 'white', border:'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 16 }}>✨ Crear planeación y equilibrar ejes</button>}
+                </div>}
+                {tabActivo === 'mapa' && <div>
+                  {CAMPOS_CONFIG.map(cf => {
+                    const pdasDelCampo = [...new Set(coverage.filter(c => c.campo === cf.nombre).map(c => c.pda_literal))]
+                    const celdas = Array.from({ length: Math.min(cf.total, 48) }, (_, i) => {
+                      const trabajado = i < pdasDelCampo.length
+                      const esPrioritario = trabajado && prioritariosPDA.has(pdasDelCampo[i])
+                      const veces = trabajado ? (pdaCoverageMap[pdasDelCampo[i]] || 1) : 0
+                      return { trabajado, esPrioritario, veces }
+                    })
+                    return <div key={cf.nombre} style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span>
+                        <span style={{ fontSize: 11, color: '#888' }}>{pdasDelCampo.length}/{cf.total} PDAs</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 3 }}>
+                        {celdas.map((c, i) => <div key={i} style={{ height: 14, borderRadius: 2, background: c.veces >= 3 ? cf.color : c.veces === 2 ? cf.bg : c.veces === 1 ? `${cf.bg}CC` : '#F0EFF8', border: c.esPrioritario && !c.trabajado ? '1.5px solid #F59E0B' : 'none' }} />)}
+                      </div>
+                    </div>
+                  })}
+                </div>}
+                {tabActivo === 'nee' && <div>
+                  {alumnosConNEE.length === 0 ? <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                    <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
+                    <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>No has registrado observaciones de diversidad en Mi Grupo todavía.</p>
+                    <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
+                  </div> : <div>{alumnosConNEE.map((alumno: any, i: number) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent:'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>
+                        {String(alumno.referencia || i + 1).replace('Alumno ', '')}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 4px' }}>{alumno.nee?.join(' · ')}</p>
+                        <p style={{ fontSize: 11, color: '#888', margin: '0 0 2px' }}>{alumno.observaciones || ''}</p>
+                        <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{alumno.pdas_sugeridos?.length || 0} PDAs adaptados</p>
+                      </div>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>Activo</span>
+                    </div>
+                  ))}</div>}
+                </div>}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.project_name}</p>
-                <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{campoCorto(p.pda_campo || '')} · {p.eje_principal || 'sin eje'}</p>
-              </div>
-              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600 }}>{p.status === 'active' ? 'Activa' : 'Cerrada'}</span>
             </div>
-          ))}
-          {plannings.length > 5 && <button onClick={() => router.push('/mis-planeaciones')} style={{ fontSize: 12, color: '#3D3A8C', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4, padding: 0, fontWeight: 600 }}>Ver todas ({plannings.length}) →</button>}
+
+            {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
+              {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
+              <button onClick={() => router.push('/planeacion/nueva')} style={{ marginTop: 8, background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>✨ Nueva planeación con MÍA</button>
+            </div>}
+
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 14px' }}>Planeaciones del ciclo</p>
+              {plannings.slice(0, 5).map((p, i) => (
+                <div key={i} onClick={() => router.push(`/planeacion/${p.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', marginBottom: 6, background: p.status === 'active' ? '#EEEDF8' : '#F8F8FE', border: `1px solid ${p.status === 'active' ? '#3D3A8C22' : '#EEEDF8'}` }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 14 }}>{p.status === 'active' ? '▶' : '✓'}</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace:'nowrap' }}>{p.project_name}</p>
+                    <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{campoCorto(p.pda_campo || '')} · {p.eje_principal || 'sin eje'}</p>
+                  </div>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, flexShrink: 0, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600 }}>{p.status === 'active' ? 'Activa' : 'Cerrada'}</span>
+                </div>
+              ))}
+              {plannings.length > 5 && <button onClick={() => router.push('/mis-planeaciones')} style={{ fontSize: 12, color: '#3D3A8C', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4, padding: 0, fontWeight: 600 }}>Ver todas ({plannings.length}) →</button>}
+            </div>
+
+          </div>
         </div>
         <div style={{ height: 40 }} />
       </div>
