@@ -85,67 +85,67 @@ export default function ConfiguracionPage() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ maxWidth: 700, margin: '40px auto', padding: '0 32px' }}>
+      <div style={{ padding: '0 32px' }}>
 
-        <h2 style={{ color: '#3D3A8C', marginBottom: 24, fontSize: 24, fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Configuración</h2>
+        {/* ENCABEZADO */}
+        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '24px 32px', marginBottom: 24, textAlign: 'center' }}>
+          <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
+        </div>
 
-        {/* Foto de perfil */}
-        <div style={{ background: 'white', borderRadius: 12, padding: 32, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px' }}>Foto de perfil</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div style={{ flexShrink: 0 }}>
+          {/* FOTO DE PERFIL */}
+          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>FOTO DE PERFIL</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16 }}>
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Foto de perfil"
-                  style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
+                  style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
               ) : (
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white' }}>
+                <div style={{ width: 90, height: 90, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, color: 'white' }}>
                   {iniciales}
                 </div>
               )}
+              <div>
+                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+                  Tu foto aparece en el menú lateral.<br/>
+                  Formatos: JPG, PNG. Máximo 2MB.
+                </p>
+                <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                  style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '9px 18px', borderRadius: 8, cursor: uploading ? 'default' : 'pointer', fontSize: 13, fontWeight: 600, opacity: uploading ? 0.7 : 1 }}>
+                  {uploading ? 'Subiendo...' : '📷 Cambiar foto'}
+                </button>
+                <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={handleFoto} style={{ display: 'none' }} />
+              </div>
             </div>
-
-            <div>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#444', lineHeight: 1.5 }}>
-                Tu foto aparece en el menú lateral.<br />
-                <span style={{ color: '#888', fontSize: 12 }}>Formatos: JPG, PNG. Máximo 2MB.</span>
+            {saveMsg && (
+              <p style={{ margin: '16px 0 0', fontSize: 13, padding: '8px 12px', borderRadius: 6,
+                background: saveMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2',
+                color: saveMsg.startsWith('✅') ? '#065f46' : '#991b1b' }}>
+                {saveMsg}
               </p>
-              <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '9px 18px', borderRadius: 8, cursor: uploading ? 'default' : 'pointer', fontSize: 13, fontWeight: 600, opacity: uploading ? 0.7 : 1 }}>
-                {uploading ? 'Subiendo...' : '📷 Cambiar foto'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={handleFoto} style={{ display: 'none' }} />
-            </div>
+            )}
           </div>
 
-          {saveMsg && (
-            <p style={{ margin: '16px 0 0', fontSize: 13, padding: '8px 12px', borderRadius: 6,
-              background: saveMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2',
-              color: saveMsg.startsWith('✅') ? '#065f46' : '#991b1b' }}>
-              {saveMsg}
-            </p>
-          )}
+          {/* DATOS DE CUENTA */}
+          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS DE CUENTA</p>
+            {[
+              { label: 'Nombre completo', value: profile?.full_name },
+              { label: 'Correo electrónico', value: profile?.email },
+              { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
+              { label: 'CCT principal', value: profile?.cct_primary },
+              { label: 'Turno', value: turnoLabel[profile?.shift_primary] ?? profile?.shift_primary },
+              { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
+            ].map(item => (
+              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
+                <span style={{ fontSize: 13, color: '#888' }}>{item.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{item.value || '—'}</span>
+              </div>
+            ))}
+          </div>
+
         </div>
-
-        {/* Datos de cuenta */}
-        <div style={{ background: 'white', borderRadius: 12, padding: 32, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px' }}>Datos de cuenta</p>
-
-          {[
-            { label: 'Nombre completo', value: profile?.full_name },
-            { label: 'Correo electrónico', value: profile?.email },
-            { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
-            { label: 'CCT principal', value: profile?.cct_primary },
-            { label: 'Turno', value: turnoLabel[profile?.shift_primary] ?? profile?.shift_primary },
-            { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
-          ].map(item => (
-            <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid #F0EFF8' }}>
-              <span style={{ fontSize: 13, color: '#888' }}>{item.label}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{item.value || '—'}</span>
-            </div>
-          ))}
-        </div>
-
         <div style={{ height: 40 }} />
       </div>
     </SidebarWrapper>
