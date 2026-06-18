@@ -639,9 +639,9 @@ export default function MiGrupoPage() {
                           {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
                         </label>
-                        <p style={{ fontSize: 10, color: '#aaa', margin: '8px 0 0', textAlign: 'center' }}>🔒 Nombres nunca almacenados</p>
                         {errorEval && <div style={s.err}>{errorEval}</div>}
                       </div>
+                      <p style={{ fontSize: 10, color: '#aaa', margin: '8px 0 0', textAlign: 'center' }}>🔒 Nombres nunca almacenados</p>
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Evaluación completa</p>
@@ -687,7 +687,7 @@ export default function MiGrupoPage() {
               <div>
                 <p style={s.cardTitle}>4 · Mi estilo de narración</p>
                 <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
-                  Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti.<br/>Así podemos personalizar más tus planeaciones.
+                  Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti.
                 </p>
                 {!estiloGuardado ? (
                   <div>
