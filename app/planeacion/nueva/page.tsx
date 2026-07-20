@@ -457,6 +457,27 @@ function NuevaPlaneacionInner() {
     setErrorTransversales('')
     setTransversales([])
     try {
+      // [jul 2026, FASE 1.2] Jerarquía pedagógica — necesidad del
+      // alumno + contexto comunitario (1er orden, NEM 2022) vs PDAs
+      // del jardín (2do orden, complementario). Se extraen aquí de
+      // `profile` (ya cargado completo por el useEffect de arriba) y
+      // se mandan a /api/sugerir-campos para que la elección de
+      // transversales también respete esta jerarquía, no solo la
+      // narrativa del generador final.
+      const pdasPrioritariosGrupo: string[] = Array.isArray(profile?.evaluacion_individual?.pdas_prioritarios_grupo)
+        ? profile.evaluacion_individual.pdas_prioritarios_grupo
+            .map((p: any) => (typeof p === 'string' ? p : p?.pda))
+            .filter(Boolean)
+        : []
+      const contextoSocialPMC: string = profile?.diagnostico_escolar?.contexto_social || ''
+      const pdasJardinRaw = profile?.pdas_jardin
+      const pdasJardinLista = !Array.isArray(pdasJardinRaw) && Array.isArray(pdasJardinRaw?.pdas)
+        ? pdasJardinRaw.pdas
+        : (Array.isArray(pdasJardinRaw) ? pdasJardinRaw : [])
+      const pdasJardinTexto: string[] = pdasJardinLista
+        .map((p: any) => (typeof p === 'string' ? p : p?.pda))
+        .filter(Boolean)
+
       const res = await fetch('/api/sugerir-campos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -467,6 +488,9 @@ function NuevaPlaneacionInner() {
           campo_principal: principalCampo,
           grado: gradoGrupo,
           eje_sugerido: ejeSugeridoParam || undefined,
+          pdas_prioritarios_grupo: pdasPrioritariosGrupo,
+          contexto_social: contextoSocialPMC,
+          pdas_jardin: pdasJardinTexto,
         })
       })
       const data = await res.json()

@@ -44,6 +44,7 @@ R4-PDA: El verbo central del PDA debe aparecer EJECUTADO en las actividades, no 
 R4-PDA-COMPUESTO: Si el PDA principal contiene MÁS DE UN verbo de acción central (ej. "hace preguntas sobre la naturaleza Y pone a prueba ideas para encontrar respuestas"), AMBOS verbos deben ejecutarse con peso equivalente a lo largo de los días — nunca uno fuerte y el otro débil o ausente. Para el verbo "hacer preguntas" en específico: en al menos la mitad de los días, deben ser los NIÑOS quienes generen una pregunta propia y espontánea dentro del texto (no solo responder las preguntas que hace la maestra). Ejemplo de ejecución correcta: "Uno de los niños levanta la mano y pregunta: '¿Y si la sombra se puede romper?'" o "Entre ellos se preguntan por qué el celofán cambia de color la sombra". Revisa el PDA principal al inicio de cada lote: si tiene coma, "y" o "e" separando dos acciones, trátalo como compuesto y reparte peso narrativo entre ambas a lo largo del proyecto completo, no solo dentro de un único día.
 R-TRANSVERSAL: Si en el bloque "CAMPOS TRANSVERSALES" se declaró uno o más campos formativos transversales, cada uno debe EJECUTARSE de forma observable en al menos un momento de este lote — igual que exige R4-PDA para el PDA principal: el verbo de acción central del contenido transversal debe aparecer EJECUTADO dentro de la narrativa (un niño o la maestra haciéndolo dentro del texto), nunca solo mencionado, insinuado o listado en un paréntesis. No necesita el mismo peso narrativo que el PDA principal en todos los días, pero si el lote completo transcurre sin que ningún transversal se ejecute ni una sola vez, la regla se incumple. Si hay más de un transversal declarado, repártelos entre los distintos días del lote en vez de forzarlos todos el mismo día. Si el bloque de transversales viene vacío ("No se definieron campos transversales"), esta regla no aplica.
 R-EJE-SECUNDARIO: Si en "DATOS DEL PROYECTO" se declaró un eje articulador secundario (distinto de "No definido"), debe integrarse de forma identificable en al menos un momento del lote como una dimensión real de la actividad ya planeada — no requiere una actividad aparte, se apoya sobre la misma actividad del día. Ejemplo: si el eje secundario es "Inclusión", algún día debe mostrar una práctica inclusiva concreta ocurriendo dentro del texto (quién participa, cómo, qué adaptación se ve en acción), no bastará con que la palabra "inclusión" aparezca mencionada. Si el eje secundario es "No definido", esta regla no aplica.
+R-SIN-ETIQUETAS: Si el bloque "PRIORIDADES PEDAGÓGICAS DEL GRUPO" menciona necesidades de aprendizaje o áreas de apoyo, PROHIBIDO usar en el texto narrativo cualquier etiqueta diagnóstica, clínica o de discapacidad (ejemplos prohibidos: "TDAH", "autista", "síndrome de...", "trastorno de...", o cualquier nombre de diagnóstico), y PROHIBIDO también usar palabras de severidad como "crítico", "urgente" o "grave" — la legislación vigente prohíbe etiquetar a alumnos neurodivergentes. Refiérete SIEMPRE a necesidades y apoyos concretos y observables en la acción (ej. "le doy un poco más de tiempo para terminar su idea", "le muestro el material antes de pedirle que lo use"), nunca a un diagnóstico ni a una categoría clínica.
 R-CONTINUIDAD: Este lote es una CONTINUACIÓN de una planeación ya iniciada. Debes dar seguimiento lógico a lo que ya ocurrió (contexto provisto), avanzar la situación problema, y NUNCA repetir materiales ni actividades ya usados. Esto aplica también a "actividad_complementaria": PROHIBIDO usar el mismo texto o actividad de relleno en más de un día — cada actividad_complementaria debe ser distinta y responder al momento real de esa planeación, nunca un genérico repetido mecánicamente para llenar el campo.
 R-CAMPOS-COMPLETOS: Los campos "inicio", "desarrollo", "cierre" y "materiales" son OBLIGATORIOS en TODOS los días del lote, sin excepción — nunca los dejes vacíos, nunca los omitas del JSON, incluso si necesitas ser más breve en otros campos para que todos quepan. El ÚNICO campo que puede quedar como cadena vacía "" es "actividad_complementaria" (no todos los días necesitan una). Si sientes que te estás quedando sin espacio, prioriza SIEMPRE completar estos 4 campos obligatorios en todos los días del lote antes que enriquecer un solo día con más detalle.
 R-JORNADA-COMPLETA: El campo "inicio" de CADA día representa el arranque real de la jornada — el momento en que el grupo entra al salón o se reúne por primera vez ese día — NUNCA un momento intermedio de la jornada (ej. "después del recreo", "a media mañana", "cuando regresan de..."). Aunque la situación problema o el proyecto estén anclados a un momento específico del día (una transición, el recreo, la tarde), ese momento se integra DENTRO del desarrollo o el cierre como parte de la narrativa, nunca como el punto de partida del campo "inicio". Dejar que el día "arranque" directamente en un momento posterior implica un vacío de actividades desde la entrada del grupo hasta ese momento, lo cual está prohibido.
@@ -296,6 +297,87 @@ async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promis
   }
 }
 
+// ============================================================
+// [jul 2026, FASE 1.2] Quita etiquetas de severidad clínica del texto
+// crudo de "alertas" en evaluacion_individual (ej. "CRÍTICO: 5 al...").
+// Ese tono choca directamente con el principio de "Cero Fricción —
+// indicadores armoniosos, nunca punitivos", y además la legislación
+// vigente PROHÍBE etiquetar a alumnos neurodivergentes — así que este
+// texto nunca debe llegar al generador con ese tono, ni siquiera como
+// contexto interno que el modelo no mostrará, porque puede sesgar el
+// tono de la narrativa igual.
+// ============================================================
+function limpiarAlertaTono(texto: string): string {
+  return texto.replace(/^(CR[IÍ]TICO|URGENTE|ALERTA)\s*[:\-]?\s*/i, '').trim()
+}
+
+// ============================================================
+// [jul 2026, FASE 1.2] Jerarquía explícita de prioridad pedagógica,
+// según decisión de producto y el enfoque histórico de la educación
+// preescolar en México:
+//   - Antes: la maestra decidía la planeación según su propio criterio.
+//   - Después: se exigió partir de las necesidades reales del alumno.
+//   - Ahora (NEM 2022): se exige combinar necesidad del alumno CON el
+//     contexto donde vive — juntos, ambos hacen la planeación más
+//     precisa para que el alumno desarrolle su potencial.
+// Por eso el 1er orden de esta función combina DOS fuentes, no una:
+// evaluación individual (necesidad) + diagnostico_escolar/PMC
+// (contexto comunitario). El 2do orden son los PDAs que el directivo
+// acordó para todo el jardín — complementario, el directivo puede
+// pedir que TAMBIÉN se atiendan, pero nunca en lugar de lo detectado
+// individualmente.
+//
+// No requiere consulta nueva a Supabase — profile ya llega completo
+// desde el frontend (select('*') en users), así que evaluacion_
+// individual, diagnostico_escolar y pdas_jardin ya viven en el objeto
+// profile, igual que alumnos_inclusion.
+//
+// REQUISITO LEGAL — no etiquetar neurodivergencia: el texto que sale
+// de aquí usa "Necesidad de apoyo:" en vez de "Alerta:", y nunca
+// incluye diagnósticos ni etiquetas clínicas (esos datos ya vienen
+// anonimizados desde analizar-evaluacion-individual, pero se refuerza
+// aquí por seguridad). La regla R-SIN-ETIQUETAS en SYSTEM_PROMPT_DIAS
+// refuerza esto también en la narrativa final.
+//
+// IMPORTANTE — alcance de este cambio: esta jerarquía calibra
+// ÉNFASIS NARRATIVO dentro del proyecto ya definido por la educadora
+// (quien elige el PDA principal en el formulario). NO decide qué PDA
+// se selecciona — esa decisión ocurre antes, en el formulario o en
+// /api/sugerir-campos (que también se actualizó para respetar esta
+// misma jerarquía al sugerir transversales).
+// ============================================================
+function obtenerPrioridadesPedagogicas(profile: any): string {
+  const evalInd = profile?.evaluacion_individual
+  const pdasGrupo: string[] = Array.isArray(evalInd?.pdas_prioritarios_grupo)
+    ? evalInd.pdas_prioritarios_grupo.map((p: any) => (typeof p === 'string' ? p : p?.pda)).filter(Boolean)
+    : []
+  const alertasCrudas: string[] = Array.isArray(evalInd?.alertas) ? evalInd.alertas : []
+  const alertasSuaves = alertasCrudas.map(limpiarAlertaTono).filter(Boolean)
+
+  const contextoSocial: string = profile?.diagnostico_escolar?.contexto_social || ''
+
+  const pdasJardinRaw = profile?.pdas_jardin
+  const pdasJardinLista = !Array.isArray(pdasJardinRaw) && Array.isArray(pdasJardinRaw?.pdas)
+    ? pdasJardinRaw.pdas
+    : (Array.isArray(pdasJardinRaw) ? pdasJardinRaw : [])
+  const pdasJardinTexto: string[] = pdasJardinLista.map((p: any) => (typeof p === 'string' ? p : p?.pda)).filter(Boolean)
+
+  if (pdasGrupo.length === 0 && alertasSuaves.length === 0 && !contextoSocial && pdasJardinTexto.length === 0) return ''
+
+  let bloque = ''
+  if (pdasGrupo.length > 0 || alertasSuaves.length > 0 || contextoSocial) {
+    bloque += `1er orden — Necesidad del alumno + contexto comunitario (máxima prioridad; la NEM 2022 exige combinar ambos para una planeación precisa):\n`
+    if (pdasGrupo.length > 0) bloque += pdasGrupo.map(p => `- Necesidad de aprendizaje detectada: ${p}`).join('\n') + '\n'
+    if (alertasSuaves.length > 0) bloque += alertasSuaves.map(a => `- Necesidad de apoyo: ${a}`).join('\n') + '\n'
+    if (contextoSocial) bloque += `- Contexto comunitario del grupo: ${contextoSocial}\n`
+  }
+  if (pdasJardinTexto.length > 0) {
+    bloque += `\n2do orden — PDAs acordados por el colectivo del jardín (complementario, nunca sustituye al 1er orden):\n`
+    bloque += pdasJardinTexto.slice(0, 8).map((p: string) => `- ${p}`).join('\n')
+  }
+  return bloque.trim()
+}
+
 async function generarLoteDeDias(params: {
   lote: DiaConMomento[]
   form: any
@@ -305,9 +387,10 @@ async function generarLoteDeDias(params: {
   contextoPrevio: string
   materialesUsados: string[]
   trayectoriaPDA: string
+  prioridadesPedagogicas: string
   esUltimoLote: boolean
 }): Promise<DiaGenerado[]> {
-  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, esUltimoLote } = params
+  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, esUltimoLote } = params
 
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
   const materialesTexto = materialesUsados.length > 0
@@ -327,6 +410,10 @@ CONTEXTO DEL GRUPO:
 
 TRAYECTORIA DEL GRUPO EN ESTE CICLO (PDAs que ya se han trabajado antes con este grupo, en otras planeaciones — úsalo SOLO como contexto de continuidad pedagógica real, para que el proyecto se sienta parte de la progresión del grupo y no aislado; NUNCA como instrucción de evitar mecánicamente estos temas ni de forzar mencionarlos):
 ${trayectoriaPDA || 'Aún no hay historial registrado — este es de los primeros proyectos con este grupo en el ciclo.'}
+
+PRIORIDADES PEDAGÓGICAS DEL GRUPO (jerarquía explícita entre dos fuentes — úsala solo para calibrar énfasis narrativo DENTRO de las actividades del proyecto ya definido, NUNCA para cambiar el PDA principal ni el proyecto elegido): 
+${prioridadesPedagogicas || 'No hay prioridades adicionales registradas para este grupo.'}
+Si el 1er orden y el 2do orden coinciden con algo que ya estás narrando en algún día, dale mayor peso narrativo al 1er orden (evaluación individual). Si solo aparece el 2do orden (PDAs del jardín) sin relación con el 1er orden, trátalo como apoyo complementario menor, nunca como el foco de la actividad.
 
 DATOS DEL PROYECTO:
 - Nombre: ${form.nombre_proyecto}
@@ -350,7 +437,7 @@ ${materialesTexto}
 LISTA DE DÍAS DE ESTE LOTE (${lote.length} día(s)):
 ${listaDiasLote}
 
-INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "dias", uno por cada día listado arriba, en el mismo orden. El campo "numero" va del 1 al ${lote.length} (numeración local a este lote). El campo "momento_modalidad" es el indicado entre paréntesis junto a cada día. NUNCA repitas ni omitas días. RECUERDA: "inicio", "desarrollo", "cierre" y "materiales" son obligatorios en LOS ${lote.length} DÍAS, sin excepción — si necesitas ahorrar espacio, hazlo acortando el detalle, nunca omitiendo un campo completo. RECUERDA TAMBIÉN: el campo "inicio" de cada día arranca desde la entrada real del grupo al salón, nunca desde un momento intermedio de la jornada. RECUERDA TAMBIÉN: nunca uses comillas dobles dentro del texto, solo comillas simples para diálogos. RECUERDA TAMBIÉN (R-TRANSVERSAL y R-EJE-SECUNDARIO): si hay campos transversales o eje secundario declarados arriba, revisa antes de terminar este lote que al menos uno de los días los haya ejecutado de forma observable — no solo mencionado.${instruccionCierreFinal}`
+INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "dias", uno por cada día listado arriba, en el mismo orden. El campo "numero" va del 1 al ${lote.length} (numeración local a este lote). El campo "momento_modalidad" es el indicado entre paréntesis junto a cada día. NUNCA repitas ni omitas días. RECUERDA: "inicio", "desarrollo", "cierre" y "materiales" son obligatorios en LOS ${lote.length} DÍAS, sin excepción — si necesitas ahorrar espacio, hazlo acortando el detalle, nunca omitiendo un campo completo. RECUERDA TAMBIÉN: el campo "inicio" de cada día arranca desde la entrada real del grupo al salón, nunca desde un momento intermedio de la jornada. RECUERDA TAMBIÉN: nunca uses comillas dobles dentro del texto, solo comillas simples para diálogos. RECUERDA TAMBIÉN (R-TRANSVERSAL y R-EJE-SECUNDARIO): si hay campos transversales o eje secundario declarados arriba, revisa antes de terminar este lote que al menos uno de los días los haya ejecutado de forma observable — no solo mencionado. RECUERDA TAMBIÉN (R-SIN-ETIQUETAS): si usaste el bloque de PRIORIDADES PEDAGÓGICAS para calibrar alguna actividad, verifica que el texto final no contenga ninguna etiqueta diagnóstica ni palabra de severidad clínica — solo necesidades y apoyos concretos.${instruccionCierreFinal}`
 
   const message = await client.messages.create({
     model: MODEL,
@@ -442,6 +529,11 @@ export async function POST(request: NextRequest) {
     // consulta una sola vez por generación completa (no por lote),
     // ya que no cambia entre lotes de la misma planeación.
     const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
+
+    // [jul 2026, FASE 1.2] Jerarquía evaluación individual (1er orden)
+    // vs PDAs del jardín (2do orden) — no requiere consulta a
+    // Supabase, ya viene en el objeto profile.
+    const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)
 
     const todosDias = calcularDiasHabiles(calDatos, form.fecha_inicio, form.fecha_fin)
     const diasHabiles = todosDias.filter(d => !d.esCTE && !d.motivo)
@@ -556,6 +648,7 @@ export async function POST(request: NextRequest) {
         contextoPrevio,
         materialesUsados,
         trayectoriaPDA,
+        prioridadesPedagogicas,
         esUltimoLote,
       })
 
