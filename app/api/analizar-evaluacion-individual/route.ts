@@ -8,6 +8,8 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 )
 
+const SECCION_HISTORIAL = 'diagnostico_individual'
+
 function repararJSON(raw: string): string {
   const n = raw.length
   let resultado = ''
@@ -150,6 +152,65 @@ Responde SOLO con JSON válido, sin texto adicional:
 
     if (error) {
       return NextResponse.json({ error: 'Error al guardar: ' + error.message }, { status: 500 })
+    }
+
+    // Historial versionado — sección 2.2 (Diagnóstico individual)
+    try {
+      // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
+      // hay que resolver primero el id interno del usuario
+      const { data: usuarioRow, error: usuarioError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_uid', auth_uid)
+        .maybeSingle()
+
+      if (usuarioError || !usuarioRow) {
+        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
+      } else {
+        const userIdInterno = usuarioRow.id
+
+        const { data: versionesPrevias } = await supabase
+          .from('documentos_historial')
+          .select('version_numero')
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .order('version_numero', { ascending: false })
+          .limit(1)
+
+        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+          ? versionesPrevias[0].version_numero + 1
+          : 1
+
+        await supabase
+          .from('documentos_historial')
+          .update({ activo: false })
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .eq('activo', true)
+
+        const totalAlumnos = typeof resultado.total_alumnos_detectados === 'number' ? resultado.total_alumnos_detectados : 0
+        const alumnosConNEE = typeof resultado.alumnos_con_nee === 'number' ? resultado.alumnos_con_nee : 0
+        const resumenCorto = `${totalAlumnos} alumnos analizados${alumnosConNEE > 0 ? `, ${alumnosConNEE} con NEE` : ''}`
+
+        const { error: historialError } = await supabase
+          .from('documentos_historial')
+          .insert({
+            user_id: userIdInterno,
+            seccion: SECCION_HISTORIAL,
+            version_numero: nuevaVersion,
+            contenido: JSON.stringify(resultado),
+            resumen: resumenCorto,
+            archivo_formato: 'texto',
+            activo: true,
+          })
+
+        if (historialError) {
+          console.error('Error guardando historial de evaluación individual:', historialError)
+        }
+      }
+    } catch (historialCatchError) {
+      // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario
+      console.error('Error inesperado en historial de evaluación individual:', historialCatchError)
     }
 
     return NextResponse.json({ resultado })

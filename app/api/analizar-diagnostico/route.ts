@@ -8,6 +8,8 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 )
 
+const SECCION_HISTORIAL = 'diagnostico_grupal'
+
 export async function POST(request: NextRequest) {
   try {
     const { diagnostico_texto, grado, auth_uid } = await request.json()
@@ -77,7 +79,7 @@ Analiza el diagnóstico, extrae las necesidades pedagógicas reales ignorando da
     const clean = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const resultado = JSON.parse(clean)
 
-    // 4. Guardar diagnóstico y PDAs prioritarios en Supabase
+    // 4. Guardar diagnóstico y PDAs prioritarios en Supabase (comportamiento actual, sin cambios)
     const { error: saveError } = await supabase
       .from('users')
       .update({
@@ -89,6 +91,70 @@ Analiza el diagnóstico, extrae las necesidades pedagógicas reales ignorando da
 
     if (saveError) {
       console.error('Error guardando diagnóstico:', saveError)
+    }
+
+    // 5. Historial versionado — sección 2.1 (Diagnóstico grupal)
+    try {
+      // 5.0 documentos_historial.user_id referencia public.users.id (NO auth_uid) —
+      // hay que resolver primero el id interno del usuario
+      const { data: usuarioRow, error: usuarioError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_uid', auth_uid)
+        .maybeSingle()
+
+      if (usuarioError || !usuarioRow) {
+        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
+      } else {
+        const userIdInterno = usuarioRow.id
+
+        // 5.1 Buscar la versión más alta ya existente para este usuario/sección
+        const { data: versionesPrevias } = await supabase
+          .from('documentos_historial')
+          .select('version_numero')
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .order('version_numero', { ascending: false })
+          .limit(1)
+
+        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+          ? versionesPrevias[0].version_numero + 1
+          : 1
+
+        // 5.2 Desactivar la versión activa anterior (si existe)
+        await supabase
+          .from('documentos_historial')
+          .update({ activo: false })
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .eq('activo', true)
+
+        // 5.3 Resumen corto legible para mostrar en el historial sin abrir el detalle
+        const totalPDAs = Array.isArray(resultado.pdas_sugeridos) ? resultado.pdas_sugeridos.length : 0
+        const resumenCorto = totalPDAs > 0
+          ? `${totalPDAs} PDAs prioritarios identificados: ${resultado.pdas_sugeridos.slice(0, 2).map((p: any) => p.campo).join(', ')}${totalPDAs > 2 ? '…' : ''}`
+          : 'Diagnóstico procesado sin PDAs sugeridos'
+
+        // 5.4 Insertar la nueva versión activa
+        const { error: historialError } = await supabase
+          .from('documentos_historial')
+          .insert({
+            user_id: userIdInterno,
+            seccion: SECCION_HISTORIAL,
+            version_numero: nuevaVersion,
+            contenido: JSON.stringify(resultado.pdas_sugeridos),
+            resumen: resumenCorto,
+            archivo_formato: 'texto',
+            activo: true,
+          })
+
+        if (historialError) {
+          console.error('Error guardando historial de diagnóstico:', historialError)
+        }
+      }
+    } catch (historialCatchError) {
+      // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario
+      console.error('Error inesperado en historial de diagnóstico:', historialCatchError)
     }
 
     return NextResponse.json(resultado)

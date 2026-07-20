@@ -8,6 +8,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SECRET_KEY!
 )
 
+const SECCION_HISTORIAL = 'observaciones_directivo'
+
 export async function POST(req: NextRequest) {
   try {
     const { texto, auth_uid } = await req.json()
@@ -51,6 +53,66 @@ Responde ÚNICAMENTE con JSON puro, sin markdown ni backticks:
 
     if (error) {
       return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })
+    }
+
+    // Historial versionado — sección 3.1 (Observaciones de dirección)
+    try {
+      // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
+      // hay que resolver primero el id interno del usuario
+      const { data: usuarioRow, error: usuarioError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('auth_uid', auth_uid)
+        .maybeSingle()
+
+      if (usuarioError || !usuarioRow) {
+        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
+      } else {
+        const userIdInterno = usuarioRow.id
+
+        const { data: versionesPrevias } = await supabaseAdmin
+          .from('documentos_historial')
+          .select('version_numero')
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .order('version_numero', { ascending: false })
+          .limit(1)
+
+        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+          ? versionesPrevias[0].version_numero + 1
+          : 1
+
+        await supabaseAdmin
+          .from('documentos_historial')
+          .update({ activo: false })
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .eq('activo', true)
+
+        const totalAreas = Array.isArray(resultado.areas_mejora) ? resultado.areas_mejora.length : 0
+        const resumenCorto = totalAreas > 0
+          ? `${totalAreas} áreas de mejora: ${resultado.areas_mejora.slice(0, 2).join(', ')}${totalAreas > 2 ? '…' : ''}`
+          : 'Observaciones de dirección procesadas'
+
+        const { error: historialError } = await supabaseAdmin
+          .from('documentos_historial')
+          .insert({
+            user_id: userIdInterno,
+            seccion: SECCION_HISTORIAL,
+            version_numero: nuevaVersion,
+            contenido: JSON.stringify(resultado),
+            resumen: resumenCorto,
+            archivo_formato: 'texto',
+            activo: true,
+          })
+
+        if (historialError) {
+          console.error('Error guardando historial de observaciones de dirección:', historialError)
+        }
+      }
+    } catch (historialCatchError) {
+      // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario
+      console.error('Error inesperado en historial de observaciones de dirección:', historialCatchError)
     }
 
     return NextResponse.json({ ok: true, resultado })

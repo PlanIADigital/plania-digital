@@ -64,6 +64,45 @@ function formatearFecha(fechaISO: string): string {
   return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// Formatea una fecha ISO como tiempo relativo ("Guardado hace 2 minutos",
+// "Guardado ayer", etc.) para que la educadora pueda confirmar que el
+// guardado fue real y no solo un ícono decorativo que apareció al instante.
+function formatearTiempoRelativo(fechaISO: string): string {
+  const ahora = Date.now()
+  const entonces = new Date(fechaISO).getTime()
+  const diffSegundos = Math.floor((ahora - entonces) / 1000)
+
+  if (diffSegundos < 60) return 'Guardado hace instantes'
+
+  const diffMinutos = Math.floor(diffSegundos / 60)
+  if (diffMinutos < 60) return `Guardado hace ${diffMinutos} minuto${diffMinutos !== 1 ? 's' : ''}`
+
+  const diffHoras = Math.floor(diffMinutos / 60)
+  if (diffHoras < 24) return `Guardado hace ${diffHoras} hora${diffHoras !== 1 ? 's' : ''}`
+
+  const diffDias = Math.floor(diffHoras / 24)
+  if (diffDias === 1) return 'Guardado ayer'
+  if (diffDias < 7) return `Guardado hace ${diffDias} días`
+
+  const fecha = new Date(fechaISO)
+  return `Guardado el ${fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`
+}
+
+// Componente que muestra el tiempo relativo de guardado y se actualiza solo
+// cada 30 segundos (para que "hace instantes" eventualmente pase a
+// "hace 2 minutos" sin que la educadora tenga que recargar la página)
+function TiempoGuardado({ fechaISO }: { fechaISO?: string }) {
+  const [, forzarActualizacion] = useState(0)
+  useEffect(() => {
+    const intervalo = setInterval(() => forzarActualizacion(t => t + 1), 30000)
+    return () => clearInterval(intervalo)
+  }, [])
+  if (!fechaISO) return null
+  return (
+    <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>{formatearTiempoRelativo(fechaISO)}</p>
+  )
+}
+
 function VerDetalle({ expandido, onToggle, children }: { expandido: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <div>
@@ -88,6 +127,11 @@ export default function MiGrupoPage() {
   const [profile, setProfile] = useState<any>(null)
   const [alumnosGuardado, setAlumnosGuardado] = useState(false)
   const [discrepanciaAlumnos, setDiscrepanciaAlumnos] = useState<DiscrepanciaAlumnos | null>(null)
+
+  // Timestamps de guardado para las 5 secciones con historial versionado —
+  // permite mostrar "Guardado hace X" junto al ✅, para confirmar que el
+  // guardado fue real y no solo un ícono que apareció de inmediato
+  const [fechasGuardado, setFechasGuardado] = useState<Record<string, string>>({})
 
   // 1A — PMC
   const [analizandoEscolar, setAnalizandoEscolar] = useState(false)
@@ -196,6 +240,11 @@ export default function MiGrupoPage() {
           setHistorialPA(json.historial)
         }
       }
+      // Fechas reales de guardado (desde documentos_historial) para las 5
+      // secciones con historial versionado — alimenta el "Guardado hace X"
+      const resFechas = await fetch(`/api/documentos-historial/fechas?auth_uid=${session.user.id}`)
+      const jsonFechas = await resFechas.json()
+      if (jsonFechas.ok) setFechasGuardado(jsonFechas.fechas || {})
     }
     load()
   }, [])
@@ -247,7 +296,10 @@ export default function MiGrupoPage() {
         body: JSON.stringify({ texto: data.texto, auth_uid: session.user.id })
       })
       const dataAnalisis = await resAnalisis.json()
-      if (dataAnalisis.ok) { setResultadoEscolar(dataAnalisis.resultado); setDiagnosticoEscolarGuardado(true) }
+      if (dataAnalisis.ok) {
+        setResultadoEscolar(dataAnalisis.resultado); setDiagnosticoEscolarGuardado(true)
+        setFechasGuardado(prev => ({ ...prev, pmc: new Date().toISOString() }))
+      }
       else setErrorEscolar('Error al analizar. Intenta de nuevo.')
     } catch { setErrorEscolar('Error de conexión.') }
     setAnalizandoEscolar(false)
@@ -316,6 +368,7 @@ export default function MiGrupoPage() {
       const data = await res.json()
       if (data.pdas_sugeridos) {
         setPdas(data.pdas_sugeridos); setGuardado(true)
+        setFechasGuardado(prev => ({ ...prev, diagnostico_grupal: new Date().toISOString() }))
         // if (data.total_alumnos_detectado) revisarDiscrepanciaAlumnos(data.total_alumnos_detectado, '2.1')
       }
       else setErrorDiagnostico(data.error || 'No se pudieron analizar los PDAs.')
@@ -342,6 +395,7 @@ export default function MiGrupoPage() {
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.error) { setErrorEval('Error al analizar.'); setGuardandoEval(false); return }
       setEvaluacionIndividual(dataAnalisis.resultado)
+      setFechasGuardado(prev => ({ ...prev, diagnostico_individual: new Date().toISOString() }))
       const detectado = dataAnalisis.resultado?.total_alumnos_detectados
       if (detectado) revisarDiscrepanciaAlumnos(detectado, '2.2')
     } catch { setErrorEval('Error de conexión.') }
@@ -360,7 +414,11 @@ export default function MiGrupoPage() {
         body: JSON.stringify({ texto, auth_uid: session.user.id })
       })
       const data = await res.json()
-      if (data.ok) { setResultadoObservaciones(data.resultado); setObservacionesGuardadas(true); return true }
+      if (data.ok) {
+        setResultadoObservaciones(data.resultado); setObservacionesGuardadas(true)
+        setFechasGuardado(prev => ({ ...prev, observaciones_directivo: new Date().toISOString() }))
+        return true
+      }
       setErrorObservaciones('Error al analizar.')
       return false
     } catch {
@@ -411,6 +469,7 @@ export default function MiGrupoPage() {
       if (dataAnalisis.ok) {
         setResultadoJardin(dataAnalisis)
         setGuardadoJardin(true)
+        setFechasGuardado(prev => ({ ...prev, pdas_jardin: new Date().toISOString() }))
       } else {
         setErrorJardin('No se pudieron identificar los PDAs del documento.')
       }
@@ -547,6 +606,7 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ PMC guardado</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['pmc']} />
                         {resultadoEscolar?.contexto_social && (
                           <VerDetalle expandido={expandidoPMC} onToggle={() => setExpandidoPMC(v => !v)}>
                             <p style={{ fontSize: 11, color: '#444', margin: 0, lineHeight: 1.4, textAlign: 'left' }}>{resultadoEscolar.contexto_social}</p>
@@ -660,6 +720,7 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Observaciones integradas</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']} />
                         {resultadoObservaciones?.areas_mejora?.length > 0 && (
                           <VerDetalle expandido={expandidoObs} onToggle={() => setExpandidoObs(v => !v)}>
                             {resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
@@ -686,6 +747,7 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']} />
                         {resultadoJardin?.resumen && (
                           <VerDetalle expandido={expandidoJardin} onToggle={() => setExpandidoJardin(v => !v)}>
                             <p style={{ fontSize: 11, color: '#444', margin: 0, lineHeight: 1.4, textAlign: 'left' }}>{resultadoJardin.resumen}</p>
@@ -723,6 +785,7 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Diagnóstico guardado</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
                         <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
                           Actualizar
@@ -746,6 +809,7 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Evaluación completa</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}</p>
                         <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
                           Actualizar

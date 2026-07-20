@@ -8,6 +8,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SECRET_KEY!
 )
 
+const SECCION_HISTORIAL = 'pdas_jardin'
+
 const CAMPOS_VALIDOS = [
   'Lenguajes',
   'Saberes y Pensamiento Científico',
@@ -174,6 +176,65 @@ FORMATO DE SALIDA:
       .from('users')
       .update({ pdas_jardin: paraGuardar })
       .eq('auth_uid', auth_uid)
+
+    // Historial versionado — sección 1.3 (PDAs del jardín)
+    try {
+      // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
+      // hay que resolver primero el id interno del usuario
+      const { data: usuarioRow, error: usuarioError } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('auth_uid', auth_uid)
+        .maybeSingle()
+
+      if (usuarioError || !usuarioRow) {
+        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
+      } else {
+        const userIdInterno = usuarioRow.id
+
+        const { data: versionesPrevias } = await supabaseAdmin
+          .from('documentos_historial')
+          .select('version_numero')
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .order('version_numero', { ascending: false })
+          .limit(1)
+
+        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+          ? versionesPrevias[0].version_numero + 1
+          : 1
+
+        await supabaseAdmin
+          .from('documentos_historial')
+          .update({ activo: false })
+          .eq('user_id', userIdInterno)
+          .eq('seccion', SECCION_HISTORIAL)
+          .eq('activo', true)
+
+        const resumenCorto = paraGuardar.resumen
+          ? paraGuardar.resumen.slice(0, 200)
+          : `${pdasFinal.length} PDAs del jardín vinculados`
+
+        const { error: historialError } = await supabaseAdmin
+          .from('documentos_historial')
+          .insert({
+            user_id: userIdInterno,
+            seccion: SECCION_HISTORIAL,
+            version_numero: nuevaVersion,
+            contenido: JSON.stringify(paraGuardar),
+            resumen: resumenCorto,
+            archivo_formato: 'texto',
+            activo: true,
+          })
+
+        if (historialError) {
+          console.error('Error guardando historial de PDAs del jardín:', historialError)
+        }
+      }
+    } catch (historialCatchError) {
+      // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario
+      console.error('Error inesperado en historial de PDAs del jardín:', historialCatchError)
+    }
 
     return NextResponse.json({
       ok: true,
