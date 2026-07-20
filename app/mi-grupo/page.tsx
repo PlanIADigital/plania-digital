@@ -80,10 +80,9 @@ function formatearTiempoRelativo(fechaISO: string): string {
   const diffHoras = Math.floor(diffMinutos / 60)
   if (diffHoras < 24) return `Guardado hace ${diffHoras} hora${diffHoras !== 1 ? 's' : ''}`
 
-  const diffDias = Math.floor(diffHoras / 24)
-  if (diffDias === 1) return 'Guardado ayer'
-  if (diffDias < 7) return `Guardado hace ${diffDias} días`
-
+  // Pasadas las 24 horas, mostramos la fecha completa directamente —
+  // sin pasos intermedios de "ayer" o "hace X días" que solo agregan
+  // ambigüedad sin aportar más certeza que la fecha exacta
   const fecha = new Date(fechaISO)
   return `Guardado el ${fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`
 }
@@ -635,7 +634,7 @@ export default function MiGrupoPage() {
                       <div>
                         <div style={{ ...s.ok, borderRadius: historialVisible ? '8px 8px 0 0' : 8 }}>
                           <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
-                          <p style={{ fontSize: 11, color: '#555', margin: '2px 0 0' }}>{formatearFecha(paActivo.fecha_carga)}</p>
+                          <TiempoGuardado fechaISO={paActivo.fecha_carga} />
                           {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
                             <div style={{ marginTop: 6, background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, padding: '6px 8px' }}>
                               <p style={{ margin: 0, fontSize: 11, color: '#92400E', fontWeight: 700 }}>⚠ {paActivo.pda_ponderacion.inconsistencias.length} observación{paActivo.pda_ponderacion.inconsistencias.length > 1 ? 'es' : ''} de MÍA</p>
