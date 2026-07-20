@@ -442,7 +442,6 @@ export async function POST(request: NextRequest) {
     // consulta una sola vez por generación completa (no por lote),
     // ya que no cambia entre lotes de la misma planeación.
     const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
-    console.log('🟢🟢🟢 VERIFICACIÓN FASE 1.1 — trayectoriaPDA:', trayectoriaPDA || '(vacío — revisar profile.id: ' + profile?.id + ')')
 
     const todosDias = calcularDiasHabiles(calDatos, form.fecha_inicio, form.fecha_fin)
     const diasHabiles = todosDias.filter(d => !d.esCTE && !d.motivo)
