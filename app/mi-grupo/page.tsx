@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
 
 const MENSAJES_ANALISIS = [
@@ -102,17 +103,6 @@ function TiempoGuardado({ fechaISO }: { fechaISO?: string }) {
   )
 }
 
-function VerDetalle({ expandido, onToggle, children }: { expandido: boolean; onToggle: () => void; children: React.ReactNode }) {
-  return (
-    <div>
-      <button onClick={onToggle} style={{ background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>
-        {expandido ? '▴ Ocultar' : '▾ Ver detalle'}
-      </button>
-      {expandido && <div style={{ marginTop: 6 }}>{children}</div>}
-    </div>
-  )
-}
-
 const GRADO_MAP: Record<string, string> = { '1er Grado': '1°', '2do Grado': '2°', '3er Grado': '3°' }
 
 type OrigenConteo = '2.1' | '2.2'
@@ -127,17 +117,32 @@ export default function MiGrupoPage() {
   const [alumnosGuardado, setAlumnosGuardado] = useState(false)
   const [discrepanciaAlumnos, setDiscrepanciaAlumnos] = useState<DiscrepanciaAlumnos | null>(null)
 
-  // Timestamps de guardado para las 5 secciones con historial versionado —
+  // Timestamps de guardado para las secciones con historial versionado —
   // permite mostrar "Guardado hace X" junto al ✅, para confirmar que el
-  // guardado fue real y no solo un ícono que apareció de inmediato
-  const [fechasGuardado, setFechasGuardado] = useState<Record<string, string>>({})
+  // guardado fue real y no solo un ícono que apareció de inmediato.
+  // Ahora también trae version_numero, para saber cuándo mostrar "Historial"
+  // (solo a partir de la 2ª versión subida)
+  const [fechasGuardado, setFechasGuardado] = useState<Record<string, { fecha: string; version: number }>>({})
+
+  // Modal genérico de "Ver detalle" — el contenido se arma según qué
+  // sección lo dispare, para no duplicar 6 componentes de modal casi iguales
+  const [modalDetalle, setModalDetalle] = useState<{ titulo: string; contenido: React.ReactNode } | null>(null)
+
+  // Modal genérico de "Historial" para las 5 secciones que usan
+  // documentos_historial (PA usa su propio historial, ya existente)
+  const [modalHistorial, setModalHistorial] = useState<{ titulo: string } | null>(null)
+  const [versionesHistorial, setVersionesHistorial] = useState<any[]>([])
+  const [cargandoVersiones, setCargandoVersiones] = useState(false)
+
+  // Modal de observaciones de MÍA sobre el PA — reemplaza el bloque
+  // amarillo grande por un badge compacto que abre esta ventana
+  const [modalMiaPA, setModalMiaPA] = useState(false)
 
   // 1A — PMC
   const [analizandoEscolar, setAnalizandoEscolar] = useState(false)
   const [diagnosticoEscolarGuardado, setDiagnosticoEscolarGuardado] = useState(false)
   const [errorEscolar, setErrorEscolar] = useState('')
   const [resultadoEscolar, setResultadoEscolar] = useState<any>(null)
-  const [expandidoPMC, setExpandidoPMC] = useState(false)
 
   // 1B — Programa Analítico
   const [analizandoPA, setAnalizandoPA] = useState(false)
@@ -146,20 +151,17 @@ export default function MiGrupoPage() {
   const [historialPA, setHistorialPA] = useState<any[]>([])
   const [historialVisible, setHistorialVisible] = useState(false)
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
-  const [expandidoPA, setExpandidoPA] = useState(false)
 
   // 2A — Diagnóstico grupal
   const [analizando, setAnalizando] = useState(false)
   const [pdas, setPdas] = useState<any[]>([])
   const [guardado, setGuardado] = useState(false)
   const [errorDiagnostico, setErrorDiagnostico] = useState('')
-  const [expandidoPdasGrupo, setExpandidoPdasGrupo] = useState(false)
 
   // 2B — Evaluación individual
   const [evaluacionIndividual, setEvaluacionIndividual] = useState<any>([])
   const [guardandoEval, setGuardandoEval] = useState(false)
   const [errorEval, setErrorEval] = useState('')
-  const [expandidoPdasIndividual, setExpandidoPdasIndividual] = useState(false)
 
   // 3A — Observaciones del directivo
   const [observacionesTexto, setObservacionesTexto] = useState('')
@@ -167,14 +169,12 @@ export default function MiGrupoPage() {
   const [observacionesGuardadas, setObservacionesGuardadas] = useState(false)
   const [errorObservaciones, setErrorObservaciones] = useState('')
   const [resultadoObservaciones, setResultadoObservaciones] = useState<any>(null)
-  const [expandidoObs, setExpandidoObs] = useState(false)
 
   // 3B — PDAs del jardín
   const [guardandoJardin, setGuardandoJardin] = useState(false)
   const [guardadoJardin, setGuardadoJardin] = useState(false)
   const [errorJardin, setErrorJardin] = useState('')
   const [resultadoJardin, setResultadoJardin] = useState<any>(null)
-  const [expandidoJardin, setExpandidoJardin] = useState(false)
 
   // 4 — Estilo narrativo
   const [estiloTexto, setEstiloTexto] = useState('')
@@ -277,6 +277,36 @@ export default function MiGrupoPage() {
     setDiscrepanciaAlumnos(null)
   }
 
+  // Abre el modal de Historial para cualquiera de las 5 secciones que usan
+  // documentos_historial (PMC, Diagnóstico Grupal, Diagnóstico Individual,
+  // Observaciones de dirección, PDAs del jardín). PA no usa esta función —
+  // tiene su propio historial ya construido en programa_analitico.
+  async function abrirHistorial(seccion: string, titulo: string) {
+    setModalHistorial({ titulo })
+    setVersionesHistorial([])
+    setCargandoVersiones(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setCargandoVersiones(false); return }
+      const res = await fetch(`/api/documentos-historial/lista?auth_uid=${session.user.id}&seccion=${seccion}`)
+      const json = await res.json()
+      if (json.ok) setVersionesHistorial(json.versiones || [])
+    } catch {
+      // silencioso — si falla, el modal simplemente se queda sin versiones que mostrar
+    }
+    setCargandoVersiones(false)
+  }
+
+  // Vuelve a consultar las fechas/versiones activas después de guardar algo
+  // nuevo, en vez de intentar adivinar la versión desde el frontend
+  async function refrescarFechas() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const res = await fetch(`/api/documentos-historial/fechas?auth_uid=${session.user.id}`)
+    const json = await res.json()
+    if (json.ok) setFechasGuardado(json.fechas || {})
+  }
+
   async function handleArchivoPMC(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -297,7 +327,7 @@ export default function MiGrupoPage() {
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.ok) {
         setResultadoEscolar(dataAnalisis.resultado); setDiagnosticoEscolarGuardado(true)
-        setFechasGuardado(prev => ({ ...prev, pmc: new Date().toISOString() }))
+        refrescarFechas()
       }
       else setErrorEscolar('Error al analizar. Intenta de nuevo.')
     } catch { setErrorEscolar('Error de conexión.') }
@@ -367,7 +397,7 @@ export default function MiGrupoPage() {
       const data = await res.json()
       if (data.pdas_sugeridos) {
         setPdas(data.pdas_sugeridos); setGuardado(true)
-        setFechasGuardado(prev => ({ ...prev, diagnostico_grupal: new Date().toISOString() }))
+        refrescarFechas()
         // if (data.total_alumnos_detectado) revisarDiscrepanciaAlumnos(data.total_alumnos_detectado, '2.1')
       }
       else setErrorDiagnostico(data.error || 'No se pudieron analizar los PDAs.')
@@ -394,7 +424,7 @@ export default function MiGrupoPage() {
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.error) { setErrorEval('Error al analizar.'); setGuardandoEval(false); return }
       setEvaluacionIndividual(dataAnalisis.resultado)
-      setFechasGuardado(prev => ({ ...prev, diagnostico_individual: new Date().toISOString() }))
+      refrescarFechas()
       const detectado = dataAnalisis.resultado?.total_alumnos_detectados
       if (detectado) revisarDiscrepanciaAlumnos(detectado, '2.2')
     } catch { setErrorEval('Error de conexión.') }
@@ -415,7 +445,7 @@ export default function MiGrupoPage() {
       const data = await res.json()
       if (data.ok) {
         setResultadoObservaciones(data.resultado); setObservacionesGuardadas(true)
-        setFechasGuardado(prev => ({ ...prev, observaciones_directivo: new Date().toISOString() }))
+        refrescarFechas()
         return true
       }
       setErrorObservaciones('Error al analizar.')
@@ -468,7 +498,7 @@ export default function MiGrupoPage() {
       if (dataAnalisis.ok) {
         setResultadoJardin(dataAnalisis)
         setGuardadoJardin(true)
-        setFechasGuardado(prev => ({ ...prev, pdas_jardin: new Date().toISOString() }))
+        refrescarFechas()
       } else {
         setErrorJardin('No se pudieron identificar los PDAs del documento.')
       }
@@ -530,6 +560,11 @@ export default function MiGrupoPage() {
     okText: { margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 } as React.CSSProperties,
     err: { background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 } as React.CSSProperties,
     textarea: { display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'none' as const, overflow: 'hidden' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8, textAlign: 'left' as const } as React.CSSProperties,
+    // Fila de acciones unificada — misma posición y estilo en las 6 tarjetas
+    // con historial (todas menos la Sección 4)
+    accionesFila: { display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' as const } as React.CSSProperties,
+    accionBtn: { background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' } as React.CSSProperties,
+    badgeMia: { display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFBEB', border: '1px solid #FCD34D', color: '#92400E', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, cursor: 'pointer' } as React.CSSProperties,
   }
 
   if (!profile) return (
@@ -605,16 +640,23 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ PMC guardado</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['pmc']} />
-                        {resultadoEscolar?.contexto_social && (
-                          <VerDetalle expandido={expandidoPMC} onToggle={() => setExpandidoPMC(v => !v)}>
-                            <p style={{ fontSize: 11, color: '#444', margin: 0, lineHeight: 1.4, textAlign: 'left' }}>{resultadoEscolar.contexto_social}</p>
-                          </VerDetalle>
-                        )}
-                        <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-                          Actualizar
-                          <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} />
-                        </label>
+                        <TiempoGuardado fechaISO={fechasGuardado['pmc']?.fecha} />
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => setModalDetalle({
+                              titulo: '1.1 · Programa de Mejora Continua',
+                              contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{resultadoEscolar?.contexto_social || 'Sin detalle disponible.'}</p>,
+                            })}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['pmc']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('pmc', '1.1 · Historial del PMC')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <label style={s.accionBtn}>
+                            ↑ Actualizar
+                            <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} />
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -632,59 +674,34 @@ export default function MiGrupoPage() {
                       </div>
                     ) : (
                       <div>
-                        <div style={{ ...s.ok, borderRadius: historialVisible ? '8px 8px 0 0' : 8 }}>
-                          <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
+                        <div style={s.ok}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+                            <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
+                            {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
+                              <button onClick={() => setModalMiaPA(true)} style={s.badgeMia}>⚠ MÍA</button>
+                            )}
+                          </div>
                           <TiempoGuardado fechaISO={paActivo.fecha_carga} />
-                          {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
-                            <div style={{ marginTop: 6, background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, padding: '6px 8px' }}>
-                              <p style={{ margin: 0, fontSize: 11, color: '#92400E', fontWeight: 700 }}>⚠ {paActivo.pda_ponderacion.inconsistencias.length} observación{paActivo.pda_ponderacion.inconsistencias.length > 1 ? 'es' : ''} de MÍA</p>
-                            </div>
-                          )}
-                          {paActivo.pda_ponderacion?.resumen_pa && (
-                            <VerDetalle expandido={expandidoPA} onToggle={() => setExpandidoPA(v => !v)}>
-                              <p style={{ fontSize: 11, color: '#444', margin: 0, lineHeight: 1.4, textAlign: 'left' }}>{paActivo.pda_ponderacion.resumen_pa}</p>
-                            </VerDetalle>
-                          )}
                           {paActivo.nota_directivo && (
                             <p style={{ fontSize: 11, color: '#185FA5', margin: '6px 0 0' }}>💬 {paActivo.nota_directivo}</p>
                           )}
-                          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                            <button onClick={toggleHistorial} style={{ background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                              {historialVisible ? '▴ Ocultar historial' : '▾ Historial'}
-                            </button>
-                            <label style={{ color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                          <div style={s.accionesFila}>
+                            <button
+                              onClick={() => setModalDetalle({
+                                titulo: '1.2 · Resumen del Programa Analítico',
+                                contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{paActivo.pda_ponderacion?.resumen_pa || 'Sin resumen disponible.'}</p>,
+                              })}
+                              style={s.accionBtn}
+                            >▾ Ver detalle</button>
+                            {paActivo.version_numero >= 2 && (
+                              <button onClick={toggleHistorial} style={s.accionBtn}>▾ Historial</button>
+                            )}
+                            <label style={s.accionBtn}>
                               ↑ Actualizar
                               <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
                             </label>
                           </div>
                         </div>
-                        {historialVisible && (
-                          <div style={{ background: 'white', border: '1.5px solid #00A896', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '8px 12px' }}>
-                            {cargandoHistorial ? <p style={{ fontSize: 11, color: '#888', margin: 0 }}>Cargando...</p> : historialPA.map((v: any, i: number) => (
-                              <div key={v.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingBottom: i < historialPA.length - 1 ? 6 : 0, marginBottom: i < historialPA.length - 1 ? 6 : 0, borderBottom: i < historialPA.length - 1 ? '1px solid #F0FDF9' : 'none' }}>
-                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: v.activo ? '#1D9E75' : '#D1D5DB', marginTop: 4, flexShrink: 0 }} />
-                                <div>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>v{v.version_numero}</span>
-                                  {v.activo && <span style={{ marginLeft: 6, fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: 10, fontWeight: 600 }}>activa</span>}
-                                  <p style={{ margin: '1px 0 0', fontSize: 11, color: '#888' }}>{formatearFecha(v.fecha_carga)}</p>
-                                  {v.nota_directivo && <p style={{ margin: '3px 0 0', fontSize: 11, color: '#185FA5' }}>💬 {v.nota_directivo}</p>}
-                                </div>
-                              </div>
-                            ))}
-                            {paActivo && (() => {
-                              const dias = Math.floor((Date.now() - new Date(paActivo.fecha_carga).getTime()) / (1000 * 60 * 60 * 24))
-                              if (dias < 30) return null
-                              return (
-                                <div style={{ marginTop: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 10px', display: 'flex', gap: 6 }}>
-                                  <span style={{ flexShrink: 0 }}>🔔</span>
-                                  <p style={{ margin: 0, fontSize: 11, color: '#1E40AF', lineHeight: 1.5 }}>
-                                    <strong>MÍA:</strong> Han pasado {dias} días. Si hubo ajustes en tu último CTE, actualiza el PA.
-                                  </p>
-                                </div>
-                              )
-                            })()}
-                          </div>
-                        )}
                         {errorPA && <div style={s.err}>{errorPA}</div>}
                       </div>
                     )}
@@ -719,16 +736,28 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Observaciones integradas</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']} />
-                        {resultadoObservaciones?.areas_mejora?.length > 0 && (
-                          <VerDetalle expandido={expandidoObs} onToggle={() => setExpandidoObs(v => !v)}>
-                            {resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
-                              <p key={i} style={{ fontSize: 11, color: '#444', margin: i === 0 ? 0 : '3px 0 0', lineHeight: 1.4, textAlign: 'left' }}>• {area}</p>
-                            ))}
-                          </VerDetalle>
-                        )}
-                        <button onClick={() => { setObservacionesGuardadas(false); setResultadoObservaciones(null); setObservacionesTexto(''); setExpandidoObs(false) }}
-                          style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>Actualizar</button>
+                        <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => setModalDetalle({
+                              titulo: '3.1 · Áreas de oportunidad',
+                              contenido: (
+                                <div>
+                                  {resultadoObservaciones?.areas_mejora?.length > 0
+                                    ? resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
+                                        <p key={i} style={{ fontSize: 13, color: '#444', margin: i === 0 ? 0 : '8px 0 0', lineHeight: 1.5, textAlign: 'left' }}>• {area}</p>
+                                      ))
+                                    : <p style={{ fontSize: 13, color: '#444', margin: 0, textAlign: 'left' }}>Sin áreas de mejora registradas.</p>}
+                                </div>
+                              ),
+                            })}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('observaciones_directivo', '3.1 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <button onClick={() => { setObservacionesGuardadas(false); setResultadoObservaciones(null); setObservacionesTexto('') }} style={s.accionBtn}>↑ Actualizar</button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -746,16 +775,23 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']} />
-                        {resultadoJardin?.resumen && (
-                          <VerDetalle expandido={expandidoJardin} onToggle={() => setExpandidoJardin(v => !v)}>
-                            <p style={{ fontSize: 11, color: '#444', margin: 0, lineHeight: 1.4, textAlign: 'left' }}>{resultadoJardin.resumen}</p>
-                          </VerDetalle>
-                        )}
-                        <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-                          Actualizar
-                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
-                        </label>
+                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => setModalDetalle({
+                              titulo: '3.2 · PDAs del jardín',
+                              contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>,
+                            })}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['pdas_jardin']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('pdas_jardin', '3.2 · Historial de PDAs del jardín')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <label style={s.accionBtn}>
+                            ↑ Actualizar
+                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -784,12 +820,50 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Diagnóstico guardado</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']} />
+                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']?.fecha} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
-                        <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-                          Actualizar
-                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} />
-                        </label>
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => {
+                              const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
+                              pdas.forEach((p) => {
+                                const key = `${p.campo}||${p.contenido}`
+                                if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
+                                grupos[key].items.push(p)
+                              })
+                              setModalDetalle({
+                                titulo: '2.1 · PDAs priorizados para tu grupo',
+                                contenido: (
+                                  <div>
+                                    {Object.values(grupos).map((grupo, gi) => (
+                                      <div key={gi} style={{ border: '1px solid #E0F5F3', borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: '#FAFFFE' }}>
+                                        <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
+                                          <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
+                                          <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
+                                        </div>
+                                        <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{grupo.contenido}</p>
+                                        {grupo.items.map((p, pi) => (
+                                          <div key={pi} style={{ background: 'white', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
+                                            <p style={{ margin: '0 0 4px', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{p.pda}</p>
+                                            <p style={{ margin: 0, fontSize: 11, color: '#666', lineHeight: 1.4 }}>{p.justificacion}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ),
+                              })
+                            }}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['diagnostico_grupal']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('diagnostico_grupal', '2.1 · Historial del diagnóstico grupal')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <label style={s.accionBtn}>
+                            ↑ Actualizar
+                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} />
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -808,61 +882,51 @@ export default function MiGrupoPage() {
                     ) : (
                       <div style={s.ok}>
                         <p style={s.okText}>✅ Evaluación completa</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']} />
+                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']?.fecha} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}</p>
-                        <label style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-                          Actualizar
-                          <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
-                        </label>
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => setModalDetalle({
+                              titulo: '2.2 · PDAs prioritarios (Diagnóstico Individual)',
+                              contenido: (
+                                <div>
+                                  {(evaluacionIndividual as any)?.pdas_prioritarios_grupo?.length > 0
+                                    ? (evaluacionIndividual as any).pdas_prioritarios_grupo.map((pda: any, i: number) => {
+                                        const esObjeto = typeof pda !== 'string'
+                                        return (
+                                          <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                                            {esObjeto && pda?.campo && (
+                                              <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
+                                                <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{pda.campo}</span>
+                                              </div>
+                                            )}
+                                            {esObjeto && pda?.contenido && (
+                                              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{pda.contenido}</p>
+                                            )}
+                                            <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>
+                                              {esObjeto ? pda.pda : pda}
+                                            </p>
+                                          </div>
+                                        )
+                                      })
+                                    : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin PDAs prioritarios registrados.</p>}
+                                </div>
+                              ),
+                            })}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('diagnostico_individual', '2.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <label style={s.accionBtn}>
+                            ↑ Actualizar
+                            <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-                {pdas.length > 0 && (() => {
-                  const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
-                  pdas.forEach((p) => {
-                    const key = `${p.campo}||${p.contenido}`
-                    if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
-                    grupos[key].items.push(p)
-                  })
-                  return (
-                    <div style={{ ...s.ok, marginTop: 16 }}>
-                      <VerDetalle expandido={expandidoPdasGrupo} onToggle={() => setExpandidoPdasGrupo(v => !v)}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>PDAs priorizados para tu grupo</p>
-                        {Object.values(grupos).map((grupo, gi) => (
-                          <div key={gi} style={{ border: '1px solid #E0F5F3', borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: 'white' }}>
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
-                              <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
-                              <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
-                            </div>
-                            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{grupo.contenido}</p>
-                            {grupo.items.map((p, pi) => (
-                              <div key={pi} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
-                                <p style={{ margin: '0 0 4px', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{p.pda}</p>
-                                <p style={{ margin: 0, fontSize: 11, color: '#666', lineHeight: 1.4 }}>{p.justificacion}</p>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </VerDetalle>
-                    </div>
-                  )
-                })()}
-
-                {(evaluacionIndividual as any)?.pdas_prioritarios_grupo?.length > 0 && (
-                  <div style={{ ...s.ok, marginTop: 12 }}>
-                    <VerDetalle expandido={expandidoPdasIndividual} onToggle={() => setExpandidoPdasIndividual(v => !v)}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>PDAs identificados como prioritarios (Diagnóstico Individual)</p>
-                      {(evaluacionIndividual as any).pdas_prioritarios_grupo.map((pda: any, i: number) => (
-                        <div key={i} style={{ background: 'white', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
-                          <p style={{ margin: 0, fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic', textAlign: 'left' }}>
-                            {typeof pda === 'string' ? pda : pda.pda}
-                          </p>
-                        </div>
-                      ))}
-                    </VerDetalle>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -905,6 +969,111 @@ export default function MiGrupoPage() {
           </div>
 
           <div style={{ height: 40 }} />
+
+          {/* Modal genérico de "Ver detalle" — usado por las 6 tarjetas */}
+          {modalDetalle && (
+            <DetalleModal titulo={modalDetalle.titulo} onClose={() => setModalDetalle(null)}>
+              {modalDetalle.contenido}
+            </DetalleModal>
+          )}
+
+          {/* Modal de "Historial" para las 5 secciones que usan documentos_historial */}
+          {modalHistorial && (
+            <DetalleModal titulo={modalHistorial.titulo} onClose={() => setModalHistorial(null)}>
+              {cargandoVersiones ? (
+                <p style={{ fontSize: 12, color: '#888', margin: 0 }}>Cargando...</p>
+              ) : versionesHistorial.length === 0 ? (
+                <p style={{ fontSize: 12, color: '#888', margin: 0 }}>No hay versiones anteriores todavía.</p>
+              ) : (
+                versionesHistorial.map((v: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingBottom: i < versionesHistorial.length - 1 ? 8 : 0, marginBottom: i < versionesHistorial.length - 1 ? 8 : 0, borderBottom: i < versionesHistorial.length - 1 ? '1px solid #F0EFF8' : 'none' }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: v.activo ? '#1D9E75' : '#D1D5DB', marginTop: 5, flexShrink: 0 }} />
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>v{v.version_numero}</span>
+                      {v.activo && <span style={{ marginLeft: 6, fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: 10, fontWeight: 600 }}>activa</span>}
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#888' }}>{formatearFecha(v.created_at)}</p>
+                      {v.resumen && <p style={{ margin: '4px 0 0', fontSize: 12, color: '#444', lineHeight: 1.4 }}>{v.resumen}</p>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </DetalleModal>
+          )}
+
+          {/* Modal de Historial del PA — reutiliza los datos que ya se cargan
+              desde /api/analizar-programa-analitico (no usa documentos_historial) */}
+          {historialVisible && (
+            <DetalleModal titulo="1.2 · Historial del Programa Analítico" onClose={() => setHistorialVisible(false)}>
+              {cargandoHistorial ? (
+                <p style={{ fontSize: 12, color: '#888', margin: 0 }}>Cargando...</p>
+              ) : (
+                <>
+                  {historialPA.map((v: any, i: number) => (
+                    <div key={v.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingBottom: i < historialPA.length - 1 ? 8 : 0, marginBottom: i < historialPA.length - 1 ? 8 : 0, borderBottom: i < historialPA.length - 1 ? '1px solid #F0EFF8' : 'none' }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: v.activo ? '#1D9E75' : '#D1D5DB', marginTop: 5, flexShrink: 0 }} />
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>v{v.version_numero}</span>
+                        {v.activo && <span style={{ marginLeft: 6, fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: 10, fontWeight: 600 }}>activa</span>}
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#888' }}>{formatearFecha(v.fecha_carga)}</p>
+                        {v.nota_directivo && <p style={{ margin: '4px 0 0', fontSize: 12, color: '#185FA5' }}>💬 {v.nota_directivo}</p>}
+                      </div>
+                    </div>
+                  ))}
+                  {paActivo && (() => {
+                    const dias = Math.floor((Date.now() - new Date(paActivo.fecha_carga).getTime()) / (1000 * 60 * 60 * 24))
+                    if (dias < 30) return null
+                    return (
+                      <div style={{ marginTop: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 10px', display: 'flex', gap: 6 }}>
+                        <span style={{ flexShrink: 0 }}>🔔</span>
+                        <p style={{ margin: 0, fontSize: 12, color: '#1E40AF', lineHeight: 1.5 }}>
+                          <strong>MÍA:</strong> Han pasado {dias} días. Si hubo ajustes en tu último CTE, actualiza el PA.
+                        </p>
+                      </div>
+                    )
+                  })()}
+                </>
+              )}
+            </DetalleModal>
+          )}
+
+          {/* Modal de observaciones de MÍA sobre inconsistencias del PA */}
+          {modalMiaPA && paActivo?.pda_ponderacion?.inconsistencias && (
+            <DetalleModal titulo="⚠ Observaciones de MÍA sobre el PA" onClose={() => setModalMiaPA(false)}>
+              {paActivo.pda_ponderacion.inconsistencias.map((obs: any, i: number) => {
+                const esTexto = typeof obs === 'string'
+                const descripcion = esTexto ? obs : (obs?.descripcion || 'Sin descripción.')
+                const tieneCampos = !esTexto && (obs?.campo_correcto || obs?.campo_incorrecto)
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      background: '#F8FFFE',
+                      border: '1px solid #C8EFE9',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: i < paActivo.pda_ponderacion.inconsistencias.length - 1 ? 10 : 0,
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5 }}>{descripcion}</p>
+                    {tieneCampos && (
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #E0F5F3', display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+                        {obs?.campo_incorrecto && (
+                          <span style={{ fontSize: 10, background: '#FEE2E2', color: '#991B1B', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>
+                            Detectado: {obs.campo_incorrecto}
+                          </span>
+                        )}
+                        {obs?.campo_correcto && (
+                          <span style={{ fontSize: 10, background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>
+                            Sugerido: {obs.campo_correcto}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </DetalleModal>
+          )}
         </div>
       )}
     </SidebarWrapper>

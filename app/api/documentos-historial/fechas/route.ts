@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     const { data: historial, error: historialError } = await supabaseAdmin
       .from('documentos_historial')
-      .select('seccion, created_at')
+      .select('seccion, created_at, version_numero')
       .eq('user_id', usuarioRow.id)
       .eq('activo', true)
 
@@ -37,10 +37,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: historialError.message }, { status: 500 })
     }
 
-    // Mapa seccion -> created_at de la versión activa (una por sección)
-    const fechas: Record<string, string> = {}
+    // Mapa seccion -> { fecha de la versión activa, número de versión } —
+    // el número de versión permite decidir cuándo mostrar el botón
+    // "Historial" (solo a partir de la 2ª versión subida)
+    const fechas: Record<string, { fecha: string; version: number }> = {}
     ;(historial || []).forEach((row: any) => {
-      fechas[row.seccion] = row.created_at
+      fechas[row.seccion] = { fecha: row.created_at, version: row.version_numero }
     })
 
     return NextResponse.json({ ok: true, fechas })

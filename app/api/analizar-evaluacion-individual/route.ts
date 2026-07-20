@@ -91,8 +91,12 @@ export async function POST(request: NextRequest) {
       .eq('grado', grado || '2°')
       .order('campo')
 
+    // [jul 2026] Se agrega CONTENIDO al catálogo que ve el modelo (antes solo
+    // recibía CAMPO + PDA) — necesario para que pdas_prioritarios_grupo pueda
+    // devolver campo y contenido junto con el PDA, igual que ya hace 2.1
+    // (Diagnóstico Grupal), y así la tarjeta se vea con el mismo badge.
     const resumenPDAs = (catalogo || []).map((r: any) =>
-      `CAMPO: ${r.campo} | PDA: ${r.pda}`
+      `CAMPO: ${r.campo} | CONTENIDO: ${r.contenido} | PDA: ${r.pda}`
     ).join('\n')
 
     const message = await client.messages.create({
@@ -112,6 +116,8 @@ REGLAS CRÍTICAS DE PRIVACIDAD:
 - Solo extrae información pedagógica: necesidades de aprendizaje, NEE, fortalezas, áreas de oportunidad
 - Ignora datos administrativos, fechas de nacimiento, CURP, domicilios, nombres de padres
 
+REGLA CRÍTICA PARA pdas_prioritarios_grupo: cada PDA que incluyas aquí debe venir acompañado de su "campo" y "contenido" exactamente como aparecen en el CATÁLOGO PDAs que se te proporciona. El texto del PDA debe ser LITERAL y EXACTO del catálogo — nunca parafrasear ni modificar el texto. Nunca inventes un campo o contenido que no corresponda al PDA seleccionado.
+
 Responde SOLO con JSON válido, sin texto adicional:
 {
   "total_alumnos_detectados": 0,
@@ -126,7 +132,13 @@ Responde SOLO con JSON válido, sin texto adicional:
       "pdas_sugeridos": []
     }
   ],
-  "pdas_prioritarios_grupo": [],
+  "pdas_prioritarios_grupo": [
+    {
+      "campo": "...",
+      "contenido": "...",
+      "pda": "..."
+    }
+  ],
   "alumnos_con_nee": 0,
   "alertas": []
 }`,
