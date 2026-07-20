@@ -7,22 +7,6 @@ const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
 
 const MAX_DIAS_POR_LOTE = 5
 
-// ============================================================
-// NOMENCLATURA DE MOMENTOS — [jul 2026] Corregido "Proyectos" para
-// usar los nombres oficiales del Cuaderno de Planeación (pág. 53),
-// compartido por la coordinación de preescolar. El código previo
-// mezclaba erróneamente los dos primeros nombres de "Taller crítico"
-// ("Situación inicial", "Organización de las acciones") dentro de
-// "Proyectos" — la misma discrepancia que ya estaba documentada como
-// pendiente de resolver.
-//
-// PENDIENTE — Taller crítico, Rincones, Centros de interés y Unidad
-// didáctica NO se tocaron en este cambio: el Cuaderno de Planeación
-// solo trae el detalle completo de Proyectos; las otras 5 modalidades
-// dependen de los PDFs "Modalidades de trabajo Preescolar Parte 1/2/3"
-// (aún pendientes de OCR) para confirmar con certeza cuál momento debe
-// recibir los días de desarrollo antes de corregir sus nombres.
-// ============================================================
 const MOMENTOS_MODALIDAD: Record<string, { momentos: string[]; desarrollo: number }> = {
   'Proyectos': { momentos: ['Punto de partida', 'Planeación', '¡A trabajar!', 'Comunicamos nuestros logros', 'Reflexionar sobre el aprendizaje'], desarrollo: 2 },
   'ABJ': { momentos: ['Planteamiento del juego', 'Desarrollo de las actividades', 'Compartimos la experiencia', 'Comunidad de juego'], desarrollo: 1 },
@@ -45,37 +29,6 @@ type DiaGenerado = {
 }
 type AjusteDia = { numero: number; codigo: string; ajuste: string }
 
-// ============================================================
-// CASOS DE PRUEBA DOCUMENTADOS — Auditoría Brújula Docente (jul 2026)
-// y revisiones propias. Antes de modificar cualquier regla o el
-// formato de salida, verificar que el prompt siga previniendo:
-// 1) Mención pasiva del verbo del PDA sin ejecutarlo en el texto.
-// 2) Relleno mecánico repetido de actividad_complementaria.
-// 3) PDA compuesto donde solo se ejecuta un verbo con fuerza.
-// 4) Fuga de lenguaje técnico interno en paréntesis pedagógicos.
-// 5) Campos obligatorios omitidos por falta de espacio de salida.
-// 6) Ajustes razonables por día, integrados en cada tarjeta de día.
-// 7-15) Ver historial completo en versiones anteriores de este archivo.
-// 16) [jul 2026, BUG DE DÍAS INSUFICIENTES] Si el rango de fechas tiene
-//     menos días hábiles reales que fases mínimas pide la modalidad,
-//     se valida ANTES de llamar a la IA y se rechaza con error claro.
-// 17) [jul 2026] El cálculo de días hábiles (calendarios_sep +
-//     fin_clases/inicio_clases + CTE + vacaciones) se movió a
-//     lib/calendarioEscolar.ts, para que /api/calendario/
-//     dias-habiles-reales (usado por Nueva Planeación para avisar de
-//     antemano si la modalidad elegida cabe en el rango) use EXACTAMENTE
-//     el mismo cálculo — nunca una copia que se pueda desincronizar.
-// 18) [jul 2026, BUG L — parte generador] Los campos formativos
-//     transversales y el eje secundario llegaban al prompt como texto
-//     informativo, pero no tenían ninguna regla que exigiera su
-//     ejecución narrativa — a diferencia del PDA principal (R4-PDA).
-//     Resultado: se declaraban en el formulario y luego no aparecían
-//     trabajados en ningún día. Se agregan R-TRANSVERSAL y
-//     R-EJE-SECUNDARIO, mismo nivel de exigencia que R4-PDA. NOTA: esto
-//     resuelve solo la mitad del bug — la vista /planeacion/[id] sigue
-//     sin renderizar filas dedicadas para transversales/eje secundario;
-//     ese es un cambio de frontend pendiente, aparte de este archivo.
-// ============================================================
 const SYSTEM_PROMPT_DIAS = `Eres el Agente Generador NEM de PlanIA Digital. Generas planeaciones didácticas para preescolar (Fase 2, NEM 2022) con voz narrativa auténtica de educadora mexicana.
 
 REGLAS DE VOZ — NO NEGOCIABLES
@@ -308,6 +261,41 @@ async function actualizarProgreso(
   }
 }
 
+// ============================================================
+// [jul 2026, FASE 1.1] Consulta la vista pda_coverage_avanzada para
+// este usuario y devuelve un resumen en texto plano de su trayectoria
+// pedagógica real en el ciclo — qué PDAs ya se han trabajado y cuántas
+// veces. Se ordena por times_used descendente porque la repetición es
+// la señal más fuerte de la trayectoria real del grupo (un PDA usado
+// 3 veces importa más para dar contexto que uno usado una sola vez).
+// Falla en silencio (regresa '') si la consulta falla o no hay datos
+// — esta fuente es contexto adicional, nunca debe poder tronar la
+// generación de una planeación si algo sale mal aquí.
+// ============================================================
+async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promise<string> {
+  if (!userId) return ''
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('pda_coverage_avanzada')
+      .select('campo, contenido, pda_literal, is_primary, covered_on, times_used')
+      .eq('user_id', userId)
+      .order('times_used', { ascending: false })
+      .order('covered_on', { ascending: false })
+      .limit(12)
+
+    if (error || !data || data.length === 0) return ''
+
+    return data.map((r: any) => {
+      const tipo = r.is_primary ? 'principal' : 'transversal'
+      const repeticion = r.times_used > 1 ? ` — ya trabajado ${r.times_used} veces con este grupo` : ''
+      return `- [${r.campo}] (${tipo}${repeticion}): ${r.pda_literal}`
+    }).join('\n')
+  } catch (e) {
+    console.error('No se pudo obtener la trayectoria de PDA (no crítico):', e)
+    return ''
+  }
+}
+
 async function generarLoteDeDias(params: {
   lote: DiaConMomento[]
   form: any
@@ -316,9 +304,10 @@ async function generarLoteDeDias(params: {
   recursosTexto: string
   contextoPrevio: string
   materialesUsados: string[]
+  trayectoriaPDA: string
   esUltimoLote: boolean
 }): Promise<DiaGenerado[]> {
-  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, esUltimoLote } = params
+  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, esUltimoLote } = params
 
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
   const materialesTexto = materialesUsados.length > 0
@@ -335,6 +324,9 @@ CONTEXTO DEL GRUPO:
 - CCT: ${profile.cct_primary} | Turno: ${profile.shift_primary} | Grado: ${profile.grade}
 - Alumnos: ${profile.total_alumnos || profile.total_students || 'no registrado'}
 - Contexto: ${profile.contexto_grupo || 'Grupo de preescolar Fase 2'}
+
+TRAYECTORIA DEL GRUPO EN ESTE CICLO (PDAs que ya se han trabajado antes con este grupo, en otras planeaciones — úsalo SOLO como contexto de continuidad pedagógica real, para que el proyecto se sienta parte de la progresión del grupo y no aislado; NUNCA como instrucción de evitar mecánicamente estos temas ni de forzar mencionarlos):
+${trayectoriaPDA || 'Aún no hay historial registrado — este es de los primeros proyectos con este grupo en el ciclo.'}
 
 DATOS DEL PROYECTO:
 - Nombre: ${form.nombre_proyecto}
@@ -446,6 +438,12 @@ export async function POST(request: NextRequest) {
     const estadoCodigo = (profile.cct_primary || '').slice(0, 2)
     const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estadoCodigo)
 
+    // [jul 2026, FASE 1.1] Trayectoria pedagógica real del grupo — se
+    // consulta una sola vez por generación completa (no por lote),
+    // ya que no cambia entre lotes de la misma planeación.
+    const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
+    console.log('🟢🟢🟢 VERIFICACIÓN FASE 1.1 — trayectoriaPDA:', trayectoriaPDA || '(vacío — revisar profile.id: ' + profile?.id + ')')
+
     const todosDias = calcularDiasHabiles(calDatos, form.fecha_inicio, form.fecha_fin)
     const diasHabiles = todosDias.filter(d => !d.esCTE && !d.motivo)
     const diasCTE = todosDias.filter(d => d.esCTE)
@@ -455,18 +453,6 @@ export async function POST(request: NextRequest) {
     const momentos = config.momentos
     const idxDesarrollo = config.desarrollo
 
-    // ============================================================
-    // [jul 2026] VALIDACIÓN PREVIA — días hábiles insuficientes.
-    // Ver comentario #16 arriba del archivo para el diagnóstico
-    // completo. Se valida ANTES de gastar ninguna llamada a la IA:
-    // si el rango elegido no tiene suficientes días hábiles reales
-    // dentro del ciclo escolar para que la modalidad tenga al menos
-    // un día por cada fase fija, se rechaza con un mensaje claro y
-    // accionable en vez de generar una planeación con fases faltantes.
-    // (El frontend, desde jul 2026, ya intenta evitar llegar aquí con
-    // este error — consulta /api/calendario/dias-habiles-reales antes
-    // de dejar generar. Esta validación queda como respaldo final.)
-    // ============================================================
     if (diasHabiles.length < momentos.length) {
       const diasExcluidos = todosDias.length - diasHabiles.length
       let msg = `Tu periodo solo tiene ${diasHabiles.length} día(s) hábil(es) dentro del ciclo escolar activo, pero la modalidad "${form.metodologia}" necesita mínimo ${momentos.length} día(s) — uno por cada fase (${momentos.join(', ')}). Ajusta las fechas para que abarquen más días hábiles dentro del ciclo, o elige una modalidad con menos fases.`
@@ -524,9 +510,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cada lote pertenece a un único momento (los lotes se cortan al
-    // cambiar de momento) — se guarda esta relación para que la
-    // pantalla de progreso pueda mostrar las fases reales.
     const lotesMomentos: string[] = lotes.map(lote => lote[0]?.momento || '')
 
     if (jobId) {
@@ -573,6 +556,7 @@ export async function POST(request: NextRequest) {
         recursosTexto,
         contextoPrevio,
         materialesUsados,
+        trayectoriaPDA,
         esUltimoLote,
       })
 
