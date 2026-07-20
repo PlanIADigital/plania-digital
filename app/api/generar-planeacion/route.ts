@@ -354,6 +354,20 @@ function obtenerPrioridadesPedagogicas(profile: any): string {
   const alertasCrudas: string[] = Array.isArray(evalInd?.alertas) ? evalInd.alertas : []
   const alertasSuaves = alertasCrudas.map(limpiarAlertaTono).filter(Boolean)
 
+  // [jul 2026, FASE 1.5] Diagnóstico grupal (Mi Grupo, Sección 2.1) —
+  // PDAs que la propia educadora identificó como prioritarios para su
+  // grupo, con justificación ya redactada. Es un diagnóstico propio
+  // de la educadora (igual que la evaluación individual), así que
+  // entra al 1er orden, no al 2do — a diferencia de pdas_jardin, que
+  // sí es del colectivo institucional completo.
+  const pdasDiagnosticoGrupal: string[] = Array.isArray(profile?.pdas_prioritarios)
+    ? profile.pdas_prioritarios.map((p: any) => {
+        const texto = typeof p === 'string' ? p : p?.pda
+        const justificacion = typeof p === 'object' ? p?.justificacion : ''
+        return texto ? (justificacion ? `${texto} (${justificacion})` : texto) : ''
+      }).filter(Boolean)
+    : []
+
   const contextoSocial: string = profile?.diagnostico_escolar?.contexto_social || ''
 
   const pdasJardinRaw = profile?.pdas_jardin
@@ -362,13 +376,14 @@ function obtenerPrioridadesPedagogicas(profile: any): string {
     : (Array.isArray(pdasJardinRaw) ? pdasJardinRaw : [])
   const pdasJardinTexto: string[] = pdasJardinLista.map((p: any) => (typeof p === 'string' ? p : p?.pda)).filter(Boolean)
 
-  if (pdasGrupo.length === 0 && alertasSuaves.length === 0 && !contextoSocial && pdasJardinTexto.length === 0) return ''
+  if (pdasGrupo.length === 0 && alertasSuaves.length === 0 && pdasDiagnosticoGrupal.length === 0 && !contextoSocial && pdasJardinTexto.length === 0) return ''
 
   let bloque = ''
-  if (pdasGrupo.length > 0 || alertasSuaves.length > 0 || contextoSocial) {
+  if (pdasGrupo.length > 0 || alertasSuaves.length > 0 || pdasDiagnosticoGrupal.length > 0 || contextoSocial) {
     bloque += `1er orden — Necesidad del alumno + contexto comunitario (máxima prioridad; la NEM 2022 exige combinar ambos para una planeación precisa):\n`
-    if (pdasGrupo.length > 0) bloque += pdasGrupo.map(p => `- Necesidad de aprendizaje detectada: ${p}`).join('\n') + '\n'
+    if (pdasGrupo.length > 0) bloque += pdasGrupo.map(p => `- Necesidad de aprendizaje detectada (evaluación individual): ${p}`).join('\n') + '\n'
     if (alertasSuaves.length > 0) bloque += alertasSuaves.map(a => `- Necesidad de apoyo: ${a}`).join('\n') + '\n'
+    if (pdasDiagnosticoGrupal.length > 0) bloque += pdasDiagnosticoGrupal.map(p => `- Prioridad del diagnóstico grupal: ${p}`).join('\n') + '\n'
     if (contextoSocial) bloque += `- Contexto comunitario del grupo: ${contextoSocial}\n`
   }
   if (pdasJardinTexto.length > 0) {
@@ -376,6 +391,57 @@ function obtenerPrioridadesPedagogicas(profile: any): string {
     bloque += pdasJardinTexto.slice(0, 8).map((p: string) => `- ${p}`).join('\n')
   }
   return bloque.trim()
+}
+
+// ============================================================
+// [jul 2026, FASE 1.3] Retroalimentación de la dirección, registrada
+// por la EDUCADORA misma (Mi Grupo, Sección 3.1) — nunca depende de
+// que el directivo tenga cuenta ni membresía. Ya viene analizada por
+// analizar-observaciones-directivo con un campo instruccion_para_agente
+// listo para usarse. Se trata como contexto que modula tono/énfasis,
+// NUNCA como regla que pueda anular R4-PDA, R-CAMPOS-COMPLETOS u otras
+// reglas núcleo del sistema — una observación de retroalimentación no
+// es una orden pedagógica superior a la estructura ya validada de la
+// planeación.
+// ============================================================
+function obtenerRetroalimentacionDireccion(profile: any): string {
+  const obs = profile?.observaciones_directivo
+  if (!obs) return ''
+  const instruccion: string = obs.instruccion_para_agente || ''
+  const aspectosFuertes: string[] = Array.isArray(obs.aspectos_fuertes) ? obs.aspectos_fuertes : []
+  if (!instruccion && aspectosFuertes.length === 0) return ''
+  let texto = instruccion ? instruccion.trim() : ''
+  if (aspectosFuertes.length > 0) {
+    texto += (texto ? '\n' : '') + `Aspectos que ya funcionan bien y conviene mantener: ${aspectosFuertes.join(', ')}.`
+  }
+  return texto
+}
+
+// ============================================================
+// [jul 2026, FASE 1.7] Estilo narrativo personal de la educadora
+// (Mi Grupo, Sección 4). Ya viene analizado por analizar-estilo-
+// narrativo con un campo instruccion_para_agente listo para usarse.
+// A diferencia de las demás fuentes (que dan CONTENIDO pedagógico),
+// esta fuente calibra la VOZ — tono, longitud de oraciones,
+// vocabulario — para que la planeación suene auténticamente a esa
+// educadora específica, no a un estilo genérico. Por eso se coloca
+// junto al contexto del grupo al inicio del prompt, no mezclado con
+// las prioridades pedagógicas de contenido.
+// ============================================================
+function obtenerEstiloNarrativo(profile: any): string {
+  const estilo = profile?.estilo_narrativo
+  if (!estilo) return ''
+  const instruccion: string = estilo.instruccion_para_agente || ''
+  if (instruccion) return instruccion.trim()
+  // Respaldo si por alguna razón no vino instruccion_para_agente pero
+  // sí los campos sueltos (registros antiguos, por ejemplo).
+  const partes: string[] = []
+  if (estilo.tono) partes.push(`Tono: ${estilo.tono}`)
+  if (estilo.vocabulario) partes.push(`Vocabulario: ${estilo.vocabulario}`)
+  if (Array.isArray(estilo.caracteristicas) && estilo.caracteristicas.length > 0) {
+    partes.push(`Características: ${estilo.caracteristicas.join(', ')}`)
+  }
+  return partes.join(' | ')
 }
 
 async function generarLoteDeDias(params: {
@@ -388,9 +454,11 @@ async function generarLoteDeDias(params: {
   materialesUsados: string[]
   trayectoriaPDA: string
   prioridadesPedagogicas: string
+  retroalimentacionDireccion: string
+  estiloNarrativo: string
   esUltimoLote: boolean
 }): Promise<DiaGenerado[]> {
-  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, esUltimoLote } = params
+  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, retroalimentacionDireccion, estiloNarrativo, esUltimoLote } = params
 
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
   const materialesTexto = materialesUsados.length > 0
@@ -408,12 +476,18 @@ CONTEXTO DEL GRUPO:
 - Alumnos: ${profile.total_alumnos || profile.total_students || 'no registrado'}
 - Contexto: ${profile.contexto_grupo || 'Grupo de preescolar Fase 2'}
 
+ESTILO PERSONAL DE LA EDUCADORA (calibra SOLO la voz — tono, longitud de oraciones, vocabulario — para que el texto suene auténticamente a ella; el contenido pedagógico y todas las reglas núcleo de este prompt siguen aplicando sin excepción):
+${estiloNarrativo || 'No hay estilo personal registrado — usa el tono cálido y directo por defecto (ver sección TONO).'}
+
 TRAYECTORIA DEL GRUPO EN ESTE CICLO (PDAs que ya se han trabajado antes con este grupo, en otras planeaciones — úsalo SOLO como contexto de continuidad pedagógica real, para que el proyecto se sienta parte de la progresión del grupo y no aislado; NUNCA como instrucción de evitar mecánicamente estos temas ni de forzar mencionarlos):
 ${trayectoriaPDA || 'Aún no hay historial registrado — este es de los primeros proyectos con este grupo en el ciclo.'}
 
 PRIORIDADES PEDAGÓGICAS DEL GRUPO (jerarquía explícita entre dos fuentes — úsala solo para calibrar énfasis narrativo DENTRO de las actividades del proyecto ya definido, NUNCA para cambiar el PDA principal ni el proyecto elegido): 
 ${prioridadesPedagogicas || 'No hay prioridades adicionales registradas para este grupo.'}
 Si el 1er orden y el 2do orden coinciden con algo que ya estás narrando en algún día, dale mayor peso narrativo al 1er orden (evaluación individual). Si solo aparece el 2do orden (PDAs del jardín) sin relación con el 1er orden, trátalo como apoyo complementario menor, nunca como el foco de la actividad.
+
+RETROALIMENTACIÓN COMPARTIDA POR LA DIRECCIÓN (la educadora la registró ella misma en Mi Grupo — trátala como contexto para calibrar tono y énfasis en las actividades, NUNCA como una regla que pueda anular R4-PDA, R-CAMPOS-COMPLETOS, R-TRANSVERSAL ni ninguna otra regla núcleo de este prompt):
+${retroalimentacionDireccion || 'No hay retroalimentación adicional registrada.'}
 
 DATOS DEL PROYECTO:
 - Nombre: ${form.nombre_proyecto}
@@ -535,6 +609,15 @@ export async function POST(request: NextRequest) {
     // Supabase, ya viene en el objeto profile.
     const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)
 
+    // [jul 2026, FASE 1.3] Retroalimentación de la dirección,
+    // registrada por la propia educadora — tampoco requiere consulta
+    // nueva, ya viene en profile.observaciones_directivo.
+    const retroalimentacionDireccion = obtenerRetroalimentacionDireccion(profile)
+
+    // [jul 2026, FASE 1.7] Estilo narrativo personal de la educadora
+    // — ya viene en profile.estilo_narrativo.
+    const estiloNarrativo = obtenerEstiloNarrativo(profile)
+
     const todosDias = calcularDiasHabiles(calDatos, form.fecha_inicio, form.fecha_fin)
     const diasHabiles = todosDias.filter(d => !d.esCTE && !d.motivo)
     const diasCTE = todosDias.filter(d => d.esCTE)
@@ -649,6 +732,8 @@ export async function POST(request: NextRequest) {
         materialesUsados,
         trayectoriaPDA,
         prioridadesPedagogicas,
+        retroalimentacionDireccion,
+        estiloNarrativo,
         esUltimoLote,
       })
 
