@@ -745,9 +745,11 @@ export default function MiGrupoPage() {
                                 <div>
                                   {resultadoObservaciones?.areas_mejora?.length > 0
                                     ? resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
-                                        <p key={i} style={{ fontSize: 13, color: '#444', margin: i === 0 ? 0 : '8px 0 0', lineHeight: 1.5, textAlign: 'left' }}>• {area}</p>
+                                        <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: i < resultadoObservaciones.areas_mejora.length - 1 ? 8 : 0 }}>
+                                          <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5 }}>{area}</p>
+                                        </div>
                                       ))
-                                    : <p style={{ fontSize: 13, color: '#444', margin: 0, textAlign: 'left' }}>Sin áreas de mejora registradas.</p>}
+                                    : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin áreas de mejora registradas.</p>}
                                 </div>
                               ),
                             })}
