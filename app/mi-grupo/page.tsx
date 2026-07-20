@@ -645,7 +645,11 @@ export default function MiGrupoPage() {
                           <button
                             onClick={() => setModalDetalle({
                               titulo: '1.1 · Programa de Mejora Continua',
-                              contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{resultadoEscolar?.contexto_social || 'Sin detalle disponible.'}</p>,
+                              contenido: (
+                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoEscolar?.contexto_social || 'Sin detalle disponible.'}</p>
+                                </div>
+                              ),
                             })}
                             style={s.accionBtn}
                           >▾ Ver detalle</button>
@@ -689,7 +693,11 @@ export default function MiGrupoPage() {
                             <button
                               onClick={() => setModalDetalle({
                                 titulo: '1.2 · Resumen del Programa Analítico',
-                                contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{paActivo.pda_ponderacion?.resumen_pa || 'Sin resumen disponible.'}</p>,
+                                contenido: (
+                                  <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                                    <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{paActivo.pda_ponderacion?.resumen_pa || 'Sin resumen disponible.'}</p>
+                                  </div>
+                                ),
                               })}
                               style={s.accionBtn}
                             >▾ Ver detalle</button>
@@ -782,7 +790,11 @@ export default function MiGrupoPage() {
                           <button
                             onClick={() => setModalDetalle({
                               titulo: '3.2 · PDAs del jardín',
-                              contenido: <p style={{ fontSize: 13, color: '#444', margin: 0, lineHeight: 1.6, textAlign: 'left' }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>,
+                              contenido: (
+                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>
+                                </div>
+                              ),
                             })}
                             style={s.accionBtn}
                           >▾ Ver detalle</button>
