@@ -1,0 +1,224 @@
+'use client'
+import { useState, useEffect } from 'react'
+
+const ESTADOS = [
+  { codigo: '01', nombre: 'Aguascalientes' },
+  { codigo: '02', nombre: 'Baja California' },
+  { codigo: '03', nombre: 'Baja California Sur' },
+  { codigo: '04', nombre: 'Campeche' },
+  { codigo: '05', nombre: 'Coahuila' },
+  { codigo: '06', nombre: 'Colima' },
+  { codigo: '07', nombre: 'Chiapas' },
+  { codigo: '08', nombre: 'Chihuahua' },
+  { codigo: '09', nombre: 'Ciudad de México' },
+  { codigo: '10', nombre: 'Durango' },
+  { codigo: '11', nombre: 'Guanajuato' },
+  { codigo: '12', nombre: 'Guerrero' },
+  { codigo: '13', nombre: 'Hidalgo' },
+  { codigo: '14', nombre: 'Jalisco' },
+  { codigo: '15', nombre: 'Estado de México' },
+  { codigo: '16', nombre: 'Michoacán' },
+  { codigo: '17', nombre: 'Morelos' },
+  { codigo: '18', nombre: 'Nayarit' },
+  { codigo: '19', nombre: 'Nuevo León' },
+  { codigo: '20', nombre: 'Oaxaca' },
+  { codigo: '21', nombre: 'Puebla' },
+  { codigo: '22', nombre: 'Querétaro' },
+  { codigo: '23', nombre: 'Quintana Roo' },
+  { codigo: '24', nombre: 'San Luis Potosí' },
+  { codigo: '25', nombre: 'Sinaloa' },
+  { codigo: '26', nombre: 'Sonora' },
+  { codigo: '27', nombre: 'Tabasco' },
+  { codigo: '28', nombre: 'Tamaulipas' },
+  { codigo: '29', nombre: 'Tlaxcala' },
+  { codigo: '30', nombre: 'Veracruz' },
+  { codigo: '31', nombre: 'Yucatán' },
+  { codigo: '32', nombre: 'Zacatecas' },
+]
+
+export default function CalendarioPage() {
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState('19')
+  const [uploadingFederal, setUploadingFederal] = useState(false)
+  const [uploadingEstatal, setUploadingEstatal] = useState(false)
+  const [mensajeFederal, setMensajeFederal] = useState('')
+  const [mensajeEstatal, setMensajeEstatal] = useState('')
+  const [federalCargado, setFederalCargado] = useState(false)
+  const [estatalCargado, setEstatalCargado] = useState(false)
+  const [estadosConEstatal, setEstadosConEstatal] = useState<string[]>([])
+
+  async function verificarEstado(estado: string) {
+    try {
+      const res = await fetch(`/api/admin/calendario-estado?estado=${estado}`)
+      const data = await res.json()
+      setFederalCargado(data.federal || false)
+      setEstatalCargado(data.estatal || false)
+      setEstadosConEstatal(data.estadosConEstatal || [])
+    } catch {}
+  }
+
+  useEffect(() => {
+    verificarEstado(estadoSeleccionado)
+    setMensajeEstatal('')
+  }, [estadoSeleccionado])
+
+  async function handleUpload(tipo: 'federal' | 'estatal', file: File) {
+    if (tipo === 'federal') setUploadingFederal(true)
+    else setUploadingEstatal(true)
+
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+
+      const res = await fetch('/api/admin/calendario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo,
+          estado: tipo === 'federal' ? 'FED' : estadoSeleccionado,
+          datos: json,
+        }),
+      })
+
+      const data = await res.json()
+      if (data.ok) {
+        if (tipo === 'federal') { setMensajeFederal('✅ Calendario federal cargado correctamente'); setFederalCargado(true) }
+        else { setMensajeEstatal('✅ Calendario estatal cargado correctamente'); setEstatalCargado(true) }
+      } else {
+        if (tipo === 'federal') setMensajeFederal('❌ Error: ' + (data.error || 'inténtalo de nuevo'))
+        else setMensajeEstatal('❌ Error: ' + (data.error || 'inténtalo de nuevo'))
+      }
+    } catch {
+      if (tipo === 'federal') setMensajeFederal('❌ El archivo no es un JSON válido')
+      else setMensajeEstatal('❌ El archivo no es un JSON válido')
+    }
+
+    if (tipo === 'federal') setUploadingFederal(false)
+    else setUploadingEstatal(false)
+  }
+
+  const Badge = ({ cargado }: { cargado: boolean }) => (
+    <span style={{
+      fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+      background: cargado ? '#D1FAE5' : '#FEF3C7',
+      color: cargado ? '#065F46' : '#92400E',
+    }}>
+      {cargado ? '✅ Cargado' : 'Pendiente'}
+    </span>
+  )
+
+  const nombreEstado = ESTADOS.find(e => e.codigo === estadoSeleccionado)?.nombre || ''
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Calendario SEP</h1>
+      <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>
+        Gestión del calendario escolar oficial. Define días hábiles, festivos y sesiones CTE para el generador de planeaciones.
+      </p>
+
+      {/* Alerta solo si alguno está pendiente */}
+      {(!federalCargado || !estatalCargado) && (
+        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
+          <span style={{ color: '#D97706' }}>⚠️</span>
+          <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
+            <strong>Ciclo 2025–2026 incompleto para {nombreEstado}.</strong> El generador no puede excluir festivos ni sesiones CTE hasta que ambos calendarios estén cargados.
+          </p>
+        </div>
+      )}
+
+      {/* Ambos cargados */}
+      {federalCargado && estatalCargado && (
+        <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
+          <span>✅</span>
+          <p style={{ fontSize: 13, color: '#065F46', margin: 0 }}>
+            <strong>Ciclo 2025–2026 completo para {nombreEstado}.</strong> El generador puede calcular días hábiles correctamente.
+          </p>
+        </div>
+      )}
+
+      {/* Instrucciones */}
+      <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <span>💡</span>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#3730A3', margin: 0 }}>Cómo convertir el PDF del calendario SEP a JSON</h2>
+        </div>
+        <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8 }}>
+          <li>Descarga el PDF oficial desde educacionbasica.sep.gob.mx (federal) o la página oficial del estado (estatal)</li>
+          <li>Abre un chat nuevo en Claude.ai y sube el PDF</li>
+          <li>Pide: <em>"Extrae todas las fechas en formato JSON con ciclo, inicio_clases, fin_clases, dias_inhabiles y sesiones_cte"</em></li>
+          <li>Copia el JSON, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
+        </ol>
+        <div style={{ marginTop: 10, display: 'flex', gap: 12 }}>
+          <a href="https://educacionbasica.sep.gob.mx" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Ir a SEP →</a>
+          <a href="https://claude.ai" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Abrir Claude.ai →</a>
+        </div>
+      </div>
+
+      {/* Federal + Estatal lado a lado */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'stretch' }}>
+
+        {/* Federal */}
+        <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🇲🇽</span>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Federal</h2>
+            </div>
+            <Badge cargado={federalCargado} />
+          </div>
+          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Aplica a todos los estados. Cargar una sola vez por ciclo escolar.</p>
+          <label style={{ display: 'block', border: '2px dashed #E5E7EB', borderRadius: 10, padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
+            <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>📂</span>
+            <span style={{ fontSize: 13, color: '#6B7280' }}>
+              {uploadingFederal ? 'Cargando...' : 'Selecciona el archivo JSON del calendario federal'}
+            </span>
+            <span style={{ fontSize: 11, color: '#D1D5DB', display: 'block', marginTop: 4 }}>Formato: .json · Máx. 1 MB</span>
+            <input type="file" accept=".json" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload('federal', f) }} />
+          </label>
+          {mensajeFederal && <p style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: '#374151' }}>{mensajeFederal}</p>}
+        </div>
+
+        {/* Estatal — con selector de estado */}
+        <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🏛️</span>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Estatal</h2>
+            </div>
+            <Badge cargado={estatalCargado} />
+          </div>
+          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Ajustes estatales específicos. Selecciona el estado antes de cargar.</p>
+
+          {/* Selector de estado */}
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Estado</label>
+          <select
+            value={estadoSeleccionado}
+            onChange={e => setEstadoSeleccionado(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #D1D5DB',
+              fontSize: 13, color: '#111827', marginBottom: 16, background: 'white',
+            }}
+          >
+            {ESTADOS.map(e => (
+              <option key={e.codigo} value={e.codigo}>
+                {e.nombre} ({e.codigo}) {estadosConEstatal.includes(e.codigo) ? '· ya cargado' : ''}
+              </option>
+            ))}
+          </select>
+
+          <label style={{ display: 'block', border: '2px dashed #E5E7EB', borderRadius: 10, padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
+            <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>📂</span>
+            <span style={{ fontSize: 13, color: '#6B7280' }}>
+              {uploadingEstatal ? 'Cargando...' : `Selecciona el archivo JSON del calendario de ${nombreEstado}`}
+            </span>
+            <span style={{ fontSize: 11, color: '#D1D5DB', display: 'block', marginTop: 4 }}>Formato: .json · Máx. 1 MB</span>
+            <input type="file" accept=".json" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload('estatal', f) }} />
+          </label>
+          {mensajeEstatal && <p style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: '#374151' }}>{mensajeEstatal}</p>}
+        </div>
+
+      </div>
+    </div>
+  )
+}

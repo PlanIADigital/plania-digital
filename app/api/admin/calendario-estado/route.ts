@@ -2,28 +2,36 @@
 //  PlanIA Digital — API: Estado de calendarios cargados
 //  app/api/admin/calendario-estado/route.ts
 // ============================================================
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const estado = searchParams.get('estado') || '19'
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SECRET_KEY!
     )
-
     const { data } = await supabaseAdmin
       .from('calendarios_sep')
-      .select('tipo')
+      .select('tipo, estado, datos')
       .eq('ciclo', '2025-2026')
 
-    const tipos = (data || []).map((r: any) => r.tipo)
+    const registros = data || []
+    const federal = registros.some((r: any) => r.tipo === 'federal' && r.estado === 'FED')
 
-    return NextResponse.json({
-      federal: tipos.includes('federal'),
-      estatal: tipos.includes('estatal'),
-    })
+    const registroEstatal = registros.find((r: any) => r.tipo === 'estatal' && r.estado === estado)
+    const estatal = !!registroEstatal
+    const estatalEsFederal = !!(registroEstatal?.datos?.origen_calendario === 'federal_sin_cambios')
+
+    // Lista de estados que YA tienen calendario estatal cargado (para mostrar en el dropdown)
+    const estadosConEstatal = registros
+      .filter((r: any) => r.tipo === 'estatal')
+      .map((r: any) => r.estado)
+
+    return NextResponse.json({ federal, estatal, estadosConEstatal, estatalEsFederal })
   } catch {
-    return NextResponse.json({ federal: false, estatal: false })
+    return NextResponse.json({ federal: false, estatal: false, estadosConEstatal: [], estatalEsFederal: false })
   }
 }

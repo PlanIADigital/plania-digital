@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { createClient } from '@supabase/supabase-js'
+import { calcularEjesCubiertos } from '@/lib/cobertura'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+const MODO_PRUEBA_CICLO_ACTIVO = true
 
 const CAMPOS_CONFIG = [
   { nombre: 'Lenguajes',                          color: '#3D3A8C', bg: '#EEEDF8', total: 86  },
@@ -15,6 +18,36 @@ const CAMPOS_CONFIG = [
   { nombre: 'Ética, Naturaleza y Sociedades',     color: '#059669', bg: '#D1FAE5', total: 70  },
   { nombre: 'De lo Humano y lo Comunitario',      color: '#7C3AED', bg: '#EDE9FE', total: 85  },
 ]
+
+// [jul 2026] Colores oficiales SEP para el diagrama "Elementos
+// curriculares" (Lenguajes=rojo, Saberes y P. Científico=azul), que
+// las educadoras ya reconocen de memoria por capacitaciones y
+// materiales oficiales. Se usan ÚNICAMENTE dentro del tab "📊 Campos"
+// de Mi Avance (barras de progreso + conteo de PDAs) — NO reemplazan
+// CAMPOS_CONFIG.color, que sigue siendo el color de marca de PlanIA en
+// TODAS las demás pantallas (grid de PDAs en el tab "PDAs", iconos,
+// badges en Mis Planeaciones, etc.). Ética/Naturaleza y De lo
+// Humano/Comunitario no cambian aquí porque ya coinciden, o están muy
+// cerca, del color oficial — solo Lenguajes y Saberes se alejaban
+// bastante del estándar SEP. Se usa un rojo suave/terracota (no rojo
+// saturado puro) para evitar que una barra bien avanzada se lea como
+// "alerta/error" por asociación visual típica de interfaces.
+const COLOR_TAB_CAMPOS: Record<string, string> = {
+  'Lenguajes': '#C0504D',
+  'Saberes y Pensamiento Científico': '#2E6DA4',
+}
+
+function colorEnTabCampos(nombre: string, colorPorDefecto: string): string {
+  return COLOR_TAB_CAMPOS[nombre] || colorPorDefecto
+}
+
+// [jul 2026] Prefijo de 3 letras por campo formativo.
+const PREFIJO_POR_CAMPO: Record<string, string> = {
+  'Lenguajes': 'LEN',
+  'Saberes y Pensamiento Científico': 'SPC',
+  'Ética, Naturaleza y Sociedades': 'ENS',
+  'De lo Humano y lo Comunitario': 'DHC',
+}
 
 const EJES = [
   'Interculturalidad crítica',
@@ -27,6 +60,16 @@ const EJES = [
 ]
 
 const MESES = ['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul']
+
+const UMBRAL_EJE_BAJO = 0.2
+
+function hoyLocalISO(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 function nombreCorto(nombre: string | null): string {
   if (!nombre) return ''
@@ -45,6 +88,11 @@ function campoCorto(nombre: string): string {
     'De lo Humano y lo Comunitario':    'Lo Humano y Comunitario',
   }
   return mapa[nombre] || nombre
+}
+
+function campoCompletoConCodigo(nombre: string): string {
+  const codigo = PREFIJO_POR_CAMPO[nombre] || ''
+  return `${nombre.toUpperCase()} (${codigo})`
 }
 
 function mesActualCiclo(): number {
@@ -130,8 +178,15 @@ export default function MiAvancePage() {
   const [profile, setProfile] = useState<any>(null)
   const [coverage, setCoverage] = useState<any[]>([])
   const [plannings, setPlannings] = useState<any[]>([])
+  const [catalogoPDA, setCatalogoPDA] = useState<{ id: string; campo: string; posicion_campo: number; pda: string }[]>([])
   const [cargando, setCargando] = useState(true)
   const [tabActivo, setTabActivo] = useState<'cobertura' | 'ejes' | 'mapa' | 'nee'>('cobertura')
+  const [pdaSeleccionado, setPdaSeleccionado] = useState<{ codigo: string; veces: number; pda: string } | null>(null)
+  const [finClasesCiclo, setFinClasesCiclo] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (tabActivo !== 'mapa') setPdaSeleccionado(null)
+  }, [tabActivo])
 
   useEffect(() => {
     async function load() {
@@ -148,9 +203,24 @@ export default function MiAvancePage() {
       setPlannings(plans || [])
       const { data: cov } = await supabase
         .from('pda_coverage')
-        .select('campo, pda_literal, is_primary, covered_on, times_used')
+        .select('campo, pda_literal, pda_id, is_primary, covered_on, times_used')
         .eq('user_id', user.id)
       setCoverage(cov || [])
+
+      const { data: catalogo } = await supabase
+        .from('pda_catalog')
+        .select('id, campo, posicion_campo, pda')
+      setCatalogoPDA(catalogo || [])
+
+      const estadoCodigo = (user.cct_primary || '').slice(0, 2)
+      try {
+        const res = await fetch(`/api/calendario/fin-ciclo?estado=${estadoCodigo}`)
+        const data = await res.json()
+        setFinClasesCiclo(data.finClases || null)
+      } catch {
+        setFinClasesCiclo(null)
+      }
+
       setCargando(false)
     }
     load()
@@ -165,30 +235,64 @@ export default function MiAvancePage() {
   const totalPlanes = plannings.length
   const pdasPrioritarios = [...new Set(coverage.filter(c => c.is_primary).map(c => c.pda_literal))].length
   const pdasPrioritariosPendientes = coverage.filter(c => c.is_primary && !c.covered_on).length
+
   const ejesConteo: Record<string, number> = {}
   plannings.forEach(p => {
     if (p.eje_principal) ejesConteo[p.eje_principal] = (ejesConteo[p.eje_principal] || 0) + 1
     if (p.eje_secundario) ejesConteo[p.eje_secundario] = (ejesConteo[p.eje_secundario] || 0) + 1
   })
+  const ejesCubiertosSet = calcularEjesCubiertos(plannings)
   const maxEje = Math.max(1, ...Object.values(ejesConteo))
   const ejesSinUsar = EJES.filter(e => !ejesConteo[e])
-  const pdaCoverageMap: Record<string, number> = {}
-  coverage.forEach(c => { pdaCoverageMap[c.pda_literal] = (pdaCoverageMap[c.pda_literal] || 0) + (c.times_used || 1) })
-  const prioritariosPDA = new Set(coverage.filter(c => c.is_primary).map(c => c.pda_literal))
+
+  const totalUsosEjes = Object.values(ejesConteo).reduce((sum, v) => sum + v, 0)
+  const promedioEsperadoPorEje = totalUsosEjes > 0 ? totalUsosEjes / EJES.length : 0
+  const ejesOrdenAscendente = [...EJES].sort((a, b) => (ejesConteo[a] || 0) - (ejesConteo[b] || 0))
+  const ejesBajos = promedioEsperadoPorEje > 0
+    ? ejesOrdenAscendente.filter(e => (ejesConteo[e] || 0) < promedioEsperadoPorEje * UMBRAL_EJE_BAJO)
+    : [...EJES]
+
+  const catalogoPorId: Record<string, { posicion: number; pda: string; campo: string }> = {}
+  catalogoPDA.forEach(p => { catalogoPorId[p.id] = { posicion: p.posicion_campo, pda: p.pda, campo: p.campo } })
+
+  const catalogoPorCampoYPosicion: Record<string, Record<number, string>> = {}
+  catalogoPDA.forEach(p => {
+    if (!catalogoPorCampoYPosicion[p.campo]) catalogoPorCampoYPosicion[p.campo] = {}
+    catalogoPorCampoYPosicion[p.campo][p.posicion_campo] = p.pda
+  })
+
+  const coberturaPorCampoYPosicion: Record<string, Record<number, { veces: number; esPrioritario: boolean }>> = {}
+  coverage.forEach(c => {
+    if (!c.pda_id) return
+    const info = catalogoPorId[c.pda_id]
+    if (!info) return
+    if (!coberturaPorCampoYPosicion[info.campo]) coberturaPorCampoYPosicion[info.campo] = {}
+    const existente = coberturaPorCampoYPosicion[info.campo][info.posicion]
+    const veces = (existente?.veces || 0) + (c.times_used || 1)
+    const esPrioritario = (existente?.esPrioritario || false) || !!c.is_primary
+    coberturaPorCampoYPosicion[info.campo][info.posicion] = { veces, esPrioritario }
+  })
+
   const evaluacionIndividual = profile?.evaluacion_individual || {}
   const alumnosRaw: any[] = Array.isArray(evaluacionIndividual?.alumnos)
     ? evaluacionIndividual.alumnos
     : Object.entries(evaluacionIndividual).map(([ref, v]: any) => ({ referencia: ref, ...v }))
   const alumnosConNEE = alumnosRaw.filter((a: any) => a?.nee && a.nee.length > 0).slice(0, 6)
   const mesActual = mesActualCiclo()
+
+  const hoyISO = hoyLocalISO()
+  const cicloEscolarConcluido = !MODO_PRUEBA_CICLO_ACTIVO && !!finClasesCiclo && hoyISO > finClasesCiclo
+
   const alertas: Array<{ tipo: 'warn' | 'info' | 'success'; texto: React.ReactNode }> = []
-  const camposBajos = pdaUnicosPorCampo.filter(c => c.porcentaje < 20)
-  if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> tienen menos del 20% de cobertura.</> })
-  if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
-  if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDAs prioritarios</strong> del diagnóstico grupal aún no abordados.</> })
-  const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
-  if (campoDestacado) alertas.push({ tipo: 'success', texto: <><strong>¡Excelente!</strong> Llevas {campoDestacado.porcentaje}% en <em>{campoCorto(campoDestacado.nombre)}</em>.</> })
-  if (alertas.length === 0 && totalPlanes > 0) alertas.push({ tipo: 'info', texto: <>Tu avance está equilibrado. MÍA estará aquí cuando la necesites.</> })
+  if (!cicloEscolarConcluido) {
+    const camposBajos = pdaUnicosPorCampo.filter(c => c.porcentaje < 20)
+    if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> tienen menos del 20% de cobertura.</> })
+    if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
+    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDAs prioritarios</strong> del diagnóstico grupal aún no abordados.</> })
+    const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
+    if (campoDestacado) alertas.push({ tipo: 'success', texto: <><strong>¡Excelente!</strong> Llevas {campoDestacado.porcentaje}% en <em>{campoCorto(campoDestacado.nombre)}</em>.</> })
+    if (alertas.length === 0 && totalPlanes > 0) alertas.push({ tipo: 'info', texto: <>Tu avance está equilibrado. MÍA estará aquí cuando la necesites.</> })
+  }
 
   if (!profile || cargando) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -237,10 +341,10 @@ export default function MiAvancePage() {
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, height: '100%' }}>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
               <KpiCard label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'todas cerradas'} icon="📋" />
-              <KpiCard label="Ejes articuladores" value={`${Object.keys(ejesConteo).length}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
+              <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
               <KpiCard label="PDAs prioritarios" value={pdasPrioritarios} delta={pdasPrioritariosPendientes > 0 ? `${pdasPrioritariosPendientes} del diagnóstico pendientes` : 'diagnóstico atendido ✓'} deltaColor={pdasPrioritariosPendientes > 0 ? '#D97706' : '#0F6E56'} icon="⭐" />
+              <KpiCard label="Ejes articuladores" value={`${ejesCubiertosSet.size}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
             </div>
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '16px 20px' }}>
@@ -253,7 +357,6 @@ export default function MiAvancePage() {
                 ))}
               </div>
             </div>
-
 
             {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
@@ -271,25 +374,28 @@ export default function MiAvancePage() {
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden', minHeight: 520, flex: 1 }}>
               <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
-                {(['cobertura','ejes','mapa','nee'] as const).map((key, idx) => {
-                  const labels = ['📊 Campos','🔗 Ejes','🗺️ PDAs','♿ Diversidad']
+                {(['cobertura','mapa','ejes','nee'] as const).map((key, idx) => {
+                  const labels = ['📊 Campos','🗺️ PDAs','🔗 Ejes','♿ Diversidad']
                   return <button key={key} onClick={() => setTabActivo(key)} style={{ flex: 1, padding: '12px 6px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tabActivo === key ? 700 : 400, background: tabActivo === key ? '#EEEDF8' : 'white', color: tabActivo === key ? '#3D3A8C' : '#888', borderBottom: tabActivo === key ? '2px solid #3D3A8C' : '2px solid transparent' }}>{labels[idx]}</button>
                 })}
               </div>
               <div style={{ padding: '20px 24px' }}>
-                {tabActivo === 'cobertura' && <div>{pdaUnicosPorCampo.map(cf => (
+                {tabActivo === 'cobertura' && <div>{pdaUnicosPorCampo.map(cf => {
+                  const colorTab = colorEnTabCampos(cf.nombre, cf.color)
+                  return (
                   <div key={cf.nombre} style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconoCampo nombre={cf.nombre} size={20} /><span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span></div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: cf.color }}>{cf.trabajados}/{cf.total} PDAs</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconoCampo nombre={cf.nombre} size={20} /><span style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', letterSpacing: '0.02em' }}>{campoCompletoConCodigo(cf.nombre)}</span></div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: colorTab }}>{cf.trabajados}/{cf.total} PDAs</span>
                     </div>
-                    <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: cf.color, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
+                    <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: colorTab, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                       <span style={{ fontSize: 11, color: '#888' }}>{cf.porcentaje}% del ciclo</span>
-                      {cf.porcentaje < 20 && <button onClick={() => router.push('/planeacion/nueva')} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
+                      {cf.porcentaje < 20 && <button onClick={() => router.push(`/planeacion/nueva?campo_sugerido=${encodeURIComponent(cf.nombre)}`)} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
                     </div>
                   </div>
-                ))}</div>}
+                  )
+                })}</div>}
                 {tabActivo === 'ejes' && <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {EJES.map(eje => {
@@ -302,26 +408,81 @@ export default function MiAvancePage() {
                       </div>
                     })}
                   </div>
-                  {ejesSinUsar.length > 0 && <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#3D3A8C', color: 'white', border:'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 16 }}>✨ Crear planeación y equilibrar ejes</button>}
+                  {ejesBajos.length > 0 && <button onClick={() => router.push(`/planeacion/nueva?eje_sugerido=${encodeURIComponent(ejesBajos[0])}`)} style={{ background: '#3D3A8C', color: 'white', border:'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 16 }}>✨ Crear planeación y equilibrar ejes</button>}
                 </div>}
                 {tabActivo === 'mapa' && <div>
+                  <p style={{ fontSize: 12, color: '#666', margin: '0 0 10px', lineHeight: 1.6 }}>
+                    Cada cuadro es un PDA específico del catálogo Fase 2 — da clic en cualquiera para ver su código y contenido, trabajado o no.
+                  </p>
+
+                  <div style={{
+                    background: '#0F6E56', borderRadius: 10, padding: '14px 16px', marginBottom: 18,
+                    height: 108, overflow: 'hidden',
+                    display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-start',
+                  }}>
+                    {pdaSeleccionado ? (
+                      <>
+                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: 'white', fontSize: 13, lineHeight: 1.3 }}>
+                          {pdaSeleccionado.codigo} {pdaSeleccionado.veces > 0 ? `— trabajado ${pdaSeleccionado.veces}x` : '— aún no trabajado'}
+                        </p>
+                        <p style={{ margin: 0, color: 'white', fontWeight: 400, fontSize: 13, lineHeight: 1.3 }}>
+                          {pdaSeleccionado.pda}
+                        </p>
+                      </>
+                    ) : (
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.3 }}>Da clic en un PDA para ver su detalle aquí.</p>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' as const, marginBottom: 18, fontSize: 11, color: '#888' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', display: 'inline-block' }} />Sin trabajar</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#8884' , display: 'inline-block' }} />1 vez</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#3D3A8C', display: 'inline-block' }} />3+ veces</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', border: '1.5px solid #F59E0B', display: 'inline-block' }} />PDA prioritario</span>
+                  </div>
                   {CAMPOS_CONFIG.map(cf => {
-                    const pdasDelCampo = [...new Set(coverage.filter(c => c.campo === cf.nombre).map(c => c.pda_literal))]
-                    const celdas = Array.from({ length: Math.min(cf.total, 48) }, (_, i) => {
-                      const trabajado = i < pdasDelCampo.length
-                      const esPrioritario = trabajado && prioritariosPDA.has(pdasDelCampo[i])
-                      const veces = trabajado ? (pdaCoverageMap[pdasDelCampo[i]] || 1) : 0
-                      return { trabajado, esPrioritario, veces }
-                    })
-                    return <div key={cf.nombre} style={{ marginBottom: 20 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{campoCorto(cf.nombre)}</span>
-                        <span style={{ fontSize: 11, color: '#888' }}>{pdasDelCampo.length}/{cf.total} PDAs</span>
+                    const catalogoCampo = catalogoPorCampoYPosicion[cf.nombre] || {}
+                    const coberturaCampo = coberturaPorCampoYPosicion[cf.nombre] || {}
+                    const cubiertos = Object.keys(coberturaCampo).length
+                    const prefijo = PREFIJO_POR_CAMPO[cf.nombre]
+                    return (
+                      <div key={cf.nombre} style={{ marginBottom: 24 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <IconoCampo nombre={cf.nombre} size={20} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', letterSpacing: '0.02em' }}>{campoCompletoConCodigo(cf.nombre)}</span>
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: cf.color }}>{cubiertos}/{cf.total} PDAs</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(26px, 1fr))', gap: 3 }}>
+                          {Array.from({ length: cf.total }, (_, idx) => idx + 1).map(n => {
+                            const cubierto = coberturaCampo[n]
+                            const pdaTexto = catalogoCampo[n] || ''
+                            const codigo = `${prefijo}-${n}`
+                            const veces = cubierto?.veces || 0
+                            let bg = '#F0EFF8'
+                            if (veces >= 3) bg = cf.color
+                            else if (veces === 2) bg = `${cf.color}CC`
+                            else if (veces === 1) bg = `${cf.color}80`
+                            return (
+                              <div
+                                key={n}
+                                onClick={() => setPdaSeleccionado({ codigo, veces, pda: pdaTexto })}
+                                style={{
+                                  aspectRatio: '1', borderRadius: 4, background: bg,
+                                  border: cubierto?.esPrioritario ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 8, fontWeight: 700, color: veces > 0 ? 'white' : '#B8B6D6',
+                                  cursor: 'pointer', userSelect: 'none' as const,
+                                }}
+                              >
+                                {n}
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 3 }}>
-                        {celdas.map((c, i) => <div key={i} style={{ height: 14, borderRadius: 2, background: c.veces >= 3 ? cf.color : c.veces === 2 ? cf.bg : c.veces === 1 ? `${cf.bg}CC` : '#F0EFF8', border: c.esPrioritario && !c.trabajado ? '1.5px solid #F59E0B' : 'none' }} />)}
-                      </div>
-                    </div>
+                    )
                   })}
                 </div>}
                 {tabActivo === 'nee' && <div>
@@ -345,8 +506,6 @@ export default function MiAvancePage() {
                 </div>}
               </div>
             </div>
-
-
 
           </div>
         </div>

@@ -8,6 +8,112 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SECRET_KEY!
 )
 
+// [jul 2026] Mismo parser robusto usado en generar-planeacion/route.ts
+// — repara saltos de línea/comillas sin escapar dentro de strings, y
+// si el JSON quedó truncado (el modelo se quedó sin espacio antes de
+// cerrar todas sus llaves/corchetes), lo cierra automáticamente en
+// vez de fallar con "Unterminated string in JSON". Este endpoint
+// nunca había tenido este resguardo — un Programa Analítico largo
+// (muchos campos_priorizados, inconsistencias, etc.) podía agotar el
+// max_tokens y tronar por completo, como pasó aquí.
+function repararJSON(raw: string): string {
+  const n = raw.length
+  let resultado = ''
+  let dentroDeString = false
+  let escapando = false
+
+  for (let i = 0; i < n; i++) {
+    const ch = raw[i]
+
+    if (!dentroDeString) {
+      resultado += ch
+      if (ch === '"') dentroDeString = true
+      continue
+    }
+
+    if (escapando) {
+      resultado += ch
+      escapando = false
+      continue
+    }
+
+    if (ch === '\\') {
+      resultado += ch
+      escapando = true
+      continue
+    }
+
+    if (ch === '\n') { resultado += '\\n'; continue }
+    if (ch === '\r') { resultado += '\\r'; continue }
+    if (ch === '\t') { resultado += '\\t'; continue }
+
+    if (ch === '"') {
+      let j = i + 1
+      while (j < n && /\s/.test(raw[j])) j++
+      const siguiente = raw[j]
+      const esCierreReal = siguiente === ',' || siguiente === '}' || siguiente === ']' || siguiente === ':' || siguiente === undefined
+      if (esCierreReal) {
+        resultado += ch
+        dentroDeString = false
+      } else {
+        resultado += '\\"'
+      }
+      continue
+    }
+
+    resultado += ch
+  }
+
+  return resultado
+}
+
+function cerrarJSONTruncado(raw: string): string {
+  const n = raw.length
+  let dentroDeString = false
+  let escapando = false
+  const pila: string[] = []
+
+  for (let i = 0; i < n; i++) {
+    const ch = raw[i]
+    if (dentroDeString) {
+      if (escapando) { escapando = false; continue }
+      if (ch === '\\') { escapando = true; continue }
+      if (ch === '"') { dentroDeString = false; continue }
+      continue
+    }
+    if (ch === '"') { dentroDeString = true; continue }
+    if (ch === '{' || ch === '[') { pila.push(ch); continue }
+    if (ch === '}' || ch === ']') { pila.pop(); continue }
+  }
+
+  let cierre = ''
+  if (dentroDeString) cierre += '"'
+  while (pila.length > 0) {
+    const abierto = pila.pop()
+    cierre += abierto === '{' ? '}' : ']'
+  }
+  return raw + cierre
+}
+
+function parsearJSONRobusto(rawContent: string): any {
+  const sinFences = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim()
+  const reparado = repararJSON(sinFences)
+  try {
+    return JSON.parse(reparado)
+  } catch (primerError) {
+    console.error('⚠️ JSON del Programa Analítico no parseó en primer intento, probablemente truncado. Intentando cerrar automáticamente...')
+    try {
+      const cerrado = cerrarJSONTruncado(reparado)
+      const resultado = JSON.parse(cerrado)
+      console.error('✅ Recuperado tras cierre automático de JSON truncado.')
+      return resultado
+    } catch (segundoError) {
+      console.error('❌ No se pudo recuperar el JSON del Programa Analítico ni siquiera cerrándolo automáticamente.')
+      throw primerError
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { texto, auth_uid, cct, archivo_formato, grado } = await req.json()
@@ -38,7 +144,14 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      // [jul 2026] Subido de 2000 a 4000 — un PA con varios campos
+      // formativos, PDAs mencionados, e inconsistencias detectadas
+      // fácilmente supera 2000 tokens de salida, causando que el JSON
+      // se corte a la mitad (el error "Unterminated string" que
+      // reportó Alfredo). El parser robusto de arriba queda además
+      // como resguardo si algún PA excepcionalmente largo siguiera
+      // agotando el límite.
+      max_tokens: 4000,
       system: `Eres un agente pedagógico especializado en el Programa de Educación Preescolar NEM 2022 Fase 2 de México.
 
 Recibes el texto de un Programa Analítico (PA) de un jardín de niños. El PA puede venir en cualquier formato: por secciones numeradas, por planos, por mes, por grado, por grupo, o como presentación. No existe un formato único.
@@ -88,8 +201,7 @@ FORMATO DE SALIDA:
     })
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
-    const clean = text.replace(/```json|```/g, '').trim()
-    const pda_ponderacion = JSON.parse(clean)
+    const pda_ponderacion = parsearJSONRobusto(text)
 
     if (versionActual) {
       await supabaseAdmin

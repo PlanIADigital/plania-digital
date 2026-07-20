@@ -1,3 +1,4 @@
+// app/api/sugerir-campos/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
@@ -11,12 +12,12 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { nombre_proyecto, situacion_problema, finalidad, campo_principal, grado } = await request.json()
+    const { nombre_proyecto, situacion_problema, finalidad, campo_principal, grado, eje_sugerido } = await request.json()
 
     // 1. Cargar catálogo completo desde Supabase
     const { data: catalogo } = await supabase
       .from('pda_catalog')
-      .select('campo, contenido, pda, grado')
+      .select('id, campo, contenido, pda, grado')
       .eq('grado', grado || '2°')
       .order('campo')
 
@@ -49,6 +50,15 @@ export async function POST(request: NextRequest) {
         return `${campo} > ${contenido}:\n${(pdas as string[]).map(p => `  - ${p}`).join('\n')}`
       }).join('\n\n')
 
+    // [jul 2026] Si "Mi Avance" mandó un eje sugerido (para equilibrar
+    // ejes poco abordados), se le presenta al modelo como candidato
+    // preferente — pero SOLO como sugerencia. La coherencia pedagógica
+    // real del proyecto siempre tiene prioridad; el modelo puede
+    // ignorarlo si no encaja con la situación problema.
+    const ejeSugeridoTexto = eje_sugerido
+      ? `\n\nEJE SUGERIDO EXTERNAMENTE (por el módulo "Mi Avance", para equilibrar cobertura de ejes poco usados): "${eje_sugerido}". Úsalo como eje_principal SOLO SI es genuinamente coherente con la situación problema y la finalidad de este proyecto específico. Si no tiene relación real y forzarlo produciría una articulación artificial, ignóralo por completo y elige el eje que realmente corresponda — la coherencia pedagógica real siempre tiene prioridad sobre esta sugerencia externa.`
+      : ''
+
     // 3. Llamar a Haiku
     const message = await client.messages.create({
       model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
@@ -63,6 +73,7 @@ REGLAS CRÍTICAS:
 - Para los ejes articuladores, elige de esta lista EXACTA: ["Inclusión", "Pensamiento crítico", "Interculturalidad crítica", "Igualdad de género", "Vida saludable", "Apropiación de las culturas a través de la lectura y la escritura", "Artes y experiencias estéticas"]
 - El eje_principal debe ser el que mejor articule el proyecto completo de forma transversal.
 - El eje_secundario debe complementar al principal sin repetirlo.
+- Si se te proporciona un eje sugerido externamente, considéralo como candidato preferente para el eje_principal SOLO SI es genuinamente coherente con la situación problema y la finalidad — nunca lo elijas si no tiene relación real. La coherencia pedagógica real siempre tiene prioridad sobre cualquier sugerencia externa.
 - Responde SOLO con JSON válido, sin markdown, sin explicaciones.
 
 FORMATO DE SALIDA EXACTO:
@@ -88,7 +99,7 @@ CATÁLOGO DISPONIBLE (campos y contenidos):
 ${resumenCatalogo}
 
 PDAs DISPONIBLES POR CONTENIDO:
-${resumenPDAs}
+${resumenPDAs}${ejeSugeridoTexto}
 
 Selecciona los 3 campos transversales más relevantes para este proyecto. Los PDAs deben ser literales del catálogo.`
       }]
@@ -98,7 +109,23 @@ Selecciona los 3 campos transversales más relevantes para este proyecto. Los PD
     const clean = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const resultado = JSON.parse(clean)
 
-    return NextResponse.json(resultado)
+    // [jul 2026] Enriquecer cada transversal sugerido con su id real
+    // de pda_catalog. Como el modelo está obligado a devolver el texto
+    // LITERAL del catálogo, el match por igualdad exacta es confiable.
+    // Si algún transversal no encuentra match (el modelo se desvió del
+    // texto exacto), queda con id: null — se loguea para detectarlo,
+    // pero no bloquea la generación de la planeación.
+    const transversalesConId = (resultado.transversales || []).map((t: any) => {
+      const match = catalogo.find((r: any) =>
+        r.campo === t.campo && r.contenido === t.contenido && r.pda === t.pda
+      )
+      if (!match) {
+        console.error('⚠️ Transversal sugerido por IA no encontró match exacto en el catálogo:', t)
+      }
+      return { ...t, id: match?.id || null }
+    })
+
+    return NextResponse.json({ ...resultado, transversales: transversalesConId })
 
   } catch (error: unknown) {
     console.error('Error en sugerir-campos:', error)

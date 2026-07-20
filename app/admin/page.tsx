@@ -5,8 +5,22 @@
 'use client'
 import { useEffect, useState } from 'react'
 
+const NOMBRES_ESTADO: Record<string, string> = {
+  '01': 'Aguascalientes', '02': 'Baja California', '03': 'Baja California Sur',
+  '04': 'Campeche', '05': 'Coahuila', '06': 'Colima', '07': 'Chiapas',
+  '08': 'Chihuahua', '09': 'Ciudad de México', '10': 'Durango',
+  '11': 'Guanajuato', '12': 'Guerrero', '13': 'Hidalgo', '14': 'Jalisco',
+  '15': 'Estado de México', '16': 'Michoacán', '17': 'Morelos', '18': 'Nayarit',
+  '19': 'Nuevo León', '20': 'Oaxaca', '21': 'Puebla', '22': 'Querétaro',
+  '23': 'Quintana Roo', '24': 'San Luis Potosí', '25': 'Sinaloa', '26': 'Sonora',
+  '27': 'Tabasco', '28': 'Tamaulipas', '29': 'Tlaxcala', '30': 'Veracruz',
+  '31': 'Yucatán', '32': 'Zacatecas',
+}
+
 export default function AdminDashboard() {
   const [calendarioOk, setCalendarioOk] = useState<boolean | null>(null)
+  const [federalCargado, setFederalCargado] = useState(false)
+  const [estadosConEstatal, setEstadosConEstatal] = useState<string[]>([])
   const [usuarios, setUsuarios] = useState({ total: 0, educadoras: 0, directivos: 0, trials: 0 })
 
   useEffect(() => {
@@ -18,7 +32,12 @@ export default function AdminDashboard() {
         ])
         const calData = await calRes.json()
         const usrData = await usrRes.json()
-        setCalendarioOk(calData.federal && calData.estatal)
+
+        setFederalCargado(calData.federal || false)
+        setEstadosConEstatal(calData.estadosConEstatal || [])
+        // "Completo" solo si federal está cargado Y al menos un estado tiene su calendario estatal
+        setCalendarioOk((calData.federal || false) && (calData.estadosConEstatal || []).length > 0)
+
         const u = usrData.usuarios || []
         setUsuarios({
           total: u.length,
@@ -31,6 +50,13 @@ export default function AdminDashboard() {
     cargar()
   }, [])
 
+  const nombresEstados = estadosConEstatal.map(c => NOMBRES_ESTADO[c] || c)
+  const descripcionCalendario = federalCargado
+    ? (nombresEstados.length > 0
+        ? `Ciclo 2025–2026: Federal + ${nombresEstados.length} estado${nombresEstados.length > 1 ? 's' : ''} (${nombresEstados.join(', ')}).`
+        : 'Ciclo 2025–2026: Federal cargado. Ningún estado tiene calendario estatal aún.')
+    : 'Ciclo 2025–2026 sin cargar. Necesario para calcular días hábiles.'
+
   return (
     <div>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Dashboard</h1>
@@ -41,7 +67,7 @@ export default function AdminDashboard() {
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
           <span>⚠️</span>
           <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
-            <strong>Calendario SEP no cargado</strong> — el generador no puede excluir festivos ni sesiones CTE.{' '}
+            <strong>Calendario SEP incompleto</strong> — el generador no puede excluir festivos ni sesiones CTE para los estados sin calendario.{' '}
             <a href="/admin/calendario" style={{ color: '#92400E', fontWeight: 600 }}>Cargarlo ahora</a>
           </p>
         </div>
@@ -78,9 +104,7 @@ export default function AdminDashboard() {
               <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E' }}>Pendiente</span>
             )}
           </div>
-          <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
-            {calendarioOk ? 'Ciclo 2025–2026 cargado. Federal + Nuevo León.' : 'Ciclo 2025–2026 sin cargar. Necesario para calcular días hábiles.'}
-          </p>
+          <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>{descripcionCalendario}</p>
           <a href="/admin/calendario" style={{ fontSize: 12, fontWeight: 600, color: '#3D3A8C', textDecoration: 'none' }}>Ir a Calendario →</a>
         </div>
 

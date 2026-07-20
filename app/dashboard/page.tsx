@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import { calcularEjesCubiertos } from '@/lib/cobertura'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,16 +29,29 @@ export default function DashboardPage() {
 
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, situacion_problema, starts_on, ends_on, pda_campo, eje_principal, status, created_at')
+        .select('id, project_name, situacion_problema, starts_on, ends_on, pda_campo, eje_principal, eje_secundario, status, created_at')
         .eq('user_id', data.id)
         .order('created_at', { ascending: false })
       setPlaneaciones(plans || [])
 
-      // Cobertura dinámica
+      // ============================================================
+      // [jul 2026, DIAGNÓSTICO CORREGIDO — COBERTURA DE PDA]
+      // Ver lib/cobertura.ts para el historial completo de por qué el
+      // conteo de PDAs y ahora el de ejes se movieron a funciones
+      // compartidas — la causa raíz en ambos casos fue código
+      // duplicado con criterios ligeramente distintos entre esta
+      // pantalla y app/mi-avance/page.tsx.
+      // ============================================================
+      const { data: cov } = await supabase
+        .from('pda_coverage')
+        .select('pda_literal')
+        .eq('user_id', data.id)
+
       const campos = new Set((plans || []).map((p: any) => p.pda_campo).filter(Boolean))
-      const ejes = new Set((plans || []).map((p: any) => p.eje_principal).filter(Boolean))
-      const { data: pdaCov } = await supabase.from('pda_coverage').select('pda_id').eq('user_id', data.id)
-      setCobertura({ campos: campos.size, ejes: ejes.size, pdas: pdaCov?.length || 0, totalCampos: 4, totalEjes: 7, totalPdas: 371 })
+      const ejesCubiertos = calcularEjesCubiertos(plans || [])
+      const pdasUnicos = new Set((cov || []).map((c: any) => c.pda_literal).filter(Boolean))
+
+      setCobertura({ campos: campos.size, ejes: ejesCubiertos.size, pdas: pdasUnicos.size, totalCampos: 4, totalEjes: 7, totalPdas: 371 })
 
       setLoading(false)
     }
@@ -83,12 +97,12 @@ export default function DashboardPage() {
           {/* COLUMNA IZQUIERDA — KPIs + MÍA */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* 3 KPIs */}
+            {/* 3 KPIs — orden pedagógico: Campos → PDA → Ejes. */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               {[
                 { label: 'COBERTURA DE\nCAMPOS FORMATIVOS', value: `${cobertura.campos} / ${cobertura.totalCampos}`, sub: 'CAMPOS Cubiertos · Ciclo 2025-2026' },
-                { label: 'COBERTURA DE\nEJES ARTICULADORES', value: `${cobertura.ejes} / ${cobertura.totalEjes}`, sub: 'EJES Cubiertos · Ciclo 2025-2026' },
                 { label: 'COBERTURA DE\nPDA', value: `${cobertura.pdas} / ${cobertura.totalPdas}`, sub: 'PDA Cubiertos · Ciclo 2025-2026' },
+                { label: 'COBERTURA DE\nEJES ARTICULADORES', value: `${cobertura.ejes} / ${cobertura.totalEjes}`, sub: 'EJES Cubiertos · Ciclo 2025-2026' },
               ].map((kpi, i) => (
                 <div key={i} style={{ background: 'white', borderRadius: 12, padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
                   <p style={{ color: '#3D3A8C', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{kpi.label}</p>
