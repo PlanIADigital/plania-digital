@@ -556,13 +556,13 @@ export default function MiGrupoPage() {
     desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5, textAlign: 'center' as const } as React.CSSProperties,
     btn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
     btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
-    ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px' } as React.CSSProperties,
+    ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const } as React.CSSProperties,
     okText: { margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 } as React.CSSProperties,
     err: { background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 } as React.CSSProperties,
     textarea: { display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'none' as const, overflow: 'hidden' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8, textAlign: 'left' as const } as React.CSSProperties,
     // Fila de acciones unificada — misma posición y estilo en las 6 tarjetas
     // con historial (todas menos la Sección 4)
-    accionesFila: { display: 'flex', gap: 14, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' as const } as React.CSSProperties,
+    accionesFila: { display: 'flex', gap: 14, justifyContent: 'center', marginTop: 'auto', paddingTop: 8, flexWrap: 'wrap' as const } as React.CSSProperties,
     accionBtn: { background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' } as React.CSSProperties,
     badgeMia: { display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFBEB', border: '1px solid #FCD34D', color: '#92400E', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, cursor: 'pointer' } as React.CSSProperties,
   }
@@ -976,7 +976,7 @@ export default function MiGrupoPage() {
                     <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
                   </div>
                 ) : (
-                  <div style={{ ...s.ok, flex: 1 }}>
+                  <div style={{ ...s.ok, flex: 1, justifyContent: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <p style={s.okText}>✅ Estilo de escritura guardado</p>
                       <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
