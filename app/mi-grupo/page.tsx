@@ -617,13 +617,15 @@ export default function MiGrupoPage() {
             </div>
           )}
 
-          {/* GRID 2 COLUMNAS */}
+          {/* GRID 2×2 — cada sección es su propia tarjeta con posición fija en
+              la cuadrícula (fila/columna explícita), así el navegador iguala
+              automáticamente la altura entre 1↔2 (misma fila) y 3↔4 (misma fila) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'stretch' }}>
 
-            {/* COLUMNA IZQUIERDA: 1.1 PMC + 1.2 PA + 3.1 + 3.2 */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const }}>
+            {/* Sección 1 · Diagnóstico Escolar (fila 1, columna 1) */}
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 1 }}>
 
-              <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
+              <div>
                 <p style={s.cardTitle}>1 · Diagnóstico Escolar</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
@@ -716,7 +718,10 @@ export default function MiGrupoPage() {
                   </div>
                 </div>
               </div>
+            </div>
 
+            {/* Sección 3 · Recomendaciones Directivas (fila 2, columna 1) */}
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 2 }}>
               <div>
                 <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -814,10 +819,10 @@ export default function MiGrupoPage() {
 
             </div>
 
-            {/* COLUMNA DERECHA: 2.1 + 2.2 + 4 */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const }}>
+            {/* Sección 2 · Diagnóstico Pedagógico (fila 1, columna 2) */}
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 1 }}>
 
-              <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
+              <div>
                 <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
@@ -942,7 +947,10 @@ export default function MiGrupoPage() {
                   </div>
                 </div>
               </div>
+            </div>
 
+            {/* Sección 4 · Mi estilo de narración (fila 2, columna 2) */}
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 2 }}>
               <div>
                 <p style={s.cardTitle}>4 · Mi estilo de narración</p>
                 <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
