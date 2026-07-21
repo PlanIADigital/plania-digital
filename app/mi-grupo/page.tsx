@@ -954,7 +954,7 @@ export default function MiGrupoPage() {
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>4 · Mi estilo de narración</p>
                 <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
-                  Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti, con tu tono y estilo personal.
+                  Comparte como escribes: una carta, unas notas o cualquier texto tuyo.<br/>La finalidad es que aprendamos de tu tono y estilo personal.<br/>MÍA aprenderá de ti para que tus planeaciones tengan tu estilo pedagógico.
                 </p>
                 {!estiloGuardado ? (
                   <div style={{ flex: 1 }}>
