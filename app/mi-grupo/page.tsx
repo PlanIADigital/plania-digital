@@ -954,7 +954,7 @@ export default function MiGrupoPage() {
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>4 · Mi estilo de narración</p>
                 <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
-                  Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti.
+                  Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti, con tu tono y estilo personal.
                 </p>
                 {!estiloGuardado ? (
                   <div style={{ flex: 1 }}>
@@ -976,13 +976,13 @@ export default function MiGrupoPage() {
                     <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
                   </div>
                 ) : (
-                  <div style={{ ...s.ok, flex: 1, justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ ...s.ok, flex: 1 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <p style={s.okText}>✅ Estilo de escritura guardado</p>
-                      <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
-                        style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer', padding: 0 }}>Actualizar</button>
+                      {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '4px 0 0' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
                     </div>
-                    {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '4px 0 0' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
+                    <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
+                      style={{ ...s.accionBtn, marginTop: 'auto', paddingTop: 8, alignSelf: 'center' }}>↑ Actualizar</button>
                   </div>
                 )}
               </div>
