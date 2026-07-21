@@ -625,14 +625,14 @@ export default function MiGrupoPage() {
             {/* Sección 1 · Diagnóstico Escolar (fila 1, columna 1) */}
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 1 }}>
 
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>1 · Diagnóstico Escolar</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>1.1 · PROGRAMA DE MEJORA CONTINUA</p>
                     <p style={s.desc}>Contexto Institucional del Jardín:<br/>Entorno, Organización y Recursos.</p>
                     {!diagnosticoEscolarGuardado ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: analizandoEscolar ? 0.6 : 1 }}>
                           {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
@@ -640,7 +640,7 @@ export default function MiGrupoPage() {
                         {errorEscolar && <div style={s.err}>{errorEscolar}</div>}
                       </div>
                     ) : (
-                      <div style={s.ok}>
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ PMC guardado</p>
                         <TiempoGuardado fechaISO={fechasGuardado['pmc']?.fecha} />
                         <div style={s.accionesFila}>
@@ -666,11 +666,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center' }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>1.2 · Programa Analítico</p>
                     <p style={s.desc}>PDA Y Contenidos priorizados por el colectivo.<br/>Acepta formato .docx, .pptx, .pdf.</p>
                     {!paActivo ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
                           {analizandoPA ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
@@ -679,8 +679,8 @@ export default function MiGrupoPage() {
                         {errorPA && <div style={s.err}>{errorPA}</div>}
                       </div>
                     ) : (
-                      <div>
-                        <div style={s.ok}>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <div style={{ ...s.ok, flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' as const }}>
                             <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
                             {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
@@ -722,14 +722,14 @@ export default function MiGrupoPage() {
 
             {/* Sección 3 · Recomendaciones Directivas (fila 2, columna 1) */}
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 2 }}>
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>3.1 · Áreas de Oportunidad</p>
                     <p style={s.desc}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
                     {!observacionesGuardadas ? (
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={3}
                           placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
                           style={s.textarea} />
@@ -747,7 +747,7 @@ export default function MiGrupoPage() {
                         <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Opcional · al subir un archivo se analiza automáticamente</p>
                       </div>
                     ) : (
-                      <div style={s.ok}>
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ Observaciones integradas</p>
                         <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
                         <div style={s.accionesFila}>
@@ -776,11 +776,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center' }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>3.2 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
                     <p style={s.desc}>PDAs acordados por el colectivo este ciclo.<br/>El sistema los integrará con tu diagnóstico.</p>
                     {!guardadoJardin ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
                           {guardandoJardin ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
@@ -788,7 +788,7 @@ export default function MiGrupoPage() {
                         {errorJardin && <div style={s.err}>{errorJardin}</div>}
                       </div>
                     ) : (
-                      <div style={s.ok}>
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
                         <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
                         <div style={s.accionesFila}>
@@ -822,14 +822,14 @@ export default function MiGrupoPage() {
             {/* Sección 2 · Diagnóstico Pedagógico (fila 1, columna 2) */}
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 1 }}>
 
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>2.1 · Diagnóstico Grupal</p>
                     <p style={s.desc}>Necesidades y áreas de oportunidad del Grupo,<br/>para personalizar tu planeaciones.</p>
                     {!guardado ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btnGreen, opacity: analizando ? 0.6 : 1 }}>
                           {analizando ? '🔍 Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
@@ -837,7 +837,7 @@ export default function MiGrupoPage() {
                         {errorDiagnostico && <div style={s.err}>{errorDiagnostico}</div>}
                       </div>
                     ) : (
-                      <div style={s.ok}>
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ Diagnóstico guardado</p>
                         <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']?.fecha} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
@@ -886,11 +886,11 @@ export default function MiGrupoPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center' }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>2.2 · Diagnóstico Individual</p>
                     <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NNE.</p>
                     {!evalCompleta ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
                           {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
                           <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
@@ -899,7 +899,7 @@ export default function MiGrupoPage() {
                         {errorEval && <div style={s.err}>{errorEval}</div>}
                       </div>
                     ) : (
-                      <div style={s.ok}>
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ Evaluación completa</p>
                         <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']?.fecha} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}</p>
@@ -951,13 +951,13 @@ export default function MiGrupoPage() {
 
             {/* Sección 4 · Mi estilo de narración (fila 2, columna 2) */}
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 2 }}>
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>4 · Mi estilo de narración</p>
                 <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
                   Comparte cómo escribes: una carta a padres, unas notas, cualquier texto tuyo.<br/>MÍA aprenderá de ti para que tus planeaciones suenen a ti.
                 </p>
                 {!estiloGuardado ? (
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
                       placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
                       style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
@@ -976,7 +976,7 @@ export default function MiGrupoPage() {
                     <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
                   </div>
                 ) : (
-                  <div style={s.ok}>
+                  <div style={{ ...s.ok, flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <p style={s.okText}>✅ Estilo de escritura guardado</p>
                       <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
