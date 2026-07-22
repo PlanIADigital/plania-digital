@@ -1,7 +1,8 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { CENTRO_APRENDIZAJE_ACTIVO } from '@/lib/featureFlags'
+import { MISIONES_ACTIVO } from '@/lib/featureFlags'
+import { useTheme } from '@/components/ThemeProvider'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +15,7 @@ const NAV_ITEMS = [
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
   { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
-  { label: 'Centro de Aprendizaje', path: '/centro-aprendizaje', icon: '🎓', activo: CENTRO_APRENDIZAJE_ACTIVO },
+  { label: 'Misiones',          path: '/misiones',         icon: '🎓', activo: MISIONES_ACTIVO },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
   { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
@@ -23,6 +24,32 @@ const NAV_ITEMS = [
 interface SidebarProps {
   profile: any
   children: React.ReactNode
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
+  return (
+    <button
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      style={{
+        width: 44, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer',
+        position: 'relative', flexShrink: 0, padding: 0,
+        background: isDark ? '#00A896' : 'rgba(255,255,255,0.22)',
+        transition: 'background 0.2s ease',
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: 2, left: isDark ? 22 : 2,
+        width: 20, height: 20, borderRadius: '50%', background: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, lineHeight: 1, transition: 'left 0.2s ease',
+      }}>
+        {isDark ? '🌙' : '☀️'}
+      </span>
+    </button>
+  )
 }
 
 export default function Sidebar({ profile, children }: SidebarProps) {
@@ -129,6 +156,10 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0 }}>
               {profile?.full_name}
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Modo oscuro</span>
+              <ThemeToggle />
+            </div>
           </div>
           <button onClick={handleLogout} style={{
             width: '100%', background: '#00A896',
@@ -141,7 +172,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         </div>
       </aside>
 
-      <main style={{ marginLeft: 240, flex: 1, background: '#E8F5F2', minHeight: '100vh' }}>
+      <main style={{ marginLeft: 240, flex: 1, background: 'var(--plania-fondo)', minHeight: '100vh' }}>
         {children}
       </main>
     </div>

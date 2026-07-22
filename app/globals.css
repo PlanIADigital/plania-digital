@@ -20,8 +20,8 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--plania-fondo);
+  color: var(--plania-texto);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -38,4 +38,25 @@ body {
   --plania-saberes:       #00A896;
   --plania-etica:         #059669;
   --plania-humano:        #7C3AED;
+
+  /* Modo claro/oscuro — deben coincidir con `temas` en lib/design-tokens.ts */
+  --plania-fondo:          #E8F5F2;
+  --plania-superficie:     #FFFFFF;
+  --plania-superficie-alt: #EEEDF8;
+  --plania-marca:          #3D3A8C;
+  --plania-accion:         #00A896;
+  --plania-texto:          #1A1A2E;
+  --plania-texto-suave:    #6B7280;
+  --plania-borde:          #E0DFF5;
+}
+
+[data-theme="dark"] {
+  --plania-fondo:          #1A1A2E;
+  --plania-superficie:     #24243B;
+  --plania-superficie-alt: #2E2E4D;
+  --plania-marca:          #8481D6;
+  --plania-accion:         #00A896;
+  --plania-texto:          #F0F0F5;
+  --plania-texto-suave:    #A8A8C0;
+  --plania-borde:          #383858;
 }

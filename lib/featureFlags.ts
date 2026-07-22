@@ -8,4 +8,4 @@
 //  directa muestra un aviso amigable en vez de cargar datos.
 // ============================================================
 
-export const CENTRO_APRENDIZAJE_ACTIVO = true
+export const MISIONES_ACTIVO = true

@@ -7,6 +7,23 @@
 //  edita SOLO este archivo.
 // ============================================================
 
+// ============================================================
+//  Modo claro/oscuro — pares de color por tema
+//  IMPORTANTE: estos valores deben coincidir exactamente con las
+//  variables CSS en app/globals.css (bloque "Modo claro/oscuro").
+//  Si cambias un color aquí, cámbialo también allá.
+// ============================================================
+export const temas = {
+  fondo:          { light: '#E8F5F2', dark: '#1A1A2E' },  // Menta / Negro azulado
+  superficie:     { light: '#FFFFFF', dark: '#24243B' },  // Tarjetas
+  superficieAlt:  { light: '#EEEDF8', dark: '#2E2E4D' },  // Índigo claro (tabs activos, badges)
+  marca:          { light: '#3D3A8C', dark: '#8481D6' },  // Índigo, aclarado en oscuro para contraste
+  accion:         { light: '#00A896', dark: '#00A896' },  // Cian — funciona igual en ambos
+  texto:          { light: '#1A1A2E', dark: '#F0F0F5' },  // Negro azulado / casi blanco
+  textoSuave:     { light: '#6B7280', dark: '#A8A8C0' },
+  borde:          { light: '#E0DFF5', dark: '#383858' },
+}
+
 export const colors = {
   // Paleta oficial PlanIA
   indigo:       '#3D3A8C',  // Color de marca principal
@@ -41,7 +58,7 @@ export const colors = {
   infoBg:       '#EEF2FF',
   infoBorder:   '#C7D2FE',
 
-  // Centro de Aprendizaje (gamificación) — dorado exclusivo para
+  // Misiones (gamificación) — dorado exclusivo para
   // XP, medallas de logros/ranking y barra de progreso de nivel.
   // NUNCA usarlo en botones, badges de tipo de misión o navegación.
   gold:         '#C9971C',

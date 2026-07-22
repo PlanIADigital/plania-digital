@@ -1,6 +1,6 @@
 // ============================================================
-//  PlanIA Digital — API: ranking del Centro de Aprendizaje
-//  app/api/centro-aprendizaje/ranking/route.ts
+//  PlanIA Digital — API: ranking de Misiones
+//  app/api/misiones/ranking/route.ts
 //
 //  Tabla de clasificación acotada al mismo rol_aplicable de quien
 //  consulta (educadoras compiten entre educadoras, etc.)
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const rolAplicable = rolAplicableDe(usuario.role)
 
     const { data: ranking } = await supabaseAdmin
-      .from('ca_ranking_cache')
+      .from('msn_ranking_cache')
       .select('user_id, full_name, xp_total, nivel_gamificacion')
       .eq('rol_aplicable', rolAplicable)
       .order('xp_total', { ascending: false })

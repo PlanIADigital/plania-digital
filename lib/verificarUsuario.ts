@@ -4,7 +4,7 @@
 //
 //  A diferencia de verificarSuperAdmin.ts, esta guardia solo exige
 //  una sesión válida (cualquier rol) — úsala en rutas API que
-//  cualquier usuaria logueada puede llamar, ej. /api/centro-aprendizaje/*
+//  cualquier usuaria logueada puede llamar, ej. /api/misiones/*
 //
 //  Uso:
 //    const auth = await verificarUsuario(request)
@@ -55,7 +55,7 @@ export async function verificarUsuario(request: Request): Promise<ResultadoAuth>
 }
 
 // Traduce el `role` de la tabla users al `rol_aplicable` de las
-// tablas ca_* (educadora/educador → 'educadora', etc.)
+// tablas msn_* (educadora/educador → 'educadora', etc.)
 export function rolAplicableDe(role: string | null | undefined): 'educadora' | 'directivo' | 'musica' {
   if (role === 'directivo') return 'directivo'
   if (role?.includes('musica')) return 'musica'

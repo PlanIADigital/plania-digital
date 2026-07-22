@@ -1,11 +1,11 @@
 // ============================================================
-//  PlanIA Digital — API: completar misión del Centro de Aprendizaje
-//  app/api/centro-aprendizaje/completar-mision/route.ts
+//  PlanIA Digital — API: completar misión
+//  app/api/misiones/completar-mision/route.ts
 //
 //  Otorga XP, recalcula nivel_gamificacion, verifica desbloqueo de
 //  logros y refresca la caché de ranking. Todo pasa por
-//  supabaseAdmin — el cliente nunca escribe ca_progreso_usuario
-//  directamente (ver RLS en database/centro_aprendizaje_schema.sql).
+//  supabaseAdmin — el cliente nunca escribe msn_progreso_usuario
+//  directamente (ver RLS en database/misiones_schema.sql).
 // ============================================================
 import { NextResponse } from 'next/server'
 import { verificarUsuario, rolAplicableDe } from '@/lib/verificarUsuario'
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     if (!misionId) return NextResponse.json({ error: 'Falta misionId' }, { status: 400 })
 
     const { data: mision } = await supabaseAdmin
-      .from('ca_misiones')
+      .from('msn_misiones')
       .select('id, titulo, xp_recompensa, nodo_mazmorra, rol_aplicable, activa')
       .eq('id', misionId)
       .single()
@@ -37,14 +37,14 @@ export async function POST(request: Request) {
     }
 
     let { data: progreso } = await supabaseAdmin
-      .from('ca_progreso_usuario')
+      .from('msn_progreso_usuario')
       .select('*')
       .eq('user_id', usuario.id)
       .single()
 
     if (!progreso) {
       const { data: nuevoProgreso, error: errorCrear } = await supabaseAdmin
-        .from('ca_progreso_usuario')
+        .from('msn_progreso_usuario')
         .insert({ user_id: usuario.id, rol_aplicable: rolAplicable })
         .select('*')
         .single()
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     // Verificar desbloqueo de logros por conteo de misiones completadas
     const { data: logros } = await supabaseAdmin
-      .from('ca_logros')
+      .from('msn_logros')
       .select('id, titulo, icono, xp_recompensa, criterio')
       .eq('rol_aplicable', rolAplicable)
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     const nuevoNivel = nivelDesdeXP(nuevoXP)
 
     const { data: progresoActualizado, error: errorUpdate } = await supabaseAdmin
-      .from('ca_progreso_usuario')
+      .from('msn_progreso_usuario')
       .update({
         xp_total: nuevoXP,
         nivel_gamificacion: nuevoNivel,
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     if (errorUpdate) return NextResponse.json({ error: 'No se pudo actualizar el progreso' }, { status: 500 })
 
     await supabaseAdmin
-      .from('ca_ranking_cache')
+      .from('msn_ranking_cache')
       .upsert({
         user_id: usuario.id,
         full_name: usuario.full_name,

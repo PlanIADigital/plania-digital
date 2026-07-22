@@ -1,6 +1,6 @@
 // ============================================================
-//  PlanIA Digital — API: progreso del Centro de Aprendizaje
-//  app/api/centro-aprendizaje/progreso/route.ts
+//  PlanIA Digital — API: progreso de Misiones
+//  app/api/misiones/progreso/route.ts
 //
 //  Devuelve el progreso de la usuaria (XP, nivel, misiones y
 //  logros desbloqueados) más los catálogos de misiones y logros
@@ -19,14 +19,14 @@ export async function GET(request: Request) {
     const rolAplicable = rolAplicableDe(usuario.role)
 
     let { data: progreso } = await supabaseAdmin
-      .from('ca_progreso_usuario')
+      .from('msn_progreso_usuario')
       .select('*')
       .eq('user_id', usuario.id)
       .single()
 
     if (!progreso) {
       const { data: nuevoProgreso, error: errorCrear } = await supabaseAdmin
-        .from('ca_progreso_usuario')
+        .from('msn_progreso_usuario')
         .insert({ user_id: usuario.id, rol_aplicable: rolAplicable })
         .select('*')
         .single()
@@ -36,14 +36,14 @@ export async function GET(request: Request) {
     }
 
     const { data: misiones } = await supabaseAdmin
-      .from('ca_misiones')
+      .from('msn_misiones')
       .select('id, titulo, descripcion, tipo, xp_recompensa, nodo_mazmorra, ventana_horas, orden')
       .eq('rol_aplicable', rolAplicable)
       .eq('activa', true)
       .order('orden', { ascending: true })
 
     const { data: logros } = await supabaseAdmin
-      .from('ca_logros')
+      .from('msn_logros')
       .select('id, titulo, descripcion, icono, xp_recompensa, criterio')
       .eq('rol_aplicable', rolAplicable)
 

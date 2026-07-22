@@ -104,19 +104,19 @@ export default function DashboardPage() {
                 { label: 'COBERTURA DE\nPDA', value: `${cobertura.pdas} / ${cobertura.totalPdas}`, sub: 'PDA Cubiertos · Ciclo 2025-2026' },
                 { label: 'COBERTURA DE\nEJES ARTICULADORES', value: `${cobertura.ejes} / ${cobertura.totalEjes}`, sub: 'EJES Cubiertos · Ciclo 2025-2026' },
               ].map((kpi, i) => (
-                <div key={i} style={{ background: 'white', borderRadius: 12, padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-                  <p style={{ color: '#3D3A8C', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{kpi.label}</p>
-                  <p style={{ color: '#3D3A8C', fontSize: 26, fontWeight: 800, margin: '0 0 4px' }}>{kpi.value}</p>
-                  <p style={{ color: '#999', fontSize: 10, margin: 0 }}>{kpi.sub}</p>
+                <div key={i} style={{ background: 'var(--plania-superficie)', borderRadius: 12, padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--plania-marca)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{kpi.label}</p>
+                  <p style={{ color: 'var(--plania-marca)', fontSize: 26, fontWeight: 800, margin: '0 0 4px' }}>{kpi.value}</p>
+                  <p style={{ color: 'var(--plania-texto-suave)', fontSize: 10, margin: 0 }}>{kpi.sub}</p>
                 </div>
               ))}
             </div>
 
             {/* Sugerencias MÍA */}
-            <div style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', flex: 1 }}>
-              <p style={{ color: '#3D3A8C', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>✨ Sugerencias de MÍA</p>
+            <div style={{ background: 'var(--plania-superficie)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', flex: 1 }}>
+              <p style={{ color: 'var(--plania-marca)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>✨ Sugerencias de MÍA</p>
               {planeaciones.length === 0 ? (
-                <p style={{ color: '#999', fontSize: 13, margin: 0, lineHeight: 1.6 }}>
+                <p style={{ color: 'var(--plania-texto-suave)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>
                   Cuando generes tu primera planeación, MÍA comenzará a analizar tu cobertura curricular y te dará orientaciones personalizadas aquí.
                 </p>
               ) : (
@@ -148,10 +148,10 @@ export default function DashboardPage() {
           </div>
 
           {/* COLUMNA DERECHA — Mis Planeaciones */}
-          <div style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'var(--plania-superficie)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <p style={{ color: '#3D3A8C', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>MIS PLANEACIONES</p>
+                <p style={{ color: 'var(--plania-marca)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>MIS PLANEACIONES</p>
                 <span style={{ background: '#3D3A8C', color: 'white', fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20 }}>
                   {planeaciones.length}
                 </span>
@@ -165,30 +165,30 @@ export default function DashboardPage() {
             {planeaciones.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <p style={{ fontSize: 32, margin: '0 0 12px' }}>📋</p>
-                <p style={{ color: '#999', fontSize: 14, margin: 0 }}>Aún no tienes planeaciones.<br />¡Crea tu primera hoy!</p>
+                <p style={{ color: 'var(--plania-texto-suave)', fontSize: 14, margin: 0 }}>Aún no tienes planeaciones.<br />¡Crea tu primera hoy!</p>
               </div>
             ) : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                   {ultimasPlaneaciones.map(p => (
-                    <div key={p.id} style={{ border: '1px solid #EEEDF8', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                    <div key={p.id} style={{ border: '1px solid var(--plania-borde)', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1A1A2E', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: 'var(--plania-texto)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {p.project_name}
                         </p>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                           {p.pda_campo && (
-                            <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                            <span style={{ background: 'var(--plania-superficie-alt)', color: 'var(--plania-marca)', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
                               {p.pda_campo}
                             </span>
                           )}
                           {p.starts_on && (
-                            <span style={{ color: '#aaa', fontSize: 11 }}>
+                            <span style={{ color: 'var(--plania-texto-suave)', fontSize: 11 }}>
                               {new Date(p.starts_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                               {p.ends_on && ` → ${new Date(p.ends_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`}
                             </span>
                           )}
-                          <span style={{ background: p.status === 'active' ? '#d1fae5' : '#EEEDF8', color: p.status === 'active' ? '#065f46' : '#666', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                          <span style={{ background: p.status === 'active' ? '#d1fae5' : 'var(--plania-superficie-alt)', color: p.status === 'active' ? '#065f46' : 'var(--plania-texto-suave)', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
                             {p.status === 'active' ? 'Activa' : p.status}
                           </span>
                         </div>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                 </div>
                 {planeaciones.length > 4 && (
                   <button onClick={() => router.push('/mis-planeaciones')}
-                    style={{ background: 'none', border: '1px solid #EEEDF8', color: '#3D3A8C', padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, marginTop: 12, width: '100%' }}>
+                    style={{ background: 'none', border: '1px solid var(--plania-superficie-alt)', color: 'var(--plania-marca)', padding: '10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, marginTop: 12, width: '100%' }}>
                     Ver todas las planeaciones ({planeaciones.length}) →
                   </button>
                 )}
