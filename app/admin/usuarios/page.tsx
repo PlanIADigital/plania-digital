@@ -26,7 +26,7 @@ export default function UsuariosPage() {
 
   const educadoras = usuarios.filter(u => ['educadora','educador'].includes(u.role))
   const directivos = usuarios.filter(u => u.role === 'directivo')
-  const trials = usuarios.filter(u => u.subscription_status === 'trial')
+  const trials = usuarios.filter(u => u.membership_status === 'trial')
 
   const roles: Record<string, string> = {
     educadora: 'Educadora',
@@ -41,6 +41,7 @@ export default function UsuariosPage() {
       <h1 className="text-lg font-medium text-gray-900 mb-1">Usuarios</h1>
       <p className="text-sm text-gray-500 mb-6">Vista global de cuentas registradas en la plataforma.</p>
 
+      {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total usuarios', value: usuarios.length, color: 'text-indigo-700' },
@@ -55,6 +56,7 @@ export default function UsuariosPage() {
         ))}
       </div>
 
+      {/* Tabla */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-sm text-gray-400">Cargando usuarios...</div>
@@ -86,15 +88,18 @@ export default function UsuariosPage() {
                       {roles[u.role] || u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs font-mono text-gray-500">{u.cct || '—'}</td>
+                  <td className="px-4 py-3 text-xs font-mono text-gray-500">{u.cct_primary || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      u.subscription_status === 'active' ? 'bg-green-100 text-green-700' :
-                      u.subscription_status === 'trial' ? 'bg-amber-100 text-amber-700' :
+                      u.membership_status === 'active' ? 'bg-green-100 text-green-700' :
+                      u.membership_status === 'trial' ? 'bg-amber-100 text-amber-700' :
                       'bg-gray-100 text-gray-500'
                     }`}>
-                      {u.subscription_status === 'active' ? 'Activo' :
-                       u.subscription_status === 'trial' ? 'Trial' : 'Inactivo'}
+                      {u.membership_status === 'active' ? 'Activo' :
+                       u.membership_status === 'trial' ? 'Trial' :
+                       u.membership_status === 'cancelled' ? 'Cancelado' :
+                       u.membership_status === 'expired' ? 'Expirado' :
+                       u.membership_status === 'suspended' ? 'Suspendido' : '—'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-400">

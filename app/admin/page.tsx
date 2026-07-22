@@ -44,7 +44,7 @@ export default function AdminDashboard() {
           total: u.length,
           educadoras: u.filter((x: any) => ['educadora','educador'].includes(x.role)).length,
           directivos: u.filter((x: any) => x.role === 'directivo').length,
-          trials: u.filter((x: any) => x.subscription_status === 'trial').length,
+          trials: u.filter((x: any) => x.membership_status === 'trial').length,
         })
       } catch {}
     }
