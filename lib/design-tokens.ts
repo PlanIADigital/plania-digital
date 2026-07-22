@@ -40,6 +40,13 @@ export const colors = {
   info:         '#3730A3',
   infoBg:       '#EEF2FF',
   infoBorder:   '#C7D2FE',
+
+  // Centro de Aprendizaje (gamificación) — dorado exclusivo para
+  // XP, medallas de logros/ranking y barra de progreso de nivel.
+  // NUNCA usarlo en botones, badges de tipo de misión o navegación.
+  gold:         '#C9971C',
+  goldLight:    '#FBF1DA',
+  goldBorder:   '#E7C878',
 }
 
 export const radius = {

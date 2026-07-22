@@ -1,6 +1,7 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { CENTRO_APRENDIZAJE_ACTIVO } from '@/lib/featureFlags'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
   { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
+  { label: 'Centro de Aprendizaje', path: '/centro-aprendizaje', icon: '🎓', activo: CENTRO_APRENDIZAJE_ACTIVO },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
   { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
