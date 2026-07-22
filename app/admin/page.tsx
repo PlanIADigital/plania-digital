@@ -4,6 +4,7 @@
 // ============================================================
 'use client'
 import { useEffect, useState } from 'react'
+import { fetchAdmin } from '@/lib/fetchAdmin'
 
 const NOMBRES_ESTADO: Record<string, string> = {
   '01': 'Aguascalientes', '02': 'Baja California', '03': 'Baja California Sur',
@@ -27,8 +28,8 @@ export default function AdminDashboard() {
     async function cargar() {
       try {
         const [calRes, usrRes] = await Promise.all([
-          fetch('/api/admin/calendario-estado'),
-          fetch('/api/admin/usuarios'),
+          fetchAdmin('/api/admin/calendario-estado'),
+          fetchAdmin('/api/admin/usuarios'),
         ])
         const calData = await calRes.json()
         const usrData = await usrRes.json()
@@ -62,7 +63,6 @@ export default function AdminDashboard() {
       <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Dashboard</h1>
       <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>Estado general de PlanIA al día de hoy</p>
 
-      {/* Alerta calendario solo si no está cargado */}
       {calendarioOk === false && (
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
           <span>⚠️</span>
@@ -73,7 +73,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
           { label: 'Usuarios activos', value: usuarios.total, color: '#3D3A8C' },
@@ -88,7 +87,6 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

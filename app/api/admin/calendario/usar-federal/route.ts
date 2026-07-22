@@ -3,19 +3,20 @@
 //  app/api/admin/calendario/usar-federal/route.ts
 // ============================================================
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { verificarSuperAdmin } from '@/lib/verificarSuperAdmin'
 
 export async function POST(request: Request) {
   try {
+    const auth = await verificarSuperAdmin(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin } = auth
+
     const { estado, nombreEstado, nota } = await request.json()
     if (!estado) {
       return NextResponse.json({ error: 'Falta el estado' }, { status: 400 })
     }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
 
     // 1. Leer el calendario federal ya cargado
     const { data: federalRow, error: errorLectura } = await supabaseAdmin

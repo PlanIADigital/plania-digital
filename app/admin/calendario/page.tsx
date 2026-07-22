@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { fetchAdmin } from '@/lib/fetchAdmin'
 
 const ESTADOS = [
   { codigo: '01', nombre: 'Aguascalientes' },
@@ -126,7 +127,7 @@ export default function CalendarioPage() {
 
   async function verificarEstado(estado: string) {
     try {
-      const res = await fetch(`/api/admin/calendario-estado?estado=${estado}`)
+      const res = await fetchAdmin(`/api/admin/calendario-estado?estado=${estado}`)
       const data = await res.json()
       setFederalCargado(data.federal || false)
       setEstatalCargado(data.estatal || false)
@@ -150,7 +151,7 @@ export default function CalendarioPage() {
       const text = await file.text()
       const json = JSON.parse(text)
 
-      const res = await fetch('/api/admin/calendario', {
+      const res = await fetchAdmin('/api/admin/calendario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,7 +190,7 @@ export default function CalendarioPage() {
     else setEliminandoEstatal(true)
 
     try {
-      const res = await fetch('/api/admin/calendario', {
+      const res = await fetchAdmin('/api/admin/calendario', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -225,7 +226,7 @@ export default function CalendarioPage() {
 
     setUsandoFederal(true)
     try {
-      const res = await fetch('/api/admin/calendario/usar-federal', {
+      const res = await fetchAdmin('/api/admin/calendario/usar-federal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -461,7 +462,6 @@ export default function CalendarioPage() {
           </div>
           <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 8 }}>Ajustes estatales específicos. Selecciona el estado antes de cargar.</p>
 
-          {/* Marca permanente: este estado usa el federal sin cambios */}
           {estatalEsFederal && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600,
@@ -499,7 +499,6 @@ export default function CalendarioPage() {
           </label>
           {mensajeEstatal && <p style={{ marginTop: 10, fontSize: 12, fontWeight: 500, color: '#374151' }}>{mensajeEstatal}</p>}
 
-          {/* Sección: usar calendario federal sin cambios — SOLO si no hay calendario propio real cargado */}
           {(!estatalCargado || estatalEsFederal) && (
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed #E5E7EB' }}>
               <button

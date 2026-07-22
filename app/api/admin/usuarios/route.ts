@@ -3,14 +3,15 @@
 //  app/api/admin/usuarios/route.ts
 // ============================================================
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { verificarSuperAdmin } from '@/lib/verificarSuperAdmin'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
+    const auth = await verificarSuperAdmin(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin } = auth
 
     const { data, error } = await supabaseAdmin
       .from('users')

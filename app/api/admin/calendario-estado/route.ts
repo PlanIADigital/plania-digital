@@ -3,16 +3,18 @@
 //  app/api/admin/calendario-estado/route.ts
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { verificarSuperAdmin } from '@/lib/verificarSuperAdmin'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verificarSuperAdmin(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin } = auth
+
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get('estado') || '19'
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
     const { data } = await supabaseAdmin
       .from('calendarios_sep')
       .select('tipo, estado, datos')

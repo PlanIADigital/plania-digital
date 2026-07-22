@@ -4,6 +4,7 @@
 // ============================================================
 'use client'
 import { useEffect, useState } from 'react'
+import { fetchAdmin } from '@/lib/fetchAdmin'
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<any[]>([])
@@ -12,7 +13,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     async function cargar() {
       try {
-        const res = await fetch('/api/admin/usuarios')
+        const res = await fetchAdmin('/api/admin/usuarios')
         const data = await res.json()
         setUsuarios(data.usuarios || [])
       } catch {
@@ -40,7 +41,6 @@ export default function UsuariosPage() {
       <h1 className="text-lg font-medium text-gray-900 mb-1">Usuarios</h1>
       <p className="text-sm text-gray-500 mb-6">Vista global de cuentas registradas en la plataforma.</p>
 
-      {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total usuarios', value: usuarios.length, color: 'text-indigo-700' },
@@ -55,7 +55,6 @@ export default function UsuariosPage() {
         ))}
       </div>
 
-      {/* Tabla */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-sm text-gray-400">Cargando usuarios...</div>
