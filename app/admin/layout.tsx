@@ -13,7 +13,7 @@ const navItems = [
     { href: '/admin', label: 'Dashboard', icon: '📊' },
   ]},
   { section: 'Ciclo escolar', items: [
-    { href: '/admin/calendario', label: 'Calendario SEP', icon: '📅' },
+    { href: '/admin/calendario', label: 'Calendarios', icon: '📅' },
     { href: '/admin/cct', label: 'Catálogo CCTs', icon: '🏫' },
   ]},
   { section: 'Plataforma', items: [
