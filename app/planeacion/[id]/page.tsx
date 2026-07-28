@@ -19,6 +19,17 @@ const PREFIJO_POR_CAMPO: Record<string, string> = {
   'De lo Humano y lo Comunitario': 'DHC',
 }
 
+// [jul 2026] Colores por etiqueta de nivel del instrumento de
+// evaluación — mismo criterio visual que ya usaba la rúbrica vieja
+// (verde=logrado, ámbar=en proceso, rojo=requiere apoyo), pero ahora
+// mapeado por texto de etiqueta en vez de por posición fija, ya que
+// el modelo entrega "niveles" como arreglo.
+const ESTILO_POR_NIVEL: Record<string, { color: string; fondo: string }> = {
+  'Logrado': { color: '#065F46', fondo: '#ECFDF5' },
+  'En proceso': { color: '#92400E', fondo: '#FFFBEB' },
+  'Requiere apoyo': { color: '#DC2626', fondo: '#FEF2F2' },
+}
+
 export default function VerPlaneacionPage() {
   const router = useRouter()
   const params = useParams()
@@ -33,11 +44,19 @@ export default function VerPlaneacionPage() {
   // y no tiene *_id guardado, simplemente no habrá código para ese
   // PDA — se sigue mostrando solo el texto literal, sin romper nada.
   const [posicionesPorId, setPosicionesPorId] = useState<Record<string, number>>({})
+  // [jul 2026] auth_uid de la sesión — se necesita para verificar
+  // dueño al marcar el nivel de logro de un alumno.
+  const [authUid, setAuthUid] = useState<string>('')
+  // [jul 2026] código del alumno cuyo nivel se está guardando en este
+  // momento (para deshabilitar su selector mientras el guardado está
+  // en vuelo, evitando doble clic o carrera de peticiones).
+  const [guardandoCodigo, setGuardandoCodigo] = useState<string>('')
 
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth/login'); return }
+      setAuthUid(session.user.id)
       const { data: userData } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!userData) { router.push('/auth/login'); return }
       setProfile(userData)
@@ -77,13 +96,65 @@ export default function VerPlaneacionPage() {
   const content = planeacion?.content_json || planeacion?.content || {}
   const dias: any[] = content.dias || []
   const diasEspeciales: any[] = content.dias_especiales || []
-  const rubrica = content.rubrica || null
+  // [jul 2026] Nuevo nombre de campo — antes "rubrica", ahora
+  // "instrumento_evaluacion" (schema: tipo, criterio, niveles[],
+  // registro_alumnos[]). Respaldo a "rubrica" solo para planeaciones
+  // muy antiguas generadas antes de este cambio, para no romper su
+  // vista si alguien las vuelve a abrir.
+  const instrumentoEvaluacion = content.instrumento_evaluacion || null
+  const rubricaLegacy = !instrumentoEvaluacion ? (content.rubrica || null) : null
 
   // [jul 2026] Construye el código real (LEN-1, SPC-14...) para un PDA
   // dado su campo formativo y su id de pda_catalog. Regresa null si
   // falta cualquier pieza (id no guardado, campo sin prefijo
   // conocido, etc.) — en ese caso el llamador simplemente muestra el
   // texto literal sin código, sin romper la vista.
+  // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
+  // pantalla al instante (optimista) y en paralelo guarda en
+  // Supabase vía el endpoint. Si el guardado falla, revierte el
+  // cambio visual y muestra el error — nunca deja la pantalla
+  // mostrando algo que no se guardó de verdad.
+  async function marcarNivel(codigo: string, nivelNuevo: string) {
+    const nivelAnterior = planeacion?.content_json?.instrumento_evaluacion?.registro_alumnos
+      ?.find((a: any) => a.codigo === codigo)?.nivel_marcado || null
+
+    setGuardandoCodigo(codigo)
+    setPlaneacion((prev: any) => {
+      const content = prev.content_json || prev.content
+      const instrumento = content.instrumento_evaluacion
+      const registroActualizado = instrumento.registro_alumnos.map((a: any) =>
+        a.codigo === codigo ? { ...a, nivel_marcado: nivelNuevo || null } : a
+      )
+      const contentActualizado = { ...content, instrumento_evaluacion: { ...instrumento, registro_alumnos: registroActualizado } }
+      return prev.content_json ? { ...prev, content_json: contentActualizado } : { ...prev, content: contentActualizado }
+    })
+
+    try {
+      const res = await fetch('/api/marcar-nivel-alumno', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth_uid: authUid, planning_id: params.id, codigo, nivel: nivelNuevo }),
+      })
+      const data = await res.json()
+      if (!data.ok) {
+        // Revertir si falló
+        setPlaneacion((prev: any) => {
+          const content = prev.content_json || prev.content
+          const instrumento = content.instrumento_evaluacion
+          const registroRevertido = instrumento.registro_alumnos.map((a: any) =>
+            a.codigo === codigo ? { ...a, nivel_marcado: nivelAnterior } : a
+          )
+          const contentRevertido = { ...content, instrumento_evaluacion: { ...instrumento, registro_alumnos: registroRevertido } }
+          return prev.content_json ? { ...prev, content_json: contentRevertido } : { ...prev, content: contentRevertido }
+        })
+        alert('No se pudo guardar el nivel: ' + (data.error || 'error desconocido'))
+      }
+    } catch {
+      alert('Error de conexión al guardar el nivel.')
+    }
+    setGuardandoCodigo('')
+  }
+
   function codigoPDA(campo: string | null, id: string | null): string | null {
     if (!campo || !id) return null
     const prefijo = PREFIJO_POR_CAMPO[campo]
@@ -322,22 +393,108 @@ export default function VerPlaneacionPage() {
           )
         })}
 
-        {/* Rúbrica */}
-        {rubrica && (
+        {/* Instrumento de evaluación (rúbrica + escala estimativa) —
+            [jul 2026] nuevo schema: criterio corto, niveles[] con
+            etiqueta+descriptor, y registro_alumnos[] con el roster
+            real de códigos para que la educadora marque el nivel de
+            cada alumno. */}
+        {instrumentoEvaluacion && (
+          <>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '32px 0 16px' }}>Instrumento de evaluación</h2>
+            <div style={s.card}>
+              <div style={s.cardHeader}>
+                <p style={s.sectionTitle}>Campo: {instrumentoEvaluacion.campo}</p>
+              </div>
+              <table style={s.table}>
+                <tbody>
+                  <tr><td style={s.tdLabel}>PDA</td><td style={s.tdValue}>{instrumentoEvaluacion.pda}</td></tr>
+                  <tr><td style={s.tdLabel}>Criterio</td><td style={{ ...s.tdValue, fontWeight: 600 }}>{instrumentoEvaluacion.criterio}</td></tr>
+                  {(instrumentoEvaluacion.niveles || []).map((nivel: any, i: number) => {
+                    const estilo = ESTILO_POR_NIVEL[nivel.etiqueta] || { color: '#374151', fondo: '#F9FAFB' }
+                    return (
+                      <tr key={i}>
+                        <td style={{ ...s.tdLabel, color: estilo.color, background: estilo.fondo, textTransform: 'uppercase' as const }}>{nivel.etiqueta}</td>
+                        <td style={{ ...s.tdValue, background: estilo.fondo }}>{nivel.descriptor}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Escala estimativa de logro — tabla de registro por alumno */}
+            {Array.isArray(instrumentoEvaluacion.registro_alumnos) && instrumentoEvaluacion.registro_alumnos.length > 0 && (
+              <div style={s.card}>
+                <div style={s.cardHeader}>
+                  <p style={s.sectionTitle}>Escala estimativa de logro</p>
+                </div>
+                <table style={s.table}>
+                  <thead>
+                    <tr>
+                      <td style={{ ...s.tdLabel, background: '#F9FAFB', borderTop: 'none', width: 100 }}>Alumno</td>
+                      <td style={{ ...s.tdLabel, background: '#F9FAFB', borderTop: 'none' }}>Nivel de logro</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {instrumentoEvaluacion.registro_alumnos.map((alumno: any, i: number) => {
+                      const estiloNivel = alumno.nivel_marcado
+                        ? (ESTILO_POR_NIVEL[alumno.nivel_marcado] || { color: '#374151', fondo: 'white' })
+                        : { color: '#374151', fondo: 'white' }
+                      return (
+                        <tr key={i}>
+                          <td style={s.tdValue}>{alumno.codigo}</td>
+                          <td style={s.tdValue}>
+                            <select
+                              value={alumno.nivel_marcado || ''}
+                              disabled={guardandoCodigo === alumno.codigo}
+                              onChange={(e) => marcarNivel(alumno.codigo, e.target.value)}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 6,
+                                border: '1px solid #D1D5DB',
+                                fontSize: 13,
+                                color: estiloNivel.color,
+                                background: estiloNivel.fondo,
+                                fontWeight: alumno.nivel_marcado ? 600 : 400,
+                                cursor: guardandoCodigo === alumno.codigo ? 'default' : 'pointer',
+                                opacity: guardandoCodigo === alumno.codigo ? 0.6 : 1,
+                              }}
+                            >
+                              <option value="">Sin marcar</option>
+                              <option value="Logrado">Logrado</option>
+                              <option value="En proceso">En proceso</option>
+                              <option value="Requiere apoyo">Requiere apoyo</option>
+                            </select>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Rúbrica — RESPALDO solo para planeaciones antiguas (antes de
+            jul 2026) que aún guardan el schema viejo "rubrica" en vez
+            de "instrumento_evaluacion". Nunca se muestra si ya existe
+            el formato nuevo. */}
+        {rubricaLegacy && (
           <>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '32px 0 16px' }}>Rúbrica de evaluación</h2>
             <div style={s.card}>
               <div style={s.cardHeader}>
-                <p style={s.sectionTitle}>Campo: {rubrica.campo}</p>
+                <p style={s.sectionTitle}>Campo: {rubricaLegacy.campo}</p>
               </div>
               <table style={s.table}>
                 <tbody>
-                  <tr><td style={s.tdLabel}>PDA</td><td style={s.tdValue}>{rubrica.pda}</td></tr>
-                  <tr><td style={s.tdLabel}>Indicador</td><td style={s.tdValue}>{rubrica.indicador}</td></tr>
-                  <tr><td style={{ ...s.tdLabel, color: '#065F46', background: '#ECFDF5' }}>LOGRADO</td><td style={{ ...s.tdValue, background: '#ECFDF5' }}>{rubrica.nivel_3}</td></tr>
-                  <tr><td style={{ ...s.tdLabel, color: '#92400E', background: '#FFFBEB' }}>EN PROCESO</td><td style={{ ...s.tdValue, background: '#FFFBEB' }}>{rubrica.nivel_2}</td></tr>
-                  <tr><td style={{ ...s.tdLabel, color: '#DC2626', background: '#FEF2F2' }}>REQUIERE APOYO</td><td style={{ ...s.tdValue, background: '#FEF2F2' }}>{rubrica.nivel_1}</td></tr>
-                  {rubrica.nota_evaluadora && <tr><td style={s.tdLabel}>Nota</td><td style={{ ...s.tdValue, fontStyle: 'italic' as const }}>{rubrica.nota_evaluadora}</td></tr>}
+                  <tr><td style={s.tdLabel}>PDA</td><td style={s.tdValue}>{rubricaLegacy.pda}</td></tr>
+                  <tr><td style={s.tdLabel}>Indicador</td><td style={s.tdValue}>{rubricaLegacy.indicador}</td></tr>
+                  <tr><td style={{ ...s.tdLabel, color: '#065F46', background: '#ECFDF5' }}>LOGRADO</td><td style={{ ...s.tdValue, background: '#ECFDF5' }}>{rubricaLegacy.nivel_3}</td></tr>
+                  <tr><td style={{ ...s.tdLabel, color: '#92400E', background: '#FFFBEB' }}>EN PROCESO</td><td style={{ ...s.tdValue, background: '#FFFBEB' }}>{rubricaLegacy.nivel_2}</td></tr>
+                  <tr><td style={{ ...s.tdLabel, color: '#DC2626', background: '#FEF2F2' }}>REQUIERE APOYO</td><td style={{ ...s.tdValue, background: '#FEF2F2' }}>{rubricaLegacy.nivel_1}</td></tr>
+                  {rubricaLegacy.nota_evaluadora && <tr><td style={s.tdLabel}>Nota</td><td style={{ ...s.tdValue, fontStyle: 'italic' as const }}>{rubricaLegacy.nota_evaluadora}</td></tr>}
                 </tbody>
               </table>
             </div>

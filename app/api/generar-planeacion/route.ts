@@ -69,10 +69,19 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown. Sin explicaciones. Sin text
   ]
 }`
 
-const SYSTEM_PROMPT_CIERRE = `Eres el Agente de Evaluación de PlanIA Digital. Recibes una planeación didáctica completa ya generada (todos los días) y produces la rúbrica de evaluación y los ajustes razonables.
+const SYSTEM_PROMPT_CIERRE = `Eres el Agente de Evaluación de PlanIA Digital. Recibes una planeación didáctica completa ya generada (todos los días) y produces el instrumento de evaluación y los ajustes razonables.
 
 REGLA CRÍTICA — R4-PDA:
-La rúbrica NUNCA se construye desde el PDA abstracto. Debes identificar las instancias CONCRETAS dentro de la narrativa de los días donde la acción del PDA principal fue ejecutada, y evaluar la calidad de esa ejecución. Ciclo: PDA define → narrativa ejecuta → rúbrica evalúa. Si el PDA principal tiene más de un verbo de acción, la rúbrica debe evaluar AMBOS verbos, no solo el más presente en la narrativa.
+El instrumento NUNCA se construye desde el PDA abstracto. Debes identificar las instancias CONCRETAS dentro de la narrativa de los días donde la acción del PDA principal fue ejecutada, y evaluar la calidad de esa ejecución. Ciclo: PDA define → narrativa ejecuta → instrumento evalúa. Si el PDA principal tiene más de un verbo de acción, el instrumento debe evaluar AMBOS verbos, no solo el más presente en la narrativa.
+
+REGLA CRÍTICA — EL "CRITERIO" ES UNA ETIQUETA CORTA, NO UNA ORACIÓN:
+El campo "criterio" es un título breve (4-8 palabras) que nombra la habilidad observable evaluada — no una oración completa ni una descripción. Ejemplo correcto: "Identificación de eventos y celebraciones". Ejemplo incorrecto: "El alumno identifica y nombra por sí mismo diversas celebraciones de su comunidad".
+
+REGLA CRÍTICA — LOS 3 NIVELES SON DESCRIPTORES DE DESEMPEÑO OBSERVABLE, EN ORDEN FIJO:
+Siempre exactamente 3 niveles, en este orden y con estas etiquetas exactas: "Logrado", "En proceso", "Requiere apoyo". Cada descriptor debe redactarse en tercera persona ("Identifica y nombra por sí mismo...", "Requiere apoyo constante del docente para...") y basarse en las instancias reales de la narrativa de arriba — nunca en el PDA abstracto ni en una plantilla genérica.
+
+REGLA CRÍTICA — LONGITUD Y FORMA DEL DESCRIPTOR (NO OPCIONAL):
+Cada descriptor es UNA a DOS oraciones, máximo. Sintetiza el PATRÓN GENERAL de desempeño que viste repetirse en la narrativa — nunca enumeres instancia por instancia ni menciones "Día 1", "Día 2", etc. PROHIBIDO construir el descriptor como una bitácora o resumen cronológico de la planeación. MAL (prohibido, formato bitácora): "El alumno nombra la emoción en el ejercicio de espejo (Día 1); construye acuerdos (Día 2); identifica la zona corporal (Día 3)...". BIEN (correcto, patrón sintetizado): "Identifica y nombra por sí mismo las emociones propias y ajenas, y ofrece ayuda concreta a un compañero sin necesitar que el docente se lo indique". Usa la narrativa de los días solo como evidencia interna para decidir QUÉ tan alto es el nivel de logro — el texto final del descriptor debe leerse como el mismo tipo de frase breve y general que usarías para describir la rúbrica de cualquier otro PDA, sin importar cuántos días tuvo la planeación.
 
 REGLA CRÍTICA — AJUSTES RAZONABLES POR DÍA, NORMATIVA SEP (NO OPCIONAL):
 Si se te proporciona una lista de alumnos con necesidades de inclusión, la atención a CADA UNO de ellos debe aparecer en TODOS Y CADA UNO de los días hábiles de la planeación, sin excepción — la inclusión no es opcional ni depende de tu criterio sobre si "amerita" ese día. Genera UNA entrada por cada alumno en cada día, ligada siempre a la actividad CONCRETA de ese día (el material real, el momento exacto, la consigna que ya está escrita en la narrativa de ese día específico) — nunca genérica, nunca repetida textualmente entre días, pero SIEMPRE presente. Redacta cada ajuste basándote en el texto de "acciones" de cada alumno, que describe su necesidad real y concreta — alumnos distintos con necesidades distintas deben producir ajustes claramente distintos en contenido y enfoque. Usa SIEMPRE el código del alumno (nunca un diagnóstico ni una etiqueta clínica) y comienza cada ajuste con "Código.- " (ej. "R.G.-1.- "). CADA AJUSTE DEBE SER BREVE: máximo 1-2 oraciones — no un párrafo largo, ya que en planeaciones con muchos días y varios alumnos el volumen total crece rápido y debe mantenerse manejable. Si hay 2 alumnos y 5 días, debes producir 10 entradas en total (2 por día), no menos. Si NO hay alumnos con necesidades de inclusión registrados, responde con un arreglo vacío en "ajustes_por_dia".
@@ -83,15 +92,17 @@ FORMATO DE SALIDA — CRÍTICO:
 Responde ÚNICAMENTE con JSON válido. Sin markdown. Sin explicaciones.
 
 {
-  "rubrica": {
+  "instrumento_evaluacion": {
+    "tipo": "rubrica_escala_estimativa",
     "campo": "nombre del campo formativo principal",
     "contenido": "contenido del campo principal",
     "pda": "pda literal",
-    "indicador": "descripción del indicador observable",
-    "nivel_3": "El alumno...",
-    "nivel_2": "El alumno...",
-    "nivel_1": "El alumno...",
-    "nota_evaluadora": "una oración con voz de maestra"
+    "criterio": "etiqueta corta de 4-8 palabras",
+    "niveles": [
+      { "etiqueta": "Logrado", "descriptor": "El alumno..." },
+      { "etiqueta": "En proceso", "descriptor": "El alumno..." },
+      { "etiqueta": "Requiere apoyo", "descriptor": "El alumno..." }
+    ]
   },
   "ajustes_por_dia": [
     { "numero": 1, "codigo": "R.G.-1", "ajuste": "R.G.-1.- acción concreta breve, ligada a lo que pasa este día..." },
@@ -262,17 +273,6 @@ async function actualizarProgreso(
   }
 }
 
-// ============================================================
-// [jul 2026, FASE 1.1] Consulta la vista pda_coverage_avanzada para
-// este usuario y devuelve un resumen en texto plano de su trayectoria
-// pedagógica real en el ciclo — qué PDAs ya se han trabajado y cuántas
-// veces. Se ordena por times_used descendente porque la repetición es
-// la señal más fuerte de la trayectoria real del grupo (un PDA usado
-// 3 veces importa más para dar contexto que uno usado una sola vez).
-// Falla en silencio (regresa '') si la consulta falla o no hay datos
-// — esta fuente es contexto adicional, nunca debe poder tronar la
-// generación de una planeación si algo sale mal aquí.
-// ============================================================
 async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promise<string> {
   if (!userId) return ''
   try {
@@ -297,55 +297,28 @@ async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promis
   }
 }
 
-// ============================================================
-// [jul 2026, FASE 1.2] Quita etiquetas de severidad clínica del texto
-// crudo de "alertas" en evaluacion_individual (ej. "CRÍTICO: 5 al...").
-// Ese tono choca directamente con el principio de "Cero Fricción —
-// indicadores armoniosos, nunca punitivos", y además la legislación
-// vigente PROHÍBE etiquetar a alumnos neurodivergentes — así que este
-// texto nunca debe llegar al generador con ese tono, ni siquiera como
-// contexto interno que el modelo no mostrará, porque puede sesgar el
-// tono de la narrativa igual.
-// ============================================================
+async function obtenerRosterAlumnos(supabaseAdmin: any, userId: string): Promise<string[]> {
+  if (!userId) return []
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('alumnos_codigo')
+      .select('codigo')
+      .eq('user_id', userId)
+      .eq('activo', true)
+      .order('fecha_alta', { ascending: true })
+
+    if (error || !data) return []
+    return data.map((r: any) => r.codigo)
+  } catch (e) {
+    console.error('No se pudo obtener el roster de alumnos (no crítico):', e)
+    return []
+  }
+}
+
 function limpiarAlertaTono(texto: string): string {
   return texto.replace(/^(CR[IÍ]TICO|URGENTE|ALERTA)\s*[:\-]?\s*/i, '').trim()
 }
 
-// ============================================================
-// [jul 2026, FASE 1.2] Jerarquía explícita de prioridad pedagógica,
-// según decisión de producto y el enfoque histórico de la educación
-// preescolar en México:
-//   - Antes: la maestra decidía la planeación según su propio criterio.
-//   - Después: se exigió partir de las necesidades reales del alumno.
-//   - Ahora (NEM 2022): se exige combinar necesidad del alumno CON el
-//     contexto donde vive — juntos, ambos hacen la planeación más
-//     precisa para que el alumno desarrolle su potencial.
-// Por eso el 1er orden de esta función combina DOS fuentes, no una:
-// evaluación individual (necesidad) + diagnostico_escolar/PMC
-// (contexto comunitario). El 2do orden son los PDAs que el directivo
-// acordó para todo el jardín — complementario, el directivo puede
-// pedir que TAMBIÉN se atiendan, pero nunca en lugar de lo detectado
-// individualmente.
-//
-// No requiere consulta nueva a Supabase — profile ya llega completo
-// desde el frontend (select('*') en users), así que evaluacion_
-// individual, diagnostico_escolar y pdas_jardin ya viven en el objeto
-// profile, igual que alumnos_inclusion.
-//
-// REQUISITO LEGAL — no etiquetar neurodivergencia: el texto que sale
-// de aquí usa "Necesidad de apoyo:" en vez de "Alerta:", y nunca
-// incluye diagnósticos ni etiquetas clínicas (esos datos ya vienen
-// anonimizados desde analizar-evaluacion-individual, pero se refuerza
-// aquí por seguridad). La regla R-SIN-ETIQUETAS en SYSTEM_PROMPT_DIAS
-// refuerza esto también en la narrativa final.
-//
-// IMPORTANTE — alcance de este cambio: esta jerarquía calibra
-// ÉNFASIS NARRATIVO dentro del proyecto ya definido por la educadora
-// (quien elige el PDA principal en el formulario). NO decide qué PDA
-// se selecciona — esa decisión ocurre antes, en el formulario o en
-// /api/sugerir-campos (que también se actualizó para respetar esta
-// misma jerarquía al sugerir transversales).
-// ============================================================
 function obtenerPrioridadesPedagogicas(profile: any): string {
   const evalInd = profile?.evaluacion_individual
   const pdasGrupo: string[] = Array.isArray(evalInd?.pdas_prioritarios_grupo)
@@ -354,12 +327,6 @@ function obtenerPrioridadesPedagogicas(profile: any): string {
   const alertasCrudas: string[] = Array.isArray(evalInd?.alertas) ? evalInd.alertas : []
   const alertasSuaves = alertasCrudas.map(limpiarAlertaTono).filter(Boolean)
 
-  // [jul 2026, FASE 1.5] Diagnóstico grupal (Mi Grupo, Sección 2.1) —
-  // PDAs que la propia educadora identificó como prioritarios para su
-  // grupo, con justificación ya redactada. Es un diagnóstico propio
-  // de la educadora (igual que la evaluación individual), así que
-  // entra al 1er orden, no al 2do — a diferencia de pdas_jardin, que
-  // sí es del colectivo institucional completo.
   const pdasDiagnosticoGrupal: string[] = Array.isArray(profile?.pdas_prioritarios)
     ? profile.pdas_prioritarios.map((p: any) => {
         const texto = typeof p === 'string' ? p : p?.pda
@@ -393,17 +360,6 @@ function obtenerPrioridadesPedagogicas(profile: any): string {
   return bloque.trim()
 }
 
-// ============================================================
-// [jul 2026, FASE 1.3] Retroalimentación de la dirección, registrada
-// por la EDUCADORA misma (Mi Grupo, Sección 3.1) — nunca depende de
-// que el directivo tenga cuenta ni membresía. Ya viene analizada por
-// analizar-observaciones-directivo con un campo instruccion_para_agente
-// listo para usarse. Se trata como contexto que modula tono/énfasis,
-// NUNCA como regla que pueda anular R4-PDA, R-CAMPOS-COMPLETOS u otras
-// reglas núcleo del sistema — una observación de retroalimentación no
-// es una orden pedagógica superior a la estructura ya validada de la
-// planeación.
-// ============================================================
 function obtenerRetroalimentacionDireccion(profile: any): string {
   const obs = profile?.observaciones_directivo
   if (!obs) return ''
@@ -417,24 +373,11 @@ function obtenerRetroalimentacionDireccion(profile: any): string {
   return texto
 }
 
-// ============================================================
-// [jul 2026, FASE 1.7] Estilo narrativo personal de la educadora
-// (Mi Grupo, Sección 4). Ya viene analizado por analizar-estilo-
-// narrativo con un campo instruccion_para_agente listo para usarse.
-// A diferencia de las demás fuentes (que dan CONTENIDO pedagógico),
-// esta fuente calibra la VOZ — tono, longitud de oraciones,
-// vocabulario — para que la planeación suene auténticamente a esa
-// educadora específica, no a un estilo genérico. Por eso se coloca
-// junto al contexto del grupo al inicio del prompt, no mezclado con
-// las prioridades pedagógicas de contenido.
-// ============================================================
 function obtenerEstiloNarrativo(profile: any): string {
   const estilo = profile?.estilo_narrativo
   if (!estilo) return ''
   const instruccion: string = estilo.instruccion_para_agente || ''
   if (instruccion) return instruccion.trim()
-  // Respaldo si por alguna razón no vino instruccion_para_agente pero
-  // sí los campos sueltos (registros antiguos, por ejemplo).
   const partes: string[] = []
   if (estilo.tono) partes.push(`Tono: ${estilo.tono}`)
   if (estilo.vocabulario) partes.push(`Vocabulario: ${estilo.vocabulario}`)
@@ -530,7 +473,7 @@ async function generarRubricaYAjustes(params: {
   form: any
   profile: any
   todosLosDias: DiaGenerado[]
-}): Promise<{ rubrica: any; ajustes_por_dia: AjusteDia[] }> {
+}): Promise<{ instrumento_evaluacion: any; ajustes_por_dia: AjusteDia[] }> {
   const { form, profile, todosLosDias } = params
 
   const resumenDias = todosLosDias.map(d =>
@@ -555,7 +498,7 @@ ${alumnosInclusionTexto}
 PLANEACIÓN COMPLETA YA GENERADA (el número de cada "Día" corresponde exactamente al número de día que verá la educadora en pantalla — usa ese mismo número en "ajustes_por_dia". Esta planeación tiene ${todosLosDias.length} días en total; recuerda generar una entrada por CADA alumno en TODOS los ${todosLosDias.length} días, cada una BREVE de 1-2 oraciones):
 ${resumenDias}
 
-Genera la rúbrica basada en las instancias concretas donde el PDA fue ejecutado en la narrativa de arriba, y los ajustes razonables por día correspondientes — recuerda: todos los alumnos, todos los días, sin excepción, cada uno ligado a su propia necesidad concreta y breve.`
+Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro) basado en las instancias concretas donde el PDA fue ejecutado en la narrativa de arriba, y los ajustes razonables por día correspondientes — recuerda: todos los alumnos, todos los días, sin excepción, cada uno ligado a su propia necesidad concreta y breve.`
 
   const message = await client.messages.create({
     model: MODEL,
@@ -570,7 +513,7 @@ Genera la rúbrica basada en las instancias concretas donde el PDA fue ejecutado
   const ajustesCompletos = validarAjustesCompletos(ajustesGenerados, todosLosDias.length, alumnosInclusionLista)
 
   return {
-    rubrica: parsed.rubrica,
+    instrumento_evaluacion: parsed.instrumento_evaluacion,
     ajustes_por_dia: ajustesCompletos,
   }
 }
@@ -599,23 +542,9 @@ export async function POST(request: NextRequest) {
     const estadoCodigo = (profile.cct_primary || '').slice(0, 2)
     const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estadoCodigo)
 
-    // [jul 2026, FASE 1.1] Trayectoria pedagógica real del grupo — se
-    // consulta una sola vez por generación completa (no por lote),
-    // ya que no cambia entre lotes de la misma planeación.
     const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
-
-    // [jul 2026, FASE 1.2] Jerarquía evaluación individual (1er orden)
-    // vs PDAs del jardín (2do orden) — no requiere consulta a
-    // Supabase, ya viene en el objeto profile.
     const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)
-
-    // [jul 2026, FASE 1.3] Retroalimentación de la dirección,
-    // registrada por la propia educadora — tampoco requiere consulta
-    // nueva, ya viene en profile.observaciones_directivo.
     const retroalimentacionDireccion = obtenerRetroalimentacionDireccion(profile)
-
-    // [jul 2026, FASE 1.7] Estilo narrativo personal de la educadora
-    // — ya viene en profile.estilo_narrativo.
     const estiloNarrativo = obtenerEstiloNarrativo(profile)
 
     const todosDias = calcularDiasHabiles(calDatos, form.fecha_inicio, form.fecha_fin)
@@ -762,11 +691,22 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { rubrica, ajustes_por_dia } = await generarRubricaYAjustes({
+    const { instrumento_evaluacion, ajustes_por_dia } = await generarRubricaYAjustes({
       form,
       profile,
       todosLosDias: todasLasDiasGeneradas,
     })
+
+    const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
+    const codigosInclusion = new Set(
+      (Array.isArray(profile.alumnos_inclusion) ? profile.alumnos_inclusion : []).map((a: any) => a.codigo)
+    )
+    const rosterCompleto = [...rosterRegulares, ...Array.from(codigosInclusion)]
+
+    const instrumentoConRegistro = {
+      ...instrumento_evaluacion,
+      registro_alumnos: rosterCompleto.map(codigo => ({ codigo, nivel_marcado: null })),
+    }
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
@@ -785,7 +725,7 @@ export async function POST(request: NextRequest) {
 
     const planeacion: any = {
       dias: diasFinal,
-      rubrica,
+      instrumento_evaluacion: instrumentoConRegistro,
       ajustes_por_dia,
     }
 
