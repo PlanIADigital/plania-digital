@@ -4,6 +4,7 @@
 // ============================================================
 'use client'
 import { useState, useEffect } from 'react'
+import { fetchAdmin } from '@/lib/fetchAdmin'
 
 type EstadoCatalogo = {
   archivo_nombre: string
@@ -33,7 +34,7 @@ export default function CatalogoPage() {
   async function cargarEstado() {
     setCargandoEstado(true)
     try {
-      const res = await fetch('/api/admin/cct-catalogo-estado')
+      const res = await fetchAdmin('/api/admin/cct-catalogo-estado')
       const json = await res.json()
       setEstado(json.data || null)
     } catch {
@@ -62,7 +63,7 @@ export default function CatalogoPage() {
     if (!nuevoArchivo.trim() || !nuevoConteo.trim()) return
     setGuardando(true)
     try {
-      const res = await fetch('/api/admin/cct-catalogo-estado', {
+      const res = await fetchAdmin('/api/admin/cct-catalogo-estado', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
