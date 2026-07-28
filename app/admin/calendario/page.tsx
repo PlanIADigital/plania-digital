@@ -51,14 +51,30 @@ const CATEGORIAS = [
   ['registro_calificaciones', 'Registro de calificaciones'],
   ['registro_comunicacion_resultados_evaluacion', 'Registro y comunicación de resultados de evaluación'],
   ['preinscripcion_ciclo_siguiente', 'Preinscripción al ciclo siguiente'],
+  ['periodo_inscripciones_reinscripciones', 'Periodo de inscripciones y reinscripciones del ciclo actual'],
+  ['reforzamiento_aprendizaje', 'Reforzamiento de aprendizaje'],
   ['clases_a_distancia', 'Clases a distancia'],
   ['ceremonia_clausura', 'Ceremonia de clausura'],
   ['dia_conmemorativo', 'Día conmemorativo (no suspende labores)'],
-  ['otro', 'Específico de un estado — siempre con "motivo"'],
+  ['otro', 'Específico de un estado — siempre con "motivo", y avisa en "notas" si es candidata a categoría oficial'],
 ]
 
-const PROMPT_ESTANDAR = `Eres un asistente experto en extraer datos estructurados de calendarios escolares oficiales en México. Te voy a compartir el calendario escolar 2025-2026 de Educación Básica de [NOMBRE DEL ESTADO].
+const PROMPT_ESTANDAR = `Eres un asistente experto en extraer datos estructurados de calendarios escolares oficiales de México.
 
+PASO 1 — IDENTIFICACIÓN OBLIGATORIA (antes de generar cualquier dato)
+Identifica el ESTADO y el CICLO ESCOLAR basándote ÚNICAMENTE en lo que el documento muestra visualmente: logo, escudo, nombre de la secretaría estatal, firma de la autoridad, o las fechas de inicio/fin de clases impresas en el propio documento.
+
+NUNCA asumas el estado o el ciclo por el nombre del archivo, por el contexto de esta conversación, ni por comparación con otros calendarios que hayas visto antes (algunos estados usan un diseño casi idéntico al federal; eso no significa que sean el federal).
+
+Si el documento no trae ningún elemento que identifique claramente el estado (sin logo, sin escudo, sin nombre de secretaría, sin firma), NO asumas que es el calendario federal ni ningún estado en particular — dilo explícitamente.
+
+Antes de generar el JSON, responde primero SOLO con este mensaje breve (todavía sin generar el JSON):
+
+"Detecté que este calendario corresponde a: [ESTADO detectado, o 'No pude confirmar el estado con certeza a partir del documento'] — ciclo escolar [XXXX-XXXX]. ¿Es correcto? Confírmame o corrígeme antes de generar el JSON."
+
+Espera la confirmación de la persona. Solo después de recibirla, continúa con el PASO 2.
+
+PASO 2 — EXTRACCIÓN
 Analiza la imagen con mucho detalle, mes por mes, identificando el color/ícono exacto de cada día marcado según la leyenda que aparece en el propio documento (puede variar de un estado a otro; usa la leyenda que EL DOCUMENTO trae, no supongas colores de otros estados).
 
 Para cada evento marcado, clasifícalo usando SIEMPRE una de estas categorías (usa exactamente estos valores en el campo "categoria"):
@@ -76,18 +92,20 @@ Para cada evento marcado, clasifícalo usando SIEMPRE una de estas categorías (
 - registro_calificaciones
 - registro_comunicacion_resultados_evaluacion
 - preinscripcion_ciclo_siguiente
+- periodo_inscripciones_reinscripciones
+- reforzamiento_aprendizaje
 - clases_a_distancia
 - ceremonia_clausura
 - dia_conmemorativo
-- otro   <- SOLO si el evento es específico de este estado y no encaja en ninguna categoría anterior (ej. suspensión por calor extremo, paro magisterial, fenómeno climático, actividad regional). Si usas "otro", SIEMPRE explica en "motivo" qué es.
+- otro   <- SOLO si el evento no encaja en NINGUNA categoría anterior. Si usas "otro", SIEMPRE explica en "motivo" qué es, Y avísame explícitamente en "notas": "Encontré una categoría que no está en el catálogo oficial: [nombre/descripción tal como aparece en la leyenda del documento]. Considera agregarla como categoría oficial."
 
 No inventes ni asumas fechas: si un día no tiene marca visible, no lo incluyas. Revisa cada mes celda por celda.
 
 Devuélveme ÚNICAMENTE este JSON (sin texto antes ni después):
 
 {
-  "ciclo": "2025-2026",
-  "entidad": "[NOMBRE DEL ESTADO]",
+  "ciclo": "[ciclo detectado y confirmado, ej. 2026-2027]",
+  "entidad": "[estado detectado y confirmado, o Federal]",
   "nivel_educativo": "Educación Básica (Preescolar, Primaria y Secundaria)",
   "dias_habiles_totales": 185,
   "inicio_clases": "YYYY-MM-DD",
@@ -95,16 +113,17 @@ Devuélveme ÚNICAMENTE este JSON (sin texto antes ni después):
   "eventos": [
     { "fecha": "YYYY-MM-DD", "fecha_fin": "YYYY-MM-DD o null si es un solo día", "categoria": "valor_del_catalogo", "motivo": "detalle opcional, null si no aplica" }
   ],
-  "notas": [ "cualquier ambigüedad, duda o color que no pudiste identificar con certeza" ]
+  "notas": [ "cualquier ambigüedad, duda, categoría no catalogada, o color que no pudiste identificar con certeza" ]
 }`
 
 const CHECKLIST = [
+  '¿Claude confirmó el estado y ciclo escolar ANTES de generar el JSON, y coincide con lo que tú esperabas?',
   '¿inicio_clases y fin_clases caen en día de semana (no domingo/sábado)?',
   '¿Las fechas cívicas cuadran con el calendario oficial? (Constitución = 1er lunes de feb, real 5 feb · Bandera = 24 feb · Juárez = 3er lunes de marzo, real 21 mar · Expropiación = 18 mar · Revolución = 3er lunes de nov, real 20 nov · Independencia = 16 sep)',
   '¿Aparece una CTE Fase Intensiva y varias Sesión Ordinaria (~1 por mes)?',
-  '¿Hay eventos "otro" sin motivo explicado? Pide aclaración antes de guardar.',
+  '¿Hay eventos "otro" sin motivo explicado, o marcados como candidatos a categoría oficial? Revisa la sección "notas" antes de guardar.',
   '¿Vacaciones de invierno y Semana Santa tienen rangos razonables (2-3 semanas)?',
-  '¿Ya leíste la sección "notas" que devolvió Claude?',
+  '¿Ya leíste la sección "notas" completa que devolvió Claude?',
 ]
 
 export default function CalendarioPage() {
@@ -290,7 +309,7 @@ export default function CalendarioPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Calendario SEP</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Calendario Federal y Calendarios Estatales</h1>
       <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>
         Gestión del calendario escolar oficial. Define días hábiles, festivos y sesiones CTE para el generador de planeaciones.
       </p>
@@ -325,9 +344,9 @@ export default function CalendarioPage() {
             </div>
             <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8 }}>
               <li>Descarga el PDF oficial desde educacionbasica.sep.gob.mx (federal) o la página oficial del estado (estatal)</li>
-              <li>Abre un chat nuevo en Claude.ai y sube el PDF</li>
-              <li>Pide: <em>"Extrae todas las fechas en formato JSON con ciclo, inicio_clases, fin_clases, dias_inhabiles y sesiones_cte"</em></li>
-              <li>Copia el JSON, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
+              <li>Abre un chat nuevo en Claude.ai, sube la imagen/PDF y pega el "Prompt recomendado" de abajo</li>
+              <li>Claude te va a confirmar primero de qué estado y ciclo escolar cree que es el documento — confírmalo o corrígelo antes de que genere el JSON</li>
+              <li>Copia el JSON que Claude genere después de tu confirmación, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
             </ol>
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="https://educacionbasica.sep.gob.mx" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Ir a SEP →</a>
@@ -347,7 +366,7 @@ export default function CalendarioPage() {
               <strong>Regla:</strong> no descargues el PDF/imagen exportable del sitio estatal. Toma una <strong>captura de pantalla de la vista web renderizada</strong> (con zoom alto del navegador para nitidez) y sube esa imagen a Claude en su lugar.
             </p>
             <p style={{ fontSize: 12, color: '#92400E', lineHeight: 1.7, margin: 0 }}>
-              <strong>Verificación rápida:</strong> si un mes aparece sospechosamente en blanco (sin ningún color, cuando debería tener recesos/vacaciones), compáralo contra la vista web en vivo antes de confiar en el archivo.
+              <strong>Verificación rápida:</strong> si un mes aparece sospechosamente en blanco (sin ningún color, cuando debería tener recesos/vacaciones), compáralo contra la vista web en vivo antes de confiar en el archivo. Tampoco confíes en el nombre que tú le pongas al archivo — algunos calendarios estatales no traen ningún logo ni escudo distintivo y son visualmente iguales al federal; dejar que Claude confirme el estado desde el propio documento evita ese error.
             </p>
           </div>
 
@@ -371,7 +390,7 @@ export default function CalendarioPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: '#3730A3' }}>
-                Prompt recomendado (usa siempre este, cambia solo el estado)
+                Prompt recomendado (detecta estado y ciclo automáticamente, no requiere editarlo)
               </span>
               <button
                 onClick={copiarPrompt}
@@ -384,7 +403,7 @@ export default function CalendarioPage() {
               </button>
             </div>
             <pre style={{
-              maxHeight: 160, overflowY: 'auto', whiteSpace: 'pre-wrap', margin: 0,
+              maxHeight: 220, overflowY: 'auto', whiteSpace: 'pre-wrap', margin: 0,
               background: 'white', border: '1px solid #C7D2FE', borderRadius: 8,
               padding: 12, fontSize: 11, lineHeight: 1.6, color: '#374151', marginBottom: 16,
             }}>
@@ -392,7 +411,7 @@ export default function CalendarioPage() {
             </pre>
 
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: '#3730A3', marginBottom: 6 }}>
-              ✅ Checklist antes de guardar (6 puntos)
+              ✅ Checklist antes de guardar (7 puntos)
             </p>
             <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8, marginBottom: 16 }}>
               {CHECKLIST.map((item, i) => <li key={i}>{item}</li>)}
@@ -413,7 +432,7 @@ export default function CalendarioPage() {
               ))}
             </div>
             <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>
-              Si la misma categoría <code>otro</code> se repite en 3+ estados, considera agregarla como categoría oficial.
+              Si la misma categoría <code>otro</code> se repite en 3+ estados, considera agregarla como categoría oficial aquí en el código.
             </p>
           </div>
         )}
@@ -425,7 +444,7 @@ export default function CalendarioPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>🇲🇽</span>
-              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Federal</h2>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario Federal</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <Badge cargado={federalCargado} />
@@ -434,7 +453,7 @@ export default function CalendarioPage() {
               )}
             </div>
           </div>
-          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Aplica a todos los estados. Cargar unasola vez por ciclo escolar.</p>
+          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Aplica a todos los estados. Cargar una sola vez por ciclo escolar.</p>
           <label style={{ display: 'block', border: '2px dashed #E5E7EB', borderRadius: 10, padding: '24px', textAlign: 'center', cursor: 'pointer' }}>
             <span style={{ fontSize: 28, display: 'block', marginBottom: 8 }}>📂</span>
             <span style={{ fontSize: 13, color: '#6B7280' }}>
@@ -451,7 +470,7 @@ export default function CalendarioPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>🏛️</span>
-              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario SEP Estatal</h2>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Calendario Estatal</h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <Badge cargado={estatalCargado} />
