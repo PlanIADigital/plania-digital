@@ -6,23 +6,16 @@
 //  /app/admin/* por fetchAdmin('/api/admin/...') para que el
 //  token de sesión viaje en el header Authorization.
 // ============================================================
-
 'use client'
+import { createClient } from '@/lib/supabase-browser'
 
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient()
 
 export async function fetchAdmin(url: string, options: RequestInit = {}) {
   const { data: { session } } = await supabase.auth.getSession()
-
   if (!session) {
     throw new Error('Sin sesión activa')
   }
-
   return fetch(url, {
     ...options,
     headers: {
