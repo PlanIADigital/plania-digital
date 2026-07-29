@@ -1,13 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient()
 
 // [jul 2026] Mismo prefijo de 3 letras usado en Mi Avance — para poder
 // mostrar el código real (LEN-1, SPC-14, etc.) de cada PDA en esta

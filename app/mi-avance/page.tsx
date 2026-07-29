@@ -2,13 +2,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase-browser'
 import { calcularEjesCubiertos } from '@/lib/cobertura'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient()
 
 const MODO_PRUEBA_CICLO_ACTIVO = true
 
