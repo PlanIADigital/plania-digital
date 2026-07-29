@@ -20,6 +20,7 @@ const navItems = [
   ]},
   { section: 'Sistema', items: [
     { href: '/admin/acciones', label: 'Acciones periódicas', icon: '✅' },
+    { href: '/admin/avances', label: 'Control de Avances', icon: '🎯' },
   ]},
 ]
 
