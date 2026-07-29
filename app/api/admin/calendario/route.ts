@@ -12,7 +12,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
     const { supabaseAdmin } = auth
-
     const { tipo, estado, datos } = await request.json()
     if (!tipo || !estado || !datos) {
       return NextResponse.json({ error: 'Faltan datos (tipo, estado o datos)' }, { status: 400 })
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
       .upsert({
         tipo,
         estado,
-        ciclo: datos.ciclo || '2025-2026',
+        ciclo: datos.ciclo || 'sin-ciclo',
         datos,
         actualizado_en: new Date().toISOString(),
       }, { onConflict: 'tipo,ciclo,estado' })
@@ -40,17 +39,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
     const { supabaseAdmin } = auth
-
-    const { tipo, estado, ciclo } = await request.json()
+    const { tipo, estado } = await request.json()
     if (!tipo || !estado) {
       return NextResponse.json({ error: 'Faltan datos (tipo o estado)' }, { status: 400 })
     }
+    // Ya NO se filtra por ciclo: al eliminar, se borran TODOS los
+    // registros de este tipo+estado sin importar de qué ciclo sean,
+    // así el bote de basura siempre limpia por completo antes de
+    // que subas el archivo actualizado.
     const { error } = await supabaseAdmin
       .from('calendarios_sep')
       .delete()
       .eq('tipo', tipo)
       .eq('estado', estado)
-      .eq('ciclo', ciclo || '2025-2026')
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true })
   } catch {

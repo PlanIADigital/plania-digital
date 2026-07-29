@@ -68,6 +68,8 @@ NUNCA asumas el estado o el ciclo por el nombre del archivo, por el contexto de 
 
 Si el documento no trae ningún elemento que identifique claramente el estado (sin logo, sin escudo, sin nombre de secretaría, sin firma), NO asumas que es el calendario federal ni ningún estado en particular — dilo explícitamente.
 
+REGLA CRÍTICA — NUNCA sugieras "usar el federal sin cambios" ni saltes la extracción completa, aunque el diseño visual de este documento se parezca mucho al calendario federal. Un diseño parecido NO significa que los datos sean idénticos — cada estado puede tener diferencias reales en fechas específicas (vacaciones, CTE, suspensiones) aunque el formato visual sea casi igual. SIEMPRE extrae mes por mes, celda por celda, exactamente lo que este documento específico muestra, sin comparar ni asumir equivalencia con ningún otro calendario que hayas visto antes en esta conversación o en tu conocimiento general.
+
 Antes de generar el archivo, responde primero SOLO con este mensaje breve (todavía sin generar nada):
 
 "Detecté que este calendario corresponde a: [ESTADO detectado, o 'No pude confirmar el estado con certeza a partir del documento'] — ciclo escolar [XXXX-XXXX]. ¿Es correcto? Confírmame o corrígeme antes de generar el archivo."
@@ -259,7 +261,6 @@ export default function CalendarioPage() {
         body: JSON.stringify({
           tipo,
           estado: tipo === 'federal' ? 'FED' : estadoSeleccionado,
-          ciclo: '2025-2026',
         }),
       })
       const data = await res.json()
@@ -362,7 +363,7 @@ export default function CalendarioPage() {
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
           <span style={{ color: '#D97706' }}>⚠️</span>
           <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
-            <strong>Ciclo 2025–2026 incompleto para {nombreEstado}.</strong> El generador no puede excluir festivos ni sesiones CTE hasta que ambos calendarios estén cargados.
+            <strong>Calendario incompleto para {nombreEstado}.</strong> El generador no puede excluir festivos ni sesiones CTE hasta que ambos calendarios (Federal y Estatal) estén cargados.
           </p>
         </div>
       )}
@@ -371,7 +372,7 @@ export default function CalendarioPage() {
         <div style={{ background: '#ECFDF5', border: '1px solid #6EE7B7', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
           <span>✅</span>
           <p style={{ fontSize: 13, color: '#065F46', margin: 0 }}>
-            <strong>Ciclo 2025–2026 completo para {nombreEstado}.</strong> El generador puede calcular días hábiles correctamente.
+            <strong>Calendario completo para {nombreEstado}.</strong> El generador puede calcular días hábiles correctamente.
             {estatalEsFederal && ' El calendario estatal usa el federal sin cambios.'}
           </p>
         </div>
