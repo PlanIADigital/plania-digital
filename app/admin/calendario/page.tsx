@@ -68,9 +68,9 @@ NUNCA asumas el estado o el ciclo por el nombre del archivo, por el contexto de 
 
 Si el documento no trae ningún elemento que identifique claramente el estado (sin logo, sin escudo, sin nombre de secretaría, sin firma), NO asumas que es el calendario federal ni ningún estado en particular — dilo explícitamente.
 
-Antes de generar el JSON, responde primero SOLO con este mensaje breve (todavía sin generar el JSON):
+Antes de generar el archivo, responde primero SOLO con este mensaje breve (todavía sin generar nada):
 
-"Detecté que este calendario corresponde a: [ESTADO detectado, o 'No pude confirmar el estado con certeza a partir del documento'] — ciclo escolar [XXXX-XXXX]. ¿Es correcto? Confírmame o corrígeme antes de generar el JSON."
+"Detecté que este calendario corresponde a: [ESTADO detectado, o 'No pude confirmar el estado con certeza a partir del documento'] — ciclo escolar [XXXX-XXXX]. ¿Es correcto? Confírmame o corrígeme antes de generar el archivo."
 
 Espera la confirmación de la persona. Solo después de recibirla, continúa con el PASO 2.
 
@@ -101,7 +101,50 @@ Para cada evento marcado, clasifícalo usando SIEMPRE una de estas categorías (
 
 No inventes ni asumas fechas: si un día no tiene marca visible, no lo incluyas. Revisa cada mes celda por celda.
 
-Devuélveme ÚNICAMENTE este JSON (sin texto antes ni después):
+PASO 3 — ENTREGA COMO ARCHIVO DESCARGABLE
+No pegues el resultado como texto en el chat. Crea y guárdalo como un ARCHIVO DESCARGABLE en formato .json, listo para que yo lo descargue directamente con un clic.
+
+Nombra el archivo así: [código de 2 dígitos]_calendario_[estado en minúsculas sin acentos]_[ciclo].json
+
+Usa esta tabla oficial de códigos para elegir el número correcto (el calendario Federal usa siempre 00, sin importar el ciclo):
+
+00 = Federal
+01 = Aguascalientes
+02 = Baja California
+03 = Baja California Sur
+04 = Campeche
+05 = Coahuila
+06 = Colima
+07 = Chiapas
+08 = Chihuahua
+09 = Ciudad de México
+10 = Durango
+11 = Guanajuato
+12 = Guerrero
+13 = Hidalgo
+14 = Jalisco
+15 = Estado de México
+16 = Michoacán
+17 = Morelos
+18 = Nayarit
+19 = Nuevo León
+20 = Oaxaca
+21 = Puebla
+22 = Querétaro
+23 = Quintana Roo
+24 = San Luis Potosí
+25 = Sinaloa
+26 = Sonora
+27 = Tabasco
+28 = Tamaulipas
+29 = Tlaxcala
+30 = Veracruz
+31 = Yucatán
+32 = Zacatecas
+
+Ejemplos de nombre correcto: 19_calendario_nuevo-leon_2026-2027.json · 00_calendario_federal_2026-2027.json · 20_calendario_oaxaca_2026-2027.json
+
+El contenido del archivo debe ser exactamente esta estructura:
 
 {
   "ciclo": "[ciclo detectado y confirmado, ej. 2026-2027]",
@@ -117,7 +160,8 @@ Devuélveme ÚNICAMENTE este JSON (sin texto antes ni después):
 }`
 
 const CHECKLIST = [
-  '¿Claude confirmó el estado y ciclo escolar ANTES de generar el JSON, y coincide con lo que tú esperabas?',
+  '¿Claude confirmó el estado y ciclo escolar ANTES de generar el archivo, y coincide con lo que tú esperabas?',
+  '¿Te entregó el .json como archivo descargable (no como texto para copiar)?',
   '¿inicio_clases y fin_clases caen en día de semana (no domingo/sábado)?',
   '¿Las fechas cívicas cuadran con el calendario oficial? (Constitución = 1er lunes de feb, real 5 feb · Bandera = 24 feb · Juárez = 3er lunes de marzo, real 21 mar · Expropiación = 18 mar · Revolución = 3er lunes de nov, real 20 nov · Independencia = 16 sep)',
   '¿Aparece una CTE Fase Intensiva y varias Sesión Ordinaria (~1 por mes)?',
@@ -345,8 +389,8 @@ export default function CalendarioPage() {
             <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8 }}>
               <li>Descarga el PDF oficial desde educacionbasica.sep.gob.mx (federal) o la página oficial del estado (estatal)</li>
               <li>Abre un chat nuevo en Claude.ai, sube la imagen/PDF y pega el "Prompt recomendado" de abajo</li>
-              <li>Claude te va a confirmar primero de qué estado y ciclo escolar cree que es el documento — confírmalo o corrígelo antes de que genere el JSON</li>
-              <li>Copia el JSON que Claude genere después de tu confirmación, guárdalo como archivo <code>.json</code> y súbelo aquí</li>
+              <li>Claude te va a confirmar primero de qué estado y ciclo escolar cree que es el documento — confírmalo o corrígelo antes de que genere el archivo</li>
+              <li>Claude te entrega el archivo <code>.json</code> LISTO PARA DESCARGAR con un clic — descárgalo y súbelo directo aquí, sin necesidad de copiar/pegar ni renombrar nada</li>
             </ol>
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="https://educacionbasica.sep.gob.mx" target="_blank" style={{ fontSize: 12, color: '#3730A3', fontWeight: 600 }}>Ir a SEP →</a>
@@ -390,7 +434,7 @@ export default function CalendarioPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: '#3730A3' }}>
-                Prompt recomendado (detecta estado y ciclo automáticamente, no requiere editarlo)
+                Prompt recomendado (pide el archivo .json descargable directamente, no requiere editarlo)
               </span>
               <button
                 onClick={copiarPrompt}
@@ -411,7 +455,7 @@ export default function CalendarioPage() {
             </pre>
 
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: '#3730A3', marginBottom: 6 }}>
-              ✅ Checklist antes de guardar (7 puntos)
+              ✅ Checklist antes de guardar (8 puntos)
             </p>
             <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#4338CA', lineHeight: 1.8, marginBottom: 16 }}>
               {CHECKLIST.map((item, i) => <li key={i}>{item}</li>)}
