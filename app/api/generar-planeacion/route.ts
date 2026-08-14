@@ -466,7 +466,7 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
     messages: [{ role: 'user', content: userMessage }],
   })
   console.error(`⏱️ FIN llamada Claude — tardó ${((Date.now() - inicioLlamada) / 1000).toFixed(1)}s`)
-
+console.error(`📊 Uso de tokens — cache_creation: ${message.usage.cache_creation_input_tokens || 0}, cache_read: ${message.usage.cache_read_input_tokens || 0}, input normal: ${message.usage.input_tokens}, output: ${message.usage.output_tokens}`)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
   const dias = parsed.dias as DiaGenerado[]
