@@ -517,7 +517,7 @@ Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro
     ajustes_por_dia: ajustesCompletos,
   }
 }
-
+export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   let supabaseAdmin: any = null
   let jobId: string | undefined = undefined
