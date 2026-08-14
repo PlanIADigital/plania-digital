@@ -358,6 +358,12 @@ export default function CalendarioPage() {
       <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 24 }}>
         Gestión del calendario escolar oficial. Define días hábiles, festivos y sesiones CTE para el generador de planeaciones.
       </p>
+      <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 10, padding: '10px 16px', marginBottom: 20, display: 'flex', gap: 10 }}>
+        <span>📌</span>
+        <p style={{ fontSize: 12, color: '#3730A3', margin: 0 }}>
+          <strong>Recuerda cada nuevo ciclo escolar:</strong> una vez que hayas subido y verificado los calendarios de este ciclo, actualiza la constante <code>CICLO_ESCOLAR_ACTIVO</code> en <code>lib/calendarioEscolar.ts</code> — el generador de planeaciones usa ese valor para saber qué calendario leer.
+        </p>
+      </div>
 
       {(!federalCargado || !estatalCargado) && (
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
