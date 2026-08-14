@@ -20,7 +20,7 @@ const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes',
 export async function obtenerCalendarioEstatal(
   supabaseAdmin: SupabaseClient,
   estadoCodigo: string,
-  ciclo: string = '2025-2026'
+  ciclo: string
 ): Promise<any> {
   const { data, error } = await supabaseAdmin
     .from('calendarios_sep')

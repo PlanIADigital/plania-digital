@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const estado = searchParams.get('estado')
     const fechaInicio = searchParams.get('fecha_inicio')
     const fechaFin = searchParams.get('fecha_fin')
-    const ciclo = searchParams.get('ciclo') || '2025-2026'
+    const ciclo = searchParams.get('ciclo') || '2026-2027'
 
     if (!estado || !fechaInicio || !fechaFin) {
       return NextResponse.json({ error: 'Faltan parámetros (estado, fecha_inicio, fecha_fin)' }, { status: 400 })
