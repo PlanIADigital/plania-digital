@@ -30,13 +30,14 @@ export async function obtenerCalendarioEstatal(
     .eq('estado', estadoCodigo)
     .maybeSingle()
 
-  if (error) {
+if (error) {
     console.error(`⚠️ Error al leer el calendario estatal (estado "${estadoCodigo}"):`, error.message)
+    throw new Error(`No se pudo leer el calendario estatal del estado "${estadoCodigo}" (ciclo ${ciclo}). Detalle: ${error.message}`)
   }
   if (!data) {
-    console.error(`⚠️ No se encontró calendario estatal cargado para el estado "${estadoCodigo}".`)
+    throw new Error(`No existe calendario estatal cargado para el estado "${estadoCodigo}" en el ciclo "${ciclo}". Verifica que el calendario esté subido en /admin/calendario y que CICLO_ESCOLAR_ACTIVO (en lib/calendarioEscolar.ts) coincida con el ciclo real subido.`)
   }
-  return data?.datos || {}
+  return data.datos || {}
 }
 
 export function calcularDiasHabiles(calDatos: any, inicio: string, fin: string): DiaHabil[] {
