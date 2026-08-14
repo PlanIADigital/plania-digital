@@ -5,7 +5,7 @@ const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
 
-const MAX_DIAS_POR_LOTE = 5
+const MAX_DIAS_POR_LOTE = 2
 
 const MOMENTOS_MODALIDAD: Record<string, { momentos: string[]; desarrollo: number }> = {
   'Proyectos': { momentos: ['Punto de partida', 'Planeación', '¡A trabajar!', 'Comunicamos nuestros logros', 'Reflexionar sobre el aprendizaje'], desarrollo: 2 },
