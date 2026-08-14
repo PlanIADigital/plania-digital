@@ -599,13 +599,8 @@ export async function POST(request: NextRequest) {
     {
       let i = 0
       while (i < diasConMomento.length) {
-        const momentoActual = diasConMomento[i].momento
         const lote: DiaConMomento[] = []
-        while (
-          i < diasConMomento.length &&
-          diasConMomento[i].momento === momentoActual &&
-          lote.length < MAX_DIAS_POR_LOTE
-        ) {
+        while (i < diasConMomento.length && lote.length < MAX_DIAS_POR_LOTE) {
           lote.push(diasConMomento[i])
           i++
         }
