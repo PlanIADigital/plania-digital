@@ -460,7 +460,9 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 8000,
-    system: SYSTEM_PROMPT_DIAS,
+    system: [
+      { type: 'text', text: SYSTEM_PROMPT_DIAS, cache_control: { type: 'ephemeral' } }
+    ],
     messages: [{ role: 'user', content: userMessage }],
   })
   console.error(`⏱️ FIN llamada Claude — tardó ${((Date.now() - inicioLlamada) / 1000).toFixed(1)}s`)
