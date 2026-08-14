@@ -501,13 +501,16 @@ PLANEACIÓN COMPLETA YA GENERADA (el número de cada "Día" corresponde exactame
 ${resumenDias}
 
 Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro) basado en las instancias concretas donde el PDA fue ejecutado en la narrativa de arriba, y los ajustes razonables por día correspondientes — recuerda: todos los alumnos, todos los días, sin excepción, cada uno ligado a su propia necesidad concreta y breve.`
-
+// TODO-TEMPORAL: logs de diagnóstico ⏱️ — quitar una vez resuelto el tema de caché de prompts (ver commit a65d3cd)
+  console.error(`⏱️ INICIO llamada Claude (rúbrica y ajustes) — ${new Date().toISOString()}`)
+  const inicioLlamadaRubrica = Date.now()
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT_CIERRE,
     messages: [{ role: 'user', content: userMessage }],
   })
+  console.error(`⏱️ FIN llamada Claude (rúbrica) — tardó ${((Date.now() - inicioLlamadaRubrica) / 1000).toFixed(1)}s`)
 
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
