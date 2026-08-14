@@ -456,12 +456,15 @@ ${listaDiasLote}
 
 INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "dias", uno por cada día listado arriba, en el mismo orden. El campo "numero" va del 1 al ${lote.length} (numeración local a este lote). El campo "momento_modalidad" es el indicado entre paréntesis junto a cada día. NUNCA repitas ni omitas días. RECUERDA: "inicio", "desarrollo", "cierre" y "materiales" son obligatorios en LOS ${lote.length} DÍAS, sin excepción — si necesitas ahorrar espacio, hazlo acortando el detalle, nunca omitiendo un campo completo. RECUERDA TAMBIÉN: el campo "inicio" de cada día arranca desde la entrada real del grupo al salón, nunca desde un momento intermedio de la jornada. RECUERDA TAMBIÉN: nunca uses comillas dobles dentro del texto, solo comillas simples para diálogos. RECUERDA TAMBIÉN (R-TRANSVERSAL y R-EJE-SECUNDARIO): si hay campos transversales o eje secundario declarados arriba, revisa antes de terminar este lote que al menos uno de los días los haya ejecutado de forma observable — no solo mencionado. RECUERDA TAMBIÉN (R-SIN-ETIQUETAS): si usaste el bloque de PRIORIDADES PEDAGÓGICAS para calibrar alguna actividad, verifica que el texto final no contenga ninguna etiqueta diagnóstica ni palabra de severidad clínica — solo necesidades y apoyos concretos.${instruccionCierreFinal}`
 
+  console.error(`⏱️ INICIO llamada Claude (lote de ${lote.length} días) — ${new Date().toISOString()}`)
+  const inicioLlamada = Date.now()
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT_DIAS,
     messages: [{ role: 'user', content: userMessage }],
   })
+  console.error(`⏱️ FIN llamada Claude — tardó ${((Date.now() - inicioLlamada) / 1000).toFixed(1)}s`)
 
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
