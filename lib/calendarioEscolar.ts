@@ -11,7 +11,7 @@
 //  necesite vivir en más de un lugar se extrae aquí, nunca se duplica.
 // ============================================================
 import type { SupabaseClient } from '@supabase/supabase-js'
-
+export const CICLO_ESCOLAR_ACTIVO = '2026-2027'
 export type DiaHabil = { fecha: string; label: string; esCTE: boolean; motivo?: string }
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']

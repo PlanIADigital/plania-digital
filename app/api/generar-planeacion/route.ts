@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil } from '@/lib/calendarioEscolar'
+import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
@@ -544,7 +544,7 @@ export async function POST(request: NextRequest) {
     }
 
     const estadoCodigo = (profile.cct_primary || '').slice(0, 2)
-    const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estadoCodigo, '2026-2027')
+    const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estadoCodigo, CICLO_ESCOLAR_ACTIVO)
 
     const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
     const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)

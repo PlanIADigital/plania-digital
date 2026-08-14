@@ -10,7 +10,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { obtenerCalendarioEstatal, calcularDiasHabiles } from '@/lib/calendarioEscolar'
+import { obtenerCalendarioEstatal, calcularDiasHabiles, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const estado = searchParams.get('estado')
     const fechaInicio = searchParams.get('fecha_inicio')
     const fechaFin = searchParams.get('fecha_fin')
-    const ciclo = searchParams.get('ciclo') || '2026-2027'
+    const ciclo = searchParams.get('ciclo') || CICLO_ESCOLAR_ACTIVO
 
     if (!estado || !fechaInicio || !fechaFin) {
       return NextResponse.json({ error: 'Faltan parámetros (estado, fecha_inicio, fecha_fin)' }, { status: 400 })
