@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { obtenerCalendarioEstatal, calcularDiasHabiles } from '@/lib/calendarioEscolar'
+import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
@@ -16,7 +16,6 @@ const MOMENTOS_MODALIDAD: Record<string, { momentos: string[]; desarrollo: numbe
   'Unidad didáctica': { momentos: ['Lectura de la realidad', 'Identificación de la trama y complejidad', 'Planificación y organización', 'Exploración y descubrimiento', 'Participación activa y horizontal', 'Valoración de la experiencia'], desarrollo: 2 },
 }
 
-type DiaHabil = { fecha: string; label: string; esCTE: boolean; motivo?: string }
 type DiaConMomento = DiaHabil & { momento: string; numeroGlobal: number }
 type DiaGenerado = {
   numero: number
