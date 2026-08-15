@@ -148,6 +148,7 @@ function NuevaPlaneacionInner() {
   const [result, setResult] = useState<any>(null)
   const [saveStatus, setSaveStatus] = useState('')
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const generandoRef = useRef(false)
   const [tiempoMinimoPaso1Cumplido, setTiempoMinimoPaso1Cumplido] = useState(false)
 
   const [ejeSugeridoParam, setEjeSugeridoParam] = useState('')
@@ -551,6 +552,7 @@ function NuevaPlaneacionInner() {
   }
 
   async function handleGenerar() {
+    if (generandoRef.current) return
     if (!form.nombre_proyecto) {
       marcarInvalido('nombre', refNombreInput)
       return
@@ -601,6 +603,7 @@ function NuevaPlaneacionInner() {
     }
 
     const jobId = crypto.randomUUID()
+    generandoRef.current = true
     setGenerating(true); setResult(null); setSaveStatus('')
     setProgreso({ totalLotes: 0, lotesCompletados: 0, faseActual: 'Iniciando...', estado: 'en_progreso', fasesLotes: [] })
 
@@ -644,7 +647,7 @@ function NuevaPlaneacionInner() {
       const data = await res.json()
       if (pollingRef.current) clearInterval(pollingRef.current)
 
-      if (data.error) { setResult({ error: data.error }); setGenerating(false); return }
+      if (data.error) { setResult({ error: data.error }); setGenerating(false); generandoRef.current = false; return }
       if (data.planeacion) {
         setProgreso(prev => ({ ...prev, estado: 'completado', faseActual: '¡Tu planeación está lista!' }))
         await new Promise(r => setTimeout(r, TIEMPO_CONFIRMACION_FINAL))
@@ -694,7 +697,7 @@ function NuevaPlaneacionInner() {
       if (pollingRef.current) clearInterval(pollingRef.current)
       setResult({ error: 'Error de conexión' })
     }
-    setGenerating(false)
+    setGenerating(false); generandoRef.current = false
   }
 
   const s = {
