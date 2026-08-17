@@ -288,6 +288,8 @@ export default function VerPlaneacionPage() {
               {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
               {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
               {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
+              {/* NOTA: el campo interno se llama "finalidad" en BD y en el código, pero se muestra como "Propósito" — término alineado a NEM 2022. */}
+              {planeacion.finalidad && <tr><td style={s.tdLabel}>Propósito</td><td style={s.tdValue}>{planeacion.finalidad}</td></tr>}
             </tbody>
           </table>
         </div>
