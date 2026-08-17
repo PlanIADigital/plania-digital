@@ -246,7 +246,7 @@ export default function VerPlaneacionPage() {
     cardHeader: { padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontSize: 13, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: 0 },
     table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 13 },
-    tdLabel: { padding: '10px 16px', fontWeight: 600, color: '#374151', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', width: 140, verticalAlign: 'top' as const },
+    tdLabel: { padding: '10px 16px', fontWeight: 600, color: '#374151', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', width: 140, verticalAlign: 'middle' as const, textAlign: 'center' as const, textTransform: 'uppercase' as const },
     tdValue: { padding: '10px 16px', color: '#1A1A2E', borderTop: '1px solid #E5E7EB', lineHeight: 1.7, verticalAlign: 'top' as const },
   }
 
