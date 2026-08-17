@@ -158,7 +158,9 @@ export default function MisPlaneacionesPage() {
                 <tr style={{ background: '#F8F7FF', borderBottom: '2px solid #EEEDF8' }}>
                   {[
                     { label: 'Nombre del Proyecto', key: 'project_name' as SortKey, width: '24%' },
-                    { label: 'Finalidad', key: null, width: '22%' },
+                    // NOTA: el campo interno se llama "finalidad" en BD y en el código (ver línea 54, 190),
+                    // pero se le muestra a la educadora como "Propósito" — término alineado a NEM 2022.
+                    { label: 'Propósito', key: null, width: '22%' },
                     { label: 'Campo Formativo', key: 'pda_campo' as SortKey, width: '16%' },
                     { label: 'Eje Articulador', key: 'eje_principal' as SortKey, width: '13%' },
                     { label: 'Creada', key: 'created_at' as SortKey, width: '9%' },

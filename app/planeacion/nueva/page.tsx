@@ -1021,8 +1021,8 @@ function NuevaPlaneacionInner() {
                 <label style={s.label}>Situación problema *</label>
                 <textarea ref={refSituacionInput} placeholder="¿Qué situación del entorno motivó este proyecto?" value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('situacion') }} />
                 {campoInvalido === 'situacion' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
-                <label style={s.label}>Finalidad *</label>
-                <textarea ref={finalidadRef} placeholder="¿Qué lograrán los alumnos al concluir este proyecto?" value={form.finalidad} onChange={e => update('finalidad', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('finalidad') }} />
+                <label style={s.label}>Propósito *</label>
+                <textarea ref={finalidadRef} placeholder="¿Cuál es el propósito de este proyecto? ¿Qué lograrán los alumnos al concluirlo?" value={form.finalidad} onChange={e => update('finalidad', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('finalidad') }} />
                 {campoInvalido === 'finalidad' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
                 <div style={{ background: '#F8F8FE', border: '1px solid #D8D6F0', borderRadius: 10, padding: 16 }}>
                   <label style={{ ...s.label, marginBottom: 4 }}>
