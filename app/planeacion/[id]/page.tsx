@@ -272,19 +272,37 @@ export default function VerPlaneacionPage() {
           <table style={s.table}>
             <tbody>
               <tr>
-                <td style={s.tdLabel}>Campo formativo{camposFormativos.length > 1 ? ' y transversales' : ''}</td>
-                <td style={s.tdValue}>{camposFormativos.join(' - ')}</td>
+                <td style={s.tdLabel}>Campo formativo principal</td>
+                <td style={s.tdValue}>{camposFormativos[0] || '—'}</td>
               </tr>
+              {camposFormativos.length > 1 && (
+                <tr>
+                  <td style={s.tdLabel}>Campo{camposFormativos.length > 2 ? 's' : ''} formativo{camposFormativos.length > 2 ? 's' : ''} transversal{camposFormativos.length > 2 ? 'es' : ''}</td>
+                  <td style={s.tdValue}>{camposFormativos.slice(1).join(' - ')}</td>
+                </tr>
+              )}
               <tr>
-                <td style={s.tdLabel}>PDA principal{segmentosPDA.length > 1 ? ' y transversales' : ''}</td>
+                <td style={s.tdLabel}>PDA principal</td>
                 <td style={s.tdValue}>
-                  {segmentosPDA.map((seg, i) => (
-                    <p key={i} style={{ margin: i === 0 ? 0 : '12px 0 0' }}>
-                      {seg.codigo && <strong>{seg.codigo} — </strong>}{seg.texto}
+                  {segmentosPDA[0] && (
+                    <p style={{ margin: 0 }}>
+                      {segmentosPDA[0].codigo && <strong>{segmentosPDA[0].codigo} — </strong>}{segmentosPDA[0].texto}
                     </p>
-                  ))}
+                  )}
                 </td>
               </tr>
+              {segmentosPDA.length > 1 && (
+                <tr>
+                  <td style={s.tdLabel}>PDA{segmentosPDA.length > 2 ? 's' : ''} transversal{segmentosPDA.length > 2 ? 'es' : ''}</td>
+                  <td style={s.tdValue}>
+                    {segmentosPDA.slice(1).map((seg, i) => (
+                      <p key={i} style={{ margin: i === 0 ? 0 : '12px 0 0' }}>
+                        {seg.codigo && <strong>{seg.codigo} — </strong>}{seg.texto}
+                      </p>
+                    ))}
+                  </td>
+                </tr>
+              )}
               {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
               {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
               {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
