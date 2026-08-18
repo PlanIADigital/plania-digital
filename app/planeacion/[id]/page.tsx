@@ -271,18 +271,21 @@ export default function VerPlaneacionPage() {
           </div>
           <table style={s.table}>
             <tbody>
+              {/* Bloque 1 — Datos generales */}
+              <tr><td style={s.tdLabel}>Nombre</td><td style={s.tdValue}>{planeacion.project_name}</td></tr>
+              {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
+              {/* NOTA: el campo interno se llama "finalidad" en BD y en el código, pero se muestra como "Propósito" — término alineado a NEM 2022. */}
+              {planeacion.finalidad && <tr><td style={s.tdLabel}>Propósito</td><td style={s.tdValue}>{planeacion.finalidad}</td></tr>}
+              {planeacion.metodologia && <tr><td style={s.tdLabel}>Modalidad / Metodología</td><td style={s.tdValue}>{planeacion.metodologia}</td></tr>}
+
+              {/* Bloque 2 — Campo Formativo Principal (agrupado con su Contenido y su PDA) */}
               <tr>
                 <td style={s.tdLabel}>Campo formativo principal</td>
                 <td style={s.tdValue}>{camposFormativos[0] || '—'}</td>
               </tr>
-              {camposFormativos.length > 1 && (
-                <tr>
-                  <td style={s.tdLabel}>Campo{camposFormativos.length > 2 ? 's' : ''} formativo{camposFormativos.length > 2 ? 's' : ''} transversal{camposFormativos.length > 2 ? 'es' : ''}</td>
-                  <td style={s.tdValue}>{camposFormativos.slice(1).join(' - ')}</td>
-                </tr>
-              )}
+              {planeacion.pda_contenido && <tr><td style={s.tdLabel}>Contenido</td><td style={s.tdValue}>{planeacion.pda_contenido}</td></tr>}
               <tr>
-                <td style={s.tdLabel}>PDA principal</td>
+                <td style={s.tdLabel}>PDA</td>
                 <td style={s.tdValue}>
                   {segmentosPDA[0] && (
                     <p style={{ margin: 0 }}>
@@ -291,29 +294,47 @@ export default function VerPlaneacionPage() {
                   )}
                 </td>
               </tr>
-              {segmentosPDA.length > 1 && (
-                <tr>
-                  <td style={s.tdLabel}>PDA{segmentosPDA.length > 2 ? 's' : ''} transversal{segmentosPDA.length > 2 ? 'es' : ''}</td>
-                  <td style={s.tdValue}>
-                    {segmentosPDA.slice(1).map((seg, i) => (
-                      <p key={i} style={{ margin: i === 0 ? 0 : '12px 0 0' }}>
-                        {seg.codigo && <strong>{seg.codigo} — </strong>}{seg.texto}
-                      </p>
-                    ))}
-                  </td>
-                </tr>
-              )}
-              {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
-              {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
-              {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
-              {/* NOTA: el campo interno se llama "finalidad" en BD y en el código, pero se muestra como "Propósito" — término alineado a NEM 2022. */}
-              {planeacion.finalidad && <tr><td style={s.tdLabel}>Propósito</td><td style={s.tdValue}>{planeacion.finalidad}</td></tr>}
+
+              {/* Bloque 3 — Campo(s) Formativo(s) Transversal(es), cada uno agrupado con su Contenido y su PDA */}
+              {[1, 2, 3].map(n => {
+                const activo = planeacion[`transversal_${n}_activo`]
+                const campo = planeacion[`transversal_${n}_campo`]
+                const contenido = planeacion[`transversal_${n}_contenido`]
+                const pda = planeacion[`transversal_${n}_pda`]
+                if (!activo || !campo) return null
+                return (
+                  <>
+                    <tr key={`campo-${n}`}>
+                      <td style={s.tdLabel}>Campo formativo transversal</td>
+                      <td style={s.tdValue}>{campo}</td>
+                    </tr>
+                    {contenido && (
+                      <tr key={`contenido-${n}`}>
+                        <td style={s.tdLabel}>Contenido</td>
+                        <td style={s.tdValue}>{contenido}</td>
+                      </tr>
+                    )}
+                    <tr key={`pda-${n}`}>
+                      <td style={s.tdLabel}>PDA</td>
+                      <td style={s.tdValue}>
+                        {codigoPDA(campo, planeacion[`transversal_${n}_id`]) && (
+                          <strong>{codigoPDA(campo, planeacion[`transversal_${n}_id`])} — </strong>
+                        )}{pda}
+                      </td>
+                    </tr>
+                  </>
+                )
+              })}
+
+              {/* Bloque 4 — Ejes */}
+              {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje articulador principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
+              {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje articulador secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
             </tbody>
           </table>
         </div>
 
         {/* Secuencia por días */}
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '24px 0 16px' }}>Secuencia didáctica por días</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '24px 0 16px', textTransform: 'uppercase' as const }}>Secuencia didáctica por días</h2>
 
         {bloques.map((bloque, idx) => {
           // Bloque de día(s) NO hábil(es) — posiblemente agrupados
