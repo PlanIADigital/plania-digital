@@ -48,7 +48,7 @@ export default function VerPlaneacionPage() {
   // momento (para deshabilitar su selector mientras el guardado está
   // en vuelo, evitando doble clic o carrera de peticiones).
   const [guardandoCodigo, setGuardandoCodigo] = useState<string>('')
-
+  const [rubricasDB, setRubricasDB] = useState<any[]>([])
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -60,7 +60,13 @@ export default function VerPlaneacionPage() {
       const { data, error: err } = await supabase.from('plannings').select('*').eq('id', params.id).single()
       if (err || !data) { setError('No se encontró la planeación'); setLoading(false); return }
       setPlaneacion(data)
-
+      const { data: rubricasData } = await supabase
+        .from('rubrics')
+        .select('*')
+        .eq('planning_id', params.id)
+        .eq('descartada', false)
+        .order('created_at', { ascending: true })
+      setRubricasDB(rubricasData || [])
       const idsPDA: string[] = [data.pda_id, data.transversal_1_id, data.transversal_2_id, data.transversal_3_id]
         .filter((id): id is string => !!id)
       if (idsPDA.length > 0) {
@@ -98,7 +104,12 @@ export default function VerPlaneacionPage() {
   // registro_alumnos[]). Respaldo a "rubrica" solo para planeaciones
   // muy antiguas generadas antes de este cambio, para no romper su
   // vista si alguien las vuelve a abrir.
-  const instrumentosEvaluacion: any[] = Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : [])
+  // [ago 2026] Las rúbricas ahora viven en la tabla dedicada `rubrics` (ver rubricasDB, cargado en el useEffect inicial).
+// Respaldo a content.instrumentos_evaluacion / instrumento_evaluacion solo para planeaciones generadas
+// antes de esta migración, que nunca llegaron a insertar filas en `rubrics`.
+const instrumentosEvaluacion: any[] = rubricasDB.length > 0
+  ? rubricasDB.map(r => ({ ...r.content_json, _rubricaId: r.id }))
+  : (Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : []))
   const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
 
   // [jul 2026] Construye el código real (LEN-1, SPC-14...) para un PDA
@@ -106,6 +117,18 @@ export default function VerPlaneacionPage() {
   // falta cualquier pieza (id no guardado, campo sin prefijo
   // conocido, etc.) — en ese caso el llamador simplemente muestra el
   // texto literal sin código, sin romper la vista.
+  // texto literal sin código, sin romper la vista.
+  async function descartarRubrica(rubricaId: string) {
+    const confirmar = window.confirm('¿Descartar esta rúbrica? Ya no aparecerá en esta planeación.')
+    if (!confirmar) return
+    const { error: err } = await supabase.from('rubrics').update({ descartada: true }).eq('id', rubricaId)
+    if (err) {
+      alert('No se pudo descartar la rúbrica: ' + err.message)
+      return
+    }
+    setRubricasDB(prev => prev.filter(r => r.id !== rubricaId))
+  }
+  // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
   // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
   // pantalla al instante (optimista) y en paralelo guarda en
   // Supabase vía el endpoint. Si el guardado falla, revierte el
@@ -466,9 +489,12 @@ export default function VerPlaneacionPage() {
                     })}
                   </tbody>
                 </table>
-                {instrumento.es_principal === false && (
+                {instrumento.es_principal === false && instrumento._rubricaId && (
                   <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button style={{ background: 'none', border: '1px solid #D1D5DB', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: '#6B7280', cursor: 'pointer' }}>
+                    <button
+                      onClick={() => descartarRubrica(instrumento._rubricaId)}
+                      style={{ background: 'none', border: '1px solid #D1D5DB', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: '#6B7280', cursor: 'pointer' }}
+                    >
                       ✕ Descartar esta rúbrica
                     </button>
                   </div>

@@ -690,6 +690,22 @@ function NuevaPlaneacionInner() {
         if (saveError) {
           setSaveStatus('Generada pero no guardada: ' + saveError.message)
         } else if (savedData?.id) {
+          const rubricasParaGuardar = data.planeacion.instrumentos_evaluacion || []
+          if (rubricasParaGuardar.length > 0) {
+            const { error: rubricasError } = await supabase.from('rubrics').insert(
+              rubricasParaGuardar.map((r: any) => ({
+                planning_id: savedData.id,
+                user_id: profile.id,
+                pda_evaluated: r.pda_evaluado,
+                content_json: r,
+                original_json: r,
+                descartada: false,
+              }))
+            )
+            if (rubricasError) {
+              console.error('No se pudieron guardar las rúbricas (no crítico, la planeación sí se guardó):', rubricasError)
+            }
+          }
           router.push(`/planeacion/${savedData.id}`)
         }
       }
