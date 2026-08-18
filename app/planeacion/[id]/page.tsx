@@ -98,8 +98,8 @@ export default function VerPlaneacionPage() {
   // registro_alumnos[]). Respaldo a "rubrica" solo para planeaciones
   // muy antiguas generadas antes de este cambio, para no romper su
   // vista si alguien las vuelve a abrir.
-  const instrumentoEvaluacion = content.instrumento_evaluacion || null
-  const rubricaLegacy = !instrumentoEvaluacion ? (content.rubrica || null) : null
+  const instrumentosEvaluacion: any[] = Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : [])
+  const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
 
   // [jul 2026] Construye el código real (LEN-1, SPC-14...) para un PDA
   // dado su campo formativo y su id de pda_catalog. Regresa null si
@@ -436,32 +436,48 @@ export default function VerPlaneacionPage() {
             etiqueta+descriptor, y registro_alumnos[] con el roster
             real de códigos para que la educadora marque el nivel de
             cada alumno. */}
-        {instrumentoEvaluacion && (
+        {instrumentosEvaluacion.length > 0 && (
           <>
-            <h2 style={{ ...s.sectionTitle, fontSize: 13, margin: '24px 0 16px' }}>Instrumento de evaluación</h2>
-            <div style={s.card}>
-              <div style={s.cardHeader}>
-                <p style={s.sectionTitle}>Campo: {instrumentoEvaluacion.campo}</p>
+            <h2 style={{ ...s.sectionTitle, fontSize: 13, margin: '24px 0 16px' }}>
+              {instrumentosEvaluacion.length > 1 ? 'Instrumentos de evaluación' : 'Instrumento de evaluación'}
+            </h2>
+            {instrumentosEvaluacion.map((instrumento: any, idx: number) => (
+              <div style={{ ...s.card, marginBottom: 16 }} key={idx}>
+                <div style={s.cardHeader}>
+                  <p style={s.sectionTitle}>
+                    Campo: {instrumento.campo}
+                    {instrumento.es_principal === false && (
+                      <span style={{ marginLeft: 10, fontSize: 11, color: '#9CA3AF', textTransform: 'none' as const, fontWeight: 400 }}>(transversal)</span>
+                    )}
+                  </p>
+                </div>
+                <table style={s.table}>
+                  <tbody>
+                    <tr><td style={s.tdLabel}>PDA</td><td style={s.tdValue}>{instrumento.pda}</td></tr>
+                    <tr><td style={s.tdLabel}>Criterio</td><td style={{ ...s.tdValue, fontWeight: 600 }}>{instrumento.criterio}</td></tr>
+                    {(instrumento.niveles || []).map((nivel: any, i: number) => {
+                      const estilo = ESTILO_POR_NIVEL[nivel.etiqueta] || { color: '#374151', fondo: '#F9FAFB' }
+                      return (
+                        <tr key={i}>
+                          <td style={{ ...s.tdLabel, color: estilo.color, background: estilo.fondo, textTransform: 'uppercase' as const }}>{nivel.etiqueta}</td>
+                          <td style={{ ...s.tdValue, background: estilo.fondo }}>{nivel.descriptor}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+                {instrumento.es_principal === false && (
+                  <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button style={{ background: 'none', border: '1px solid #D1D5DB', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: '#6B7280', cursor: 'pointer' }}>
+                      ✕ Descartar esta rúbrica
+                    </button>
+                  </div>
+                )}
               </div>
-              <table style={s.table}>
-                <tbody>
-                  <tr><td style={s.tdLabel}>PDA</td><td style={s.tdValue}>{instrumentoEvaluacion.pda}</td></tr>
-                  <tr><td style={s.tdLabel}>Criterio</td><td style={{ ...s.tdValue, fontWeight: 600 }}>{instrumentoEvaluacion.criterio}</td></tr>
-                  {(instrumentoEvaluacion.niveles || []).map((nivel: any, i: number) => {
-                    const estilo = ESTILO_POR_NIVEL[nivel.etiqueta] || { color: '#374151', fondo: '#F9FAFB' }
-                    return (
-                      <tr key={i}>
-                        <td style={{ ...s.tdLabel, color: estilo.color, background: estilo.fondo, textTransform: 'uppercase' as const }}>{nivel.etiqueta}</td>
-                        <td style={{ ...s.tdValue, background: estilo.fondo }}>{nivel.descriptor}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            ))}
 
             {/* Escala estimativa de logro — tabla de registro por alumno */}
-            {Array.isArray(instrumentoEvaluacion.registro_alumnos) && instrumentoEvaluacion.registro_alumnos.length > 0 && (
+            {Array.isArray(instrumentosEvaluacion[0]?.registro_alumnos) && instrumentosEvaluacion[0].registro_alumnos.length > 0 && (
               <div style={s.card}>
                 <div style={s.cardHeader}>
                   <p style={s.sectionTitle}>Escala estimativa de logro</p>
@@ -474,7 +490,7 @@ export default function VerPlaneacionPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {instrumentoEvaluacion.registro_alumnos.map((alumno: any, i: number) => {
+                    {instrumentosEvaluacion[0].registro_alumnos.map((alumno: any, i: number) => {
                       const estiloNivel = alumno.nivel_marcado
                         ? (ESTILO_POR_NIVEL[alumno.nivel_marcado] || { color: '#374151', fondo: 'white' })
                         : { color: '#374151', fondo: 'white' }

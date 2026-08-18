@@ -473,56 +473,67 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
   return dias.map(validarDiaCompleto)
 }
 
-async function generarRubricaYAjustes(params: {
-  form: any
+async function generarAjustesPorDia(params: {
   profile: any
   todosLosDias: DiaGenerado[]
-}): Promise<{ instrumento_evaluacion: any; ajustes_por_dia: AjusteDia[] }> {
-  const { form, profile, todosLosDias } = params
-
+}): Promise<AjusteDia[]> {
+  const { profile, todosLosDias } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
-
   const alumnosInclusionLista: { codigo: string; acciones?: string }[] = Array.isArray(profile.alumnos_inclusion)
     ? profile.alumnos_inclusion
     : []
-
-  const alumnosInclusionTexto = alumnosInclusionLista.length > 0
-    ? JSON.stringify(alumnosInclusionLista)
-    : 'No hay alumnos con necesidades de inclusión registrados en este grupo.'
-
-  const userMessage = `PDA principal a evaluar: ${form.pda_principal}
-Campo formativo: ${form.campo_formativo}
-Contenido: ${form.contenido}
-
-ALUMNOS CON NECESIDADES DE INCLUSIÓN:
+  if (alumnosInclusionLista.length === 0) return []
+  const alumnosInclusionTexto = JSON.stringify(alumnosInclusionLista)
+  const userMessage = `ALUMNOS CON NECESIDADES DE INCLUSIÓN:
 ${alumnosInclusionTexto}
-
 PLANEACIÓN COMPLETA YA GENERADA (el número de cada "Día" corresponde exactamente al número de día que verá la educadora en pantalla — usa ese mismo número en "ajustes_por_dia". Esta planeación tiene ${todosLosDias.length} días en total; recuerda generar una entrada por CADA alumno en TODOS los ${todosLosDias.length} días, cada una BREVE de 1-2 oraciones):
 ${resumenDias}
-
-Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro) basado en las instancias concretas donde el PDA fue ejecutado en la narrativa de arriba, y los ajustes razonables por día correspondientes — recuerda: todos los alumnos, todos los días, sin excepción, cada uno ligado a su propia necesidad concreta y breve.`
-// TODO-TEMPORAL: logs de diagnóstico ⏱️ — quitar una vez resuelto el tema de caché de prompts (ver commit a65d3cd)
-  console.error(`⏱️ INICIO llamada Claude (rúbrica y ajustes) — ${new Date().toISOString()}`)
-  const inicioLlamadaRubrica = Date.now()
+Genera los ajustes razonables por día correspondientes — recuerda: todos los alumnos, todos los días, sin excepción, cada uno ligado a su propia necesidad concreta y breve.`
+  console.error(`⏱️ INICIO llamada Claude (ajustes por día) — ${new Date().toISOString()}`)
+  const inicio = Date.now()
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT_CIERRE,
     messages: [{ role: 'user', content: userMessage }],
   })
-  console.error(`⏱️ FIN llamada Claude (rúbrica) — tardó ${((Date.now() - inicioLlamadaRubrica) / 1000).toFixed(1)}s`)
-
+  console.error(`⏱️ FIN llamada Claude (ajustes) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
   const ajustesGenerados: AjusteDia[] = Array.isArray(parsed.ajustes_por_dia) ? parsed.ajustes_por_dia : []
-  const ajustesCompletos = validarAjustesCompletos(ajustesGenerados, todosLosDias.length, alumnosInclusionLista)
+  return validarAjustesCompletos(ajustesGenerados, todosLosDias.length, alumnosInclusionLista)
+}
 
-  return {
-    instrumento_evaluacion: parsed.instrumento_evaluacion,
-    ajustes_por_dia: ajustesCompletos,
-  }
+async function generarUnaRubrica(params: {
+  pdaTexto: string
+  campoFormativo: string
+  contenido: string
+  todosLosDias: DiaGenerado[]
+}): Promise<any> {
+  const { pdaTexto, campoFormativo, contenido, todosLosDias } = params
+  const resumenDias = todosLosDias.map(d =>
+    `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
+  ).join('\n\n')
+  const userMessage = `PDA a evaluar: ${pdaTexto}
+Campo formativo: ${campoFormativo}
+Contenido: ${contenido}
+PLANEACIÓN COMPLETA YA GENERADA:
+${resumenDias}
+Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro) basado en las instancias concretas donde este PDA fue ejecutado en la narrativa de arriba.`
+  console.error(`⏱️ INICIO llamada Claude (rúbrica de "${campoFormativo}") — ${new Date().toISOString()}`)
+  const inicio = Date.now()
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4000,
+    system: SYSTEM_PROMPT_CIERRE,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+  console.error(`⏱️ FIN llamada Claude (rúbrica) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  const content = message.content[0].type === 'text' ? message.content[0].text : ''
+  const parsed = parsearJSONRobusto(content)
+  return parsed.instrumento_evaluacion
 }
 export const maxDuration = 700;
 export async function POST(request: NextRequest) {
@@ -693,11 +704,38 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { instrumento_evaluacion, ajustes_por_dia } = await generarRubricaYAjustes({
-      form,
+    const ajustes_por_dia = await generarAjustesPorDia({
       profile,
       todosLosDias: todasLasDiasGeneradas,
     })
+
+    // Arma la lista de PDAs activos: principal siempre primero (no descartable),
+    // seguido de cada transversal que la educadora haya conservado.
+    const pdasActivos: { pdaTexto: string; campoFormativo: string; contenido: string; esPrincipal: boolean }[] = [
+      { pdaTexto: form.pda_principal, campoFormativo: form.campo_formativo, contenido: form.contenido, esPrincipal: true },
+    ]
+    if (form.transversales?.length > 0) {
+      for (const t of form.transversales) {
+        pdasActivos.push({ pdaTexto: t.pda, campoFormativo: t.campo, contenido: t.contenido, esPrincipal: false })
+      }
+    }
+
+    if (jobId) {
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        fase_actual: `Construyendo ${pdasActivos.length > 1 ? 'tus rúbricas de evaluación' : 'tu rúbrica de evaluación'}...`,
+      })
+    }
+
+    const rubricas: any[] = []
+    for (const p of pdasActivos) {
+      const instrumento = await generarUnaRubrica({
+        pdaTexto: p.pdaTexto,
+        campoFormativo: p.campoFormativo,
+        contenido: p.contenido,
+        todosLosDias: todasLasDiasGeneradas,
+      })
+      rubricas.push({ ...instrumento, pda_evaluado: p.pdaTexto, es_principal: p.esPrincipal })
+    }
 
     const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
     const codigosInclusion = new Set(
@@ -705,10 +743,10 @@ export async function POST(request: NextRequest) {
     )
     const rosterCompleto = [...rosterRegulares, ...Array.from(codigosInclusion)]
 
-    const instrumentoConRegistro = {
-      ...instrumento_evaluacion,
+    const rubricasConRegistro = rubricas.map(r => ({
+      ...r,
       registro_alumnos: rosterCompleto.map(codigo => ({ codigo, nivel_marcado: null })),
-    }
+    }))
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
@@ -727,7 +765,7 @@ export async function POST(request: NextRequest) {
 
     const planeacion: any = {
       dias: diasFinal,
-      instrumento_evaluacion: instrumentoConRegistro,
+      instrumentos_evaluacion: rubricasConRegistro,
       ajustes_por_dia,
     }
 
