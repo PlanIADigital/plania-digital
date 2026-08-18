@@ -280,7 +280,7 @@ export default function VerPlaneacionPage() {
 
               {/* Bloque 2 — Campo Formativo Principal (agrupado con su Contenido y su PDA) */}
               <tr>
-                <td style={s.tdLabel}>Campo formativo principal</td>
+                <td style={s.tdLabel}>CF Principal</td>
                 <td style={s.tdValue}>{camposFormativos[0] || '—'}</td>
               </tr>
               {planeacion.pda_contenido && <tr><td style={s.tdLabel}>Contenido</td><td style={s.tdValue}>{planeacion.pda_contenido}</td></tr>}
@@ -305,7 +305,7 @@ export default function VerPlaneacionPage() {
                 return (
                   <>
                     <tr key={`campo-${n}`}>
-                      <td style={s.tdLabel}>Campo formativo transversal</td>
+                      <td style={s.tdLabel}>CF Transversal</td>
                       <td style={s.tdValue}>{campo}</td>
                     </tr>
                     {contenido && (
@@ -327,14 +327,14 @@ export default function VerPlaneacionPage() {
               })}
 
               {/* Bloque 4 — Ejes */}
-              {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje articulador principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
-              {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje articulador secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
+              {planeacion.eje_principal && <tr><td style={s.tdLabel}>Eje Art Principal</td><td style={s.tdValue}>{planeacion.eje_principal}</td></tr>}
+              {planeacion.eje_secundario && <tr><td style={s.tdLabel}>Eje Art Secundario</td><td style={s.tdValue}>{planeacion.eje_secundario}</td></tr>}
             </tbody>
           </table>
         </div>
 
         {/* Secuencia por días */}
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '24px 0 16px', textTransform: 'uppercase' as const }}>Secuencia didáctica por días</h2>
+        <h2 style={{ ...s.sectionTitle, fontSize: 13, margin: '24px 0 16px' }}>Secuencia didáctica por días</h2>
 
         {bloques.map((bloque, idx) => {
           // Bloque de día(s) NO hábil(es) — posiblemente agrupados
@@ -438,7 +438,7 @@ export default function VerPlaneacionPage() {
             cada alumno. */}
         {instrumentoEvaluacion && (
           <>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '32px 0 16px' }}>Instrumento de evaluación</h2>
+            <h2 style={{ ...s.sectionTitle, fontSize: 13, margin: '24px 0 16px' }}>Instrumento de evaluación</h2>
             <div style={s.card}>
               <div style={s.cardHeader}>
                 <p style={s.sectionTitle}>Campo: {instrumentoEvaluacion.campo}</p>
