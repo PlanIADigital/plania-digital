@@ -493,7 +493,7 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
                   <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                       onClick={() => descartarRubrica(instrumento._rubricaId)}
-                      style={{ background: 'none', border: '1px solid #D1D5DB', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: '#6B7280', cursor: 'pointer' }}
+                      style={{ background: 'none', border: '1.5px solid #00A896', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#00A896', cursor: 'pointer' }}
                     >
                       ✕ Descartar esta rúbrica
                     </button>
