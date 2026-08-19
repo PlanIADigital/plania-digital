@@ -143,6 +143,7 @@ function NuevaPlaneacionInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [profile, setProfile] = useState<any>(null)
+  const [problematicasPA, setProblematicasPA] = useState<string[]>([])
   const [generating, setGenerating] = useState(false)
   const [progreso, setProgreso] = useState<ProgresoReal>({ totalLotes: 0, lotesCompletados: 0, faseActual: 'Iniciando...', estado: 'en_progreso', fasesLotes: [] })
   const [result, setResult] = useState<any>(null)
@@ -266,6 +267,16 @@ function NuevaPlaneacionInner() {
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      const { data: pa } = await supabase
+        .from('programa_analitico')
+        .select('pda_ponderacion')
+        .eq('educadora_id', data.id)
+        .eq('activo', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const problematicas = pa?.pda_ponderacion?.problematicas_institucionales
+      if (Array.isArray(problematicas)) setProblematicasPA(problematicas)
     }
     load()
   }, [])
@@ -1035,6 +1046,18 @@ function NuevaPlaneacionInner() {
                 <input ref={refNombreInput} placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={{ ...s.input, ...estiloResaltado('nombre') }} />
                 {campoInvalido === 'nombre' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
                 <label style={s.label}>Situación problema *</label>
+                {problematicasPA.length > 0 && (
+                  <select
+                    value=""
+                    onChange={e => { if (e.target.value) update('situacion_problema', e.target.value) }}
+                    style={{ ...s.input, marginBottom: 8, color: '#6B7280', fontSize: 13 }}
+                  >
+                    <option value="">💡 Problemáticas detectadas en tu jardín (Programa Analítico) — elige una o escribe la tuya</option>
+                    {problematicasPA.map((p, i) => (
+                      <option key={i} value={p}>{p}</option>
+                    ))}
+                  </select>
+                )}
                 <textarea ref={refSituacionInput} placeholder="¿Qué situación del entorno motivó este proyecto?" value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('situacion') }} />
                 {campoInvalido === 'situacion' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
                 <label style={s.label}>Propósito *</label>
