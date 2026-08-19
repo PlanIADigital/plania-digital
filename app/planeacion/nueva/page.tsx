@@ -270,7 +270,7 @@ function NuevaPlaneacionInner() {
       const { data: pa } = await supabase
         .from('programa_analitico')
         .select('pda_ponderacion')
-        .eq('educadora_id', data.id)
+        .eq('educadora_id', session.user.id)
         .eq('activo', true)
         .order('created_at', { ascending: false })
         .limit(1)
