@@ -789,7 +789,7 @@ async function darDeBajaAlumno(id: string) {
                         <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={3}
                           placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
                           style={s.textarea} />
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                           <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
                             style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                             {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
@@ -798,6 +798,18 @@ async function darDeBajaAlumno(id: string) {
                             {analizandoObservaciones ? '🔍 Analizando...' : '📎 Archivo'}
                             <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} disabled={analizandoObservaciones} />
                           </label>
+                          {/* [ago 2026] Solo aparece si ya había observaciones guardadas
+                              antes de entrar a editar — mismo patrón que Mi estilo de
+                              narración en Configuración. */}
+                          {resultadoObservaciones && (
+                            <button
+                              type="button"
+                              disabled={analizandoObservaciones}
+                              onClick={() => { setObservacionesGuardadas(true); setObservacionesTexto(''); setErrorObservaciones('') }}
+                              style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoObservaciones ? 'default' : 'pointer' }}>
+                              Cancelar
+                            </button>
+                          )}
                         </div>
                         {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
                         <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Opcional · al subir un archivo se analiza automáticamente</p>
@@ -827,7 +839,7 @@ async function darDeBajaAlumno(id: string) {
                           {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
                             <button onClick={() => abrirHistorial('observaciones_directivo', '2.2 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
                           )}
-                          <button onClick={() => { setObservacionesGuardadas(false); setResultadoObservaciones(null); setObservacionesTexto('') }} style={s.accionBtn}>↑ Actualizar</button>
+                          <button onClick={() => setObservacionesGuardadas(false)} style={s.accionBtn}>↑ Actualizar</button>
                         </div>
                       </div>
                     )}
