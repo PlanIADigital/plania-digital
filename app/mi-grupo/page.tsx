@@ -785,7 +785,7 @@ async function darDeBajaAlumno(id: string) {
                     <p style={s.subTitle}>2.2 · Áreas de Oportunidad</p>
                     <p style={s.desc}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
                       {!observacionesGuardadas ? (
-                      <div style={{ flex: 1, minHeight: 200, transition: 'min-height 0.2s ease' }}>
+                      <div style={{ flex: 1 }}>
                         <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={3}
                           placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
                           style={s.textarea} />
@@ -814,8 +814,8 @@ async function darDeBajaAlumno(id: string) {
                         {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
                         <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Opcional · al subir un archivo se analiza automáticamente</p>
                       </div>
-                      ) : (
-                      <div style={{ ...s.ok, flex: 1, minHeight: 200, transition: 'min-height 0.2s ease' }}>
+                                            ) : (
+                      <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ Observaciones integradas</p>
                         <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
                         <div style={s.accionesFila}>
