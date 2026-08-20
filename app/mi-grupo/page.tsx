@@ -751,7 +751,7 @@ async function darDeBajaAlumno(id: string) {
                       <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <div style={{ ...s.ok, flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-                            <p style={s.okText}>✅ PA cargado · <span style={{ fontWeight: 400 }}>v{paActivo.version_numero}</span></p>
+                            <p style={s.okText}>✅ PA guardado</p>
                             {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
                               <button onClick={() => setModalMiaPA(true)} style={s.badgeMia}>⚠ MÍA</button>
                             )}
@@ -907,7 +907,7 @@ async function darDeBajaAlumno(id: string) {
                       </div>
                     ) : (
                       <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ Diagnóstico guardado</p>
+                        <p style={s.okText}>✅ Diagnóstico grupal guardado</p>
                         <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']?.fecha} />
                         <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
                         <div style={s.accionesFila}>
@@ -957,7 +957,7 @@ async function darDeBajaAlumno(id: string) {
                   </div>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>2.2 · Diagnóstico Individual</p>
-                    <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NNE.</p>
+                    <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NEE.</p>
                     {!evalCompleta ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
@@ -969,9 +969,14 @@ async function darDeBajaAlumno(id: string) {
                       </div>
                     ) : (
                       <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ Evaluación completa</p>
+                                                <p style={s.okText}>✅ Diagnóstico individual guardado</p>
                         <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']?.fecha} />
-                        <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}</p>
+                        <p
+                          onClick={abrirModalAlumnos}
+                          style={{ fontSize: 11, color: '#444', margin: '3px 0 0', cursor: 'pointer' }}
+                        >
+                          👥 Alumnos {(evaluacionIndividual as any).total_alumnos_detectados || 0} · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}
+                        </p>
                         <div style={s.accionesFila}>
                           <button
                             onClick={() => setModalDetalle({
@@ -1006,8 +1011,7 @@ async function darDeBajaAlumno(id: string) {
                           {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
                             <button onClick={() => abrirHistorial('diagnostico_individual', '2.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
                           )}
-                                                    <button onClick={abrirModalAlumnos} style={s.accionBtn}>👥 Alumnos</button>
-                          <label style={s.accionBtn}>
+                             <label style={s.accionBtn}>
                             ↑ Actualizar
                             <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
                           </label>
