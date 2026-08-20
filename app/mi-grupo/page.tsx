@@ -1006,8 +1006,8 @@ async function darDeBajaAlumno(id: string) {
                           {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
                             <button onClick={() => abrirHistorial('diagnostico_individual', '2.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
                           )}
+                                                    <button onClick={abrirModalAlumnos} style={s.accionBtn}>👥 Alumnos</button>
                           <label style={s.accionBtn}>
-                            <button onClick={abrirModalAlumnos} style={s.accionBtn}>👥 Alumnos</button>
                             ↑ Actualizar
                             <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
                           </label>
@@ -1129,9 +1129,7 @@ async function darDeBajaAlumno(id: string) {
           </>
         )}
 
-        <button type="button" onClick={agregarAlumno} style={{ marginTop: 12, background: '#00A896', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-          + Agregar alumno
-        </button>
+        
       </div>
     )}
     {errorAlumnos && <div style={s.err}>{errorAlumnos}</div>}
