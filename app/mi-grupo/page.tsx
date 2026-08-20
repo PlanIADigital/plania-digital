@@ -105,7 +105,7 @@ function TiempoGuardado({ fechaISO }: { fechaISO?: string }) {
 
 const GRADO_MAP: Record<string, string> = { '1er Grado': '1°', '2do Grado': '2°', '3er Grado': '3°' }
 
-type OrigenConteo = '2.1' | '2.2'
+type OrigenConteo = '3.1' | '3.2'
 interface DiscrepanciaAlumnos {
   detectado: number
   origen: OrigenConteo
@@ -459,7 +459,7 @@ async function darDeBajaAlumno(id: string) {
       if (data.pdas_sugeridos) {
         setPdas(data.pdas_sugeridos); setGuardado(true)
         refrescarFechas()
-        // if (data.total_alumnos_detectado) revisarDiscrepanciaAlumnos(data.total_alumnos_detectado, '2.1')
+        // if (data.total_alumnos_detectado) revisarDiscrepanciaAlumnos(data.total_alumnos_detectado, '3.1')
       }
       else setErrorDiagnostico(data.error || 'No se pudieron analizar los PDAs.')
     } catch { setErrorDiagnostico('Error de conexión.') }
@@ -487,7 +487,7 @@ async function darDeBajaAlumno(id: string) {
       setEvaluacionIndividual(dataAnalisis.resultado)
       refrescarFechas()
       const detectado = dataAnalisis.resultado?.total_alumnos_detectados
-      if (detectado) revisarDiscrepanciaAlumnos(detectado, '2.2')
+      if (detectado) revisarDiscrepanciaAlumnos(detectado, '3.2')
     } catch { setErrorEval('Error de conexión.') }
     setGuardandoEval(false)
   }
@@ -620,7 +620,7 @@ async function darDeBajaAlumno(id: string) {
           {discrepanciaAlumnos && (
             <div style={{ background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' as const }}>
               <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', lineHeight: 1.6, flex: 1, minWidth: 260 }}>
-                🔔 <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '2.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}, pero tienes registrados <strong>{profile.total_alumnos}</strong> en tu grupo. ¿Actualizamos el total a {discrepanciaAlumnos.detectado}?
+                🔔 <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '3.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}, pero tienes registrados <strong>{profile.total_alumnos}</strong> en tu grupo. ¿Actualizamos el total a {discrepanciaAlumnos.detectado}?
               </p>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button onClick={confirmarActualizarAlumnos}
@@ -738,13 +738,51 @@ async function darDeBajaAlumno(id: string) {
               </div>
             </div>
 
-            {/* Sección 3 · Recomendaciones Directivas (fila 2, columna 1) */}
-              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
+            {/* Sección 2 · Recomendaciones Directivas (fila 1, columna 2) */}
+              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 1 }}>
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                <p style={s.cardTitle}>2 · Recomendaciones Directivas</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>3.1 · Áreas de Oportunidad</p>
+                    <p style={s.subTitle}>2.1 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
+                    <p style={s.desc}>PDAs acordados por el colectivo este ciclo.<br/>El sistema los integrará con tu diagnóstico.</p>
+                    {!guardadoJardin ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                        <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
+                          {guardandoJardin ? '🔍 Analizando...' : '📁 Seleccionar'}
+                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
+                        </label>
+                        {errorJardin && <div style={s.err}>{errorJardin}</div>}
+                      </div>
+                    ) : (
+                      <div style={{ ...s.ok, flex: 1 }}>
+                        <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
+                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
+                        <div style={s.accionesFila}>
+                          <button
+                            onClick={() => setModalDetalle({
+                              titulo: '2.1 · PDAs del jardín',
+                              contenido: (
+                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>
+                                </div>
+                              ),
+                            })}
+                            style={s.accionBtn}
+                          >▾ Ver detalle</button>
+                          {(fechasGuardado['pdas_jardin']?.version ?? 0) >= 2 && (
+                            <button onClick={() => abrirHistorial('pdas_jardin', '2.1 · Historial de PDAs del jardín')} style={s.accionBtn}>▾ Historial</button>
+                          )}
+                          <label style={s.accionBtn}>
+                            ↑ Actualizar
+                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <p style={s.subTitle}>2.2 · Áreas de Oportunidad</p>
                     <p style={s.desc}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
                     {!observacionesGuardadas ? (
                       <div style={{ flex: 1 }}>
@@ -771,7 +809,7 @@ async function darDeBajaAlumno(id: string) {
                         <div style={s.accionesFila}>
                           <button
                             onClick={() => setModalDetalle({
-                              titulo: '3.1 · Áreas de oportunidad',
+                              titulo: '2.2 · Áreas de oportunidad',
                               contenido: (
                                 <div>
                                   {resultadoObservaciones?.areas_mejora?.length > 0
@@ -787,47 +825,9 @@ async function darDeBajaAlumno(id: string) {
                             style={s.accionBtn}
                           >▾ Ver detalle</button>
                           {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('observaciones_directivo', '3.1 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
+                            <button onClick={() => abrirHistorial('observaciones_directivo', '2.2 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
                           )}
                           <button onClick={() => { setObservacionesGuardadas(false); setResultadoObservaciones(null); setObservacionesTexto('') }} style={s.accionBtn}>↑ Actualizar</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>3.2 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
-                    <p style={s.desc}>PDAs acordados por el colectivo este ciclo.<br/>El sistema los integrará con tu diagnóstico.</p>
-                    {!guardadoJardin ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
-                          {guardandoJardin ? '🔍 Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
-                        </label>
-                        {errorJardin && <div style={s.err}>{errorJardin}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => setModalDetalle({
-                              titulo: '3.2 · PDAs del jardín',
-                              contenido: (
-                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
-                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>
-                                </div>
-                              ),
-                            })}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['pdas_jardin']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('pdas_jardin', '3.2 · Historial de PDAs del jardín')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                          <label style={s.accionBtn}>
-                            ↑ Actualizar
-                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
-                          </label>
                         </div>
                       </div>
                     )}
@@ -837,14 +837,13 @@ async function darDeBajaAlumno(id: string) {
 
             </div>
 
-            {/* Sección 2 · Diagnóstico Pedagógico (fila 1, columna 2) */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 1 }}>
-
+                        {/* Sección 3 · Diagnóstico Pedagógico (fila 2, ancho completo) */}
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>2 · Diagnóstico Pedagógico</p>
+                <p style={s.cardTitle}>3 · Diagnóstico Pedagógico</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>2.1 · Diagnóstico Grupal</p>
+                      <p style={s.subTitle}>3.1 · Diagnóstico Grupal</p>
                     <p style={s.desc}>Necesidades y áreas de oportunidad del Grupo,<br/>para personalizar tu planeaciones.</p>
                     {!guardado ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
@@ -869,7 +868,7 @@ async function darDeBajaAlumno(id: string) {
                                 grupos[key].items.push(p)
                               })
                               setModalDetalle({
-                                titulo: '2.1 · PDAs priorizados para tu grupo',
+                              titulo: '3.1 · PDAs priorizados para tu grupo',
                                 contenido: (
                                   <div>
                                     {Object.values(grupos).map((grupo, gi) => (
@@ -894,7 +893,7 @@ async function darDeBajaAlumno(id: string) {
                             style={s.accionBtn}
                           >▾ Ver detalle</button>
                           {(fechasGuardado['diagnostico_grupal']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('diagnostico_grupal', '2.1 · Historial del diagnóstico grupal')} style={s.accionBtn}>▾ Historial</button>
+                            <button onClick={() => abrirHistorial('diagnostico_grupal', '3.1 · Historial del diagnóstico grupal')} style={s.accionBtn}>▾ Historial</button>
                           )}
                           <label style={s.accionBtn}>
                             ↑ Actualizar
@@ -905,7 +904,7 @@ async function darDeBajaAlumno(id: string) {
                     )}
                   </div>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>2.2 · Diagnóstico Individual</p>
+                    <p style={s.subTitle}>3.2 · Diagnóstico Individual</p>
                     <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NEE.</p>
                     {!evalCompleta ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
@@ -929,7 +928,7 @@ async function darDeBajaAlumno(id: string) {
                         <div style={s.accionesFila}>
                           <button
                             onClick={() => setModalDetalle({
-                              titulo: '2.2 · PDAs prioritarios (Diagnóstico Individual)',
+                              titulo: '3.2 · PDAs prioritarios (Diagnóstico Individual)',
                               contenido: (
                                 <div>
                                   {(evaluacionIndividual as any)?.pdas_prioritarios_grupo?.length > 0
@@ -958,7 +957,7 @@ async function darDeBajaAlumno(id: string) {
                             style={s.accionBtn}
                           >▾ Ver detalle</button>
                           {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('diagnostico_individual', '2.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
+                            <button onClick={() => abrirHistorial('diagnostico_individual', '3.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
                           )}
                              <label style={s.accionBtn}>
                             ↑ Actualizar
@@ -1038,7 +1037,7 @@ async function darDeBajaAlumno(id: string) {
               </div>
             ))}
             <p style={{ fontSize: 11, color: '#888', margin: '10px 0 0', lineHeight: 1.5 }}>
-              Los alumnos de inclusión se gestionan desde <strong>Diagnóstico Individual</strong> (Sección 2.2), no aquí.
+              Los alumnos de inclusión se gestionan desde <strong>Diagnóstico Individual</strong> (Sección 3.2), no aquí.
             </p>
           </>
         )}
