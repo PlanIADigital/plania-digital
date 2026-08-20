@@ -182,13 +182,6 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
   const [errorJardin, setErrorJardin] = useState('')
   const [resultadoJardin, setResultadoJardin] = useState<any>(null)
 
-  // 4 — Estilo narrativo
-  const [estiloTexto, setEstiloTexto] = useState('')
-  const [analizandoEstilo, setAnalizandoEstilo] = useState(false)
-  const [estiloGuardado, setEstiloGuardado] = useState(false)
-  const [errorEstilo, setErrorEstilo] = useState('')
-  const [resultadoEstilo, setResultadoEstilo] = useState<any>(null)
-
   const gradoGrupo = GRADO_MAP[profile?.grado || ''] || profile?.grado || '2°'
 
   useEffect(() => {
@@ -199,7 +192,6 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
       if (data.observaciones_directivo) { setResultadoObservaciones(data.observaciones_directivo); setObservacionesGuardadas(true) }
-      if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
       if (data.diagnostico_escolar) { setResultadoEscolar(data.diagnostico_escolar); setDiagnosticoEscolarGuardado(true) }
       // [jul 2026] Faltaba marcar guardado=true al restaurar — sin
       // esto, el botón seguía mostrando "Seleccionar" como si nunca
@@ -574,49 +566,6 @@ async function darDeBajaAlumno(id: string) {
     } catch { setErrorJardin('Error al procesar el archivo.') }
     setGuardandoJardin(false)
   }
-
-  async function analizarEstiloConTexto(texto: string): Promise<boolean> {
-    if (!texto.trim()) { setErrorEstilo('Escribe o sube un texto.'); return false }
-    setAnalizandoEstilo(true); setErrorEstilo('')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return false
-      const res = await fetch('/api/analizar-estilo-narrativo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, auth_uid: session.user.id })
-      })
-      const data = await res.json()
-      if (data.ok) { setResultadoEstilo(data.resultado); setEstiloGuardado(true); return true }
-      setErrorEstilo('Error al analizar.')
-      return false
-    } catch {
-      setErrorEstilo('Error de conexión.')
-      return false
-    } finally {
-      setAnalizandoEstilo(false)
-    }
-  }
-
-  function handleAnalizarEstilo() {
-    analizarEstiloConTexto(estiloTexto)
-  }
-
-  async function handleArchivoEstilo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (!data.texto) { setErrorEstilo('No se pudo extraer el texto.'); return }
-      const textoCombinado = estiloTexto ? estiloTexto + '\n\n' + data.texto : data.texto
-      const exito = await analizarEstiloConTexto(textoCombinado)
-      if (!exito) setEstiloTexto(textoCombinado)
-    } catch { setErrorEstilo('No se pudo extraer el texto.') }
-  }
-
   const s = {
     page: { padding: '0 40px' } as React.CSSProperties,
     card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
@@ -790,7 +739,7 @@ async function darDeBajaAlumno(id: string) {
             </div>
 
             {/* Sección 3 · Recomendaciones Directivas (fila 2, columna 1) */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 2 }}>
+              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>3 · Recomendaciones Directivas</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
@@ -1023,46 +972,7 @@ async function darDeBajaAlumno(id: string) {
               </div>
             </div>
 
-            {/* Sección 4 · Mi estilo de narración (fila 2, columna 2) */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 2 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>4 · Mi estilo de narración</p>
-                <p style={{ fontSize: 12, color: '#888', margin: '0 0 12px', lineHeight: 1.5, textAlign: 'center' }}>
-                  Comparte como escribes: una carta, unas notas o cualquier texto tuyo.<br/>La finalidad es que aprendamos de tu tono y estilo personal.<br/>MÍA aprenderá de ti para que tus planeaciones tengan tu estilo pedagógico.
-                </p>
-                {!estiloGuardado ? (
-                  <div style={{ flex: 1 }}>
-                    <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
-                      placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
-                      style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
-                    />
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
-                      <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
-                        style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                        {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar estilo'}
-                      </button>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                        {analizandoEstilo ? '🔍 Analizando...' : '📎 O sube un documento'}
-                        <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
-                      </label>
-                    </div>
-                    {errorEstilo && <div style={s.err}>{errorEstilo}</div>}
-                    <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
-                  </div>
-                ) : (
-                  <div style={{ ...s.ok, flex: 1 }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <p style={s.okText}>✅ Estilo de escritura guardado</p>
-                      {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '4px 0 0' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
-                    </div>
-                    <button onClick={() => { setEstiloGuardado(false); setResultadoEstilo(null); setEstiloTexto('') }}
-                      style={{ ...s.accionBtn, marginTop: 'auto', paddingTop: 8, alignSelf: 'center' }}>↑ Actualizar</button>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
+           </div>
 
           <div style={{ height: 40 }} />
 
