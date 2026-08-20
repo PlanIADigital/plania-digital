@@ -173,6 +173,7 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
   const [observacionesTexto, setObservacionesTexto] = useState('')
   const [analizandoObservaciones, setAnalizandoObservaciones] = useState(false)
   const [observacionesGuardadas, setObservacionesGuardadas] = useState(false)
+  const [modalObservacionesAbierto, setModalObservacionesAbierto] = useState(false)
   const [errorObservaciones, setErrorObservaciones] = useState('')
   const [resultadoObservaciones, setResultadoObservaciones] = useState<any>(null)
 
@@ -519,8 +520,9 @@ async function darDeBajaAlumno(id: string) {
     }
   }
 
-  function handleAnalizarObservaciones() {
-    analizarObservacionesConTexto(observacionesTexto)
+    async function handleAnalizarObservaciones() {
+    const exito = await analizarObservacionesConTexto(observacionesTexto)
+    if (exito) setModalObservacionesAbierto(false)
   }
 
   async function handleArchivoObservaciones(e: React.ChangeEvent<HTMLInputElement>) {
@@ -533,8 +535,9 @@ async function darDeBajaAlumno(id: string) {
       const data = await res.json()
       if (!data.texto) { setErrorObservaciones('No se pudo extraer el texto.'); return }
       const textoCombinado = observacionesTexto ? observacionesTexto + '\n\n' + data.texto : data.texto
-      const exito = await analizarObservacionesConTexto(textoCombinado)
-      if (!exito) setObservacionesTexto(textoCombinado)
+            const exito = await analizarObservacionesConTexto(textoCombinado)
+      if (exito) setModalObservacionesAbierto(false)
+      else setObservacionesTexto(textoCombinado)
     } catch { setErrorObservaciones('No se pudo extraer el texto.') }
   }
 
@@ -784,37 +787,17 @@ async function darDeBajaAlumno(id: string) {
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>2.2 · Áreas de Oportunidad</p>
                     <p style={s.desc}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
-                      {!observacionesGuardadas ? (
-                      <div style={{ flex: 1 }}>
-                        <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={3}
-                          placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
-                          style={s.textarea} />
-                                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
-                          <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
-                            style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                            {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
-                          </button>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                            {analizandoObservaciones ? '🔍 Analizando...' : '📎 Archivo'}
-                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} disabled={analizandoObservaciones} />
-                          </label>
-                          {/* [ago 2026] Solo aparece si ya había observaciones guardadas
-                              antes de entrar a editar — mismo patrón que Mi estilo de
-                              narración en Configuración. */}
-                          {resultadoObservaciones && (
-                            <button
-                              type="button"
-                              disabled={analizandoObservaciones}
-                              onClick={() => { setObservacionesGuardadas(true); setObservacionesTexto(''); setErrorObservaciones('') }}
-                              style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoObservaciones ? 'default' : 'pointer' }}>
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                        {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
-                        <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Opcional · al subir un archivo se analiza automáticamente</p>
+                                          {!observacionesGuardadas ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                        <button
+                          type="button"
+                          onClick={() => setModalObservacionesAbierto(true)}
+                          style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          ✍️ Redactar observaciones
+                        </button>
+                        <p style={{ fontSize: 10, color: '#aaa', marginTop: 8 }}>Opcional</p>
                       </div>
-                                            ) : (
+                      ) : (
                       <div style={{ ...s.ok, flex: 1 }}>
                         <p style={s.okText}>✅ Observaciones integradas</p>
                         <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
@@ -839,7 +822,7 @@ async function darDeBajaAlumno(id: string) {
                           {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
                             <button onClick={() => abrirHistorial('observaciones_directivo', '2.2 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
                           )}
-                          <button onClick={() => setObservacionesGuardadas(false)} style={s.accionBtn}>↑ Actualizar</button>
+                          <button onClick={() => setModalObservacionesAbierto(true)} style={s.accionBtn}>↑ Actualizar</button>
                         </div>
                       </div>
                     )}
@@ -848,6 +831,37 @@ async function darDeBajaAlumno(id: string) {
               </div>
 
             </div>
+
+            {/* [ago 2026] Modal de redacción/edición de 2.2 Áreas de Oportunidad —
+                sustituye al formulario inline (que hacía "saltar" el alto de la
+                tarjeta al entrar en modo edición). La tarjeta nunca cambia de
+                tamaño ahora; toda la edición ocurre en esta capa flotante. */}
+            {modalObservacionesAbierto && (
+              <DetalleModal titulo="2.2 · Áreas de oportunidad" onClose={() => setModalObservacionesAbierto(false)}>
+                <textarea value={observacionesTexto} onChange={e => setObservacionesTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
+                  placeholder="Ej: La directora me indicó trabajar más la expresión oral..."
+                  style={s.textarea} />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center', marginTop: 10 }}>
+                  <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
+                    style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
+                  </button>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {analizandoObservaciones ? '🔍 Analizando...' : '📎 Archivo'}
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} disabled={analizandoObservaciones} />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={analizandoObservaciones}
+                    onClick={() => { setModalObservacionesAbierto(false); setErrorObservaciones('') }}
+                    style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoObservaciones ? 'default' : 'pointer' }}>
+                    Cancelar
+                  </button>
+                </div>
+                {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
+                <p style={{ fontSize: 10, color: '#aaa', marginTop: 6, textAlign: 'center' as const }}>Opcional · al subir un archivo se analiza automáticamente</p>
+              </DetalleModal>
+            )}
 
                         {/* Sección 3 · Diagnóstico Pedagógico (fila 2, ancho completo) */}
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
