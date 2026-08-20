@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { supabase } from '@/lib/supabase'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const CAMPOS = [
   'Lenguajes',
@@ -695,7 +696,8 @@ function NuevaPlaneacionInner() {
           content_json: data.planeacion,
           eje_principal: ejePrincipal || null,
           eje_secundario: ejeElegidoPorEducadora || (ejeSecundarioDescartado ? null : ejeSecundario) || null,
-          school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
+           school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
+          ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
           status: 'active',
         }).select('id').single()
         if (saveError) {
