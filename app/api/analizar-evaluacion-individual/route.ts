@@ -10,6 +10,14 @@ const supabase = createClient(
 
 const SECCION_HISTORIAL = 'diagnostico_individual'
 
+// [ago 2026] 35 = máximo oficial de alumnos por grupo en preescolar México.
+// Medido: ~580 tokens por alumno con nivel de detalle real (observaciones,
+// NEE, fortalezas, áreas de oportunidad, 3 PDAs sugeridos). 35 alumnos ≈
+// 22,300 tokens base; 48,000 da margen de calidad ~2x sin escatimar, y
+// queda cómodo bajo el techo real del modelo (Haiku 4.5 soporta 64,000
+// tokens de salida). Costo adicional del margen: centavos de dólar.
+const MAX_TOKENS_ANALISIS = 48000
+
 function repararJSON(raw: string): string {
   const n = raw.length
   let resultado = ''
@@ -101,6 +109,39 @@ function segmentarPorAlumno(texto: string): { segmentos: string[]; huboMarcador:
   return { segmentos, huboMarcador: segmentos.length > 0 }
 }
 
+// [ago 2026] FIX truncamiento silencioso: con max_tokens insuficiente, el
+// modelo se quedó a la mitad del alumno 12 de 14 y el resto del análisis
+// (alumnos 13-14, pdas_prioritarios_grupo, alumnos_con_nee, alertas) nunca
+// se generó — pero como cerrarJSONTruncado() cierra el JSON a la fuerza,
+// el error pasó completamente silencioso y el conteo determinístico de
+// arriba mostró "14 alumnos" con confianza total sobre un análisis
+// incompleto. Ahora se revisa message.stop_reason: si el SDK confirma que
+// la respuesta se cortó por límite de tokens, se reintenta una vez antes
+// de rendirse — nunca se guarda silenciosamente un resultado truncado.
+async function llamarModeloConReintento(params: {
+  system: string
+  userContent: string
+}): Promise<{ responseText: string; truncado: boolean }> {
+  for (let intento = 1; intento <= 2; intento++) {
+    const message = await client.messages.create({
+      model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
+      max_tokens: MAX_TOKENS_ANALISIS,
+      system: params.system,
+      messages: [{ role: 'user', content: params.userContent }],
+    })
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+    if (message.stop_reason !== 'max_tokens') {
+      return { responseText, truncado: false }
+    }
+    console.error(`[analizar-evaluacion-individual] Intento ${intento}: respuesta truncada por max_tokens (stop_reason='max_tokens').`)
+    if (intento === 2) {
+      return { responseText, truncado: true }
+    }
+  }
+  // Inalcanzable, pero TypeScript necesita un retorno explícito
+  return { responseText: '', truncado: true }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { texto_evaluacion, grado, auth_uid } = await request.json()
@@ -137,10 +178,7 @@ export async function POST(request: NextRequest) {
       ? `\n\nNOTA CRÍTICA DE CONTEO: el texto ya viene dividido en exactamente ${segmentos.length} bloques delimitados por "=== ALUMNO N DE ${segmentos.length} ===". Debes generar EXACTAMENTE ${segmentos.length} objetos en el arreglo "alumnos" — ni uno más, ni uno menos, uno por cada bloque. Nunca generes un alumno adicional que no corresponda a uno de estos ${segmentos.length} bloques delimitados.`
       : ''
 
-    const message = await client.messages.create({
-      model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
-      max_tokens: 8000,
-      system: `Eres un agente pedagógico especializado en el Programa de Preescolar NEM 2022 Fase 2 de México.
+    const systemPrompt = `Eres un agente pedagógico especializado en el Programa de Preescolar NEM 2022 Fase 2 de México.
 
 Tu tarea es analizar la evaluación individual de alumnos de una educadora y extraer información pedagógica útil.
 
@@ -179,13 +217,22 @@ Responde SOLO con JSON válido, sin texto adicional:
   ],
   "alumnos_con_nee": 0,
   "alertas": []
-}`,
-      messages: [{
-        role: 'user',
-        content: `Analiza esta evaluación individual de ${grado || '2°'} grado preescolar.\n\nCATÁLOGO PDAs:\n${resumenPDAs}${notaSegmentacion}\n\nEVALUACIÓN:\n${textoParaModelo}`
-      }]
+}`
+
+    const userContent = `Analiza esta evaluación individual de ${grado || '2°'} grado preescolar.\n\nCATÁLOGO PDAs:\n${resumenPDAs}${notaSegmentacion}\n\nEVALUACIÓN:\n${textoParaModelo}`
+
+    const { responseText, truncado } = await llamarModeloConReintento({
+      system: systemPrompt,
+      userContent,
     })
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+
+    if (truncado) {
+      return NextResponse.json(
+        { error: 'El análisis quedó incompleto (documento muy extenso). Por favor intenta de nuevo — si el problema persiste, contacta soporte.' },
+        { status: 500 }
+      )
+    }
+
     let resultado
     try {
       resultado = parsearJSONRobusto(responseText)
