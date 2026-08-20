@@ -131,14 +131,23 @@ async function llamarModeloConReintento(params: {
   userContent: string
 }): Promise<{ responseText: string; truncado: boolean }> {
   for (let intento = 1; intento <= 2; intento++) {
-    const message = await client.messages.create({
+    // [ago 2026] Con max_tokens alto (48000), el SDK de Anthropic exige modo
+    // streaming — estima que una respuesta tan larga podría tardar más de
+    // 10 minutos y bloquea la petición no-streaming ANTES de enviarla (por
+    // eso el error anterior fallaba en <1s, sin tocar la red). stream()
+    // + finalMessage() da el mismo resultado que create(), solo que por
+    // streaming internamente — el resto del código no cambia.
+    const stream = client.messages.stream({
       model: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: MAX_TOKENS_ANALISIS,
       system: params.system,
       messages: [{ role: 'user', content: params.userContent }],
+    }, {
+      headers: { 'anthropic-beta': 'output-128k-2025-02-19' }
     })
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
-    if (message.stop_reason !== 'max_tokens') {
+    const finalMessage = await stream.finalMessage()
+    const responseText = finalMessage.content[0]?.type === 'text' ? finalMessage.content[0].text : ''
+    if (finalMessage.stop_reason !== 'max_tokens') {
       return { responseText, truncado: false }
     }
     console.error(`[analizar-evaluacion-individual] Intento ${intento}: respuesta truncada por max_tokens (stop_reason='max_tokens').`)
