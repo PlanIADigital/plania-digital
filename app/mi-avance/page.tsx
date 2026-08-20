@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { createClient } from '@/lib/supabase-browser'
 import { calcularEjesCubiertos } from '@/lib/cobertura'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
@@ -202,6 +203,7 @@ export default function MiAvancePage() {
         .from('pda_coverage')
         .select('campo, pda_literal, pda_id, is_primary, covered_on, times_used')
         .eq('user_id', user.id)
+        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
       setCoverage(cov || [])
 
       const { data: catalogo } = await supabase

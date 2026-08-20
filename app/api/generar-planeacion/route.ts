@@ -275,10 +275,11 @@ async function actualizarProgreso(
 async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promise<string> {
   if (!userId) return ''
   try {
-    const { data, error } = await supabaseAdmin
+        const { data, error } = await supabaseAdmin
       .from('pda_coverage_avanzada')
       .select('campo, contenido, pda_literal, is_primary, covered_on, times_used')
       .eq('user_id', userId)
+      .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
       .order('times_used', { ascending: false })
       .order('covered_on', { ascending: false })
       .limit(12)
