@@ -217,11 +217,11 @@ export default function ConfiguracionPage() {
                 />
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
                   <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
-                    style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar estilo'}
+                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar'}
                   </button>
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    {analizandoEstilo ? '🔍 Analizando...' : '📎 O sube un documento'}
+                    {analizandoEstilo ? '🔍 Analizando...' : '📎 Subir'}
                     <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
                   </label>
                   {/* [ago 2026] Solo aparece si había un estilo guardado antes de
