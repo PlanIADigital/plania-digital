@@ -66,6 +66,57 @@ antes de decidir — un cambio aquí toca la restricción única de la tabla.
 
 ---
 
+## 21 de agosto de 2026 — Migración completa de `pda_coverage` a `ciclo_escolar` real
+
+**Qué se descubrió:** la restricción única de `pda_coverage` era
+`UNIQUE (user_id, school_year_id, pda_literal)` — y como `school_year_id`
+siempre fue un valor fijo hardcodeado (ver entrada anterior, mismo día),
+esa restricción nunca distinguió ciclo real desde que existe la tabla.
+Esto significa que, hasta hoy, el "no repetir PDA" y el tracker de
+`times_used` mezclaban todos los ciclos sin darse cuenta — a pesar de que
+el diseño original (`CLAUDE.md`) dice explícitamente "sistema reinicia
+tracker PDA" al inicio de cada ciclo.
+
+**Origen del problema:** `pda_coverage` se llena vía un **trigger de
+Postgres** (`trigger_pda_coverage`, función `registrar_pda_coverage()`),
+no desde código de Next.js — por eso el primer `grep` en el código de la
+app no encontró ningún `insert`/`upsert` hacia esa tabla. El trigger
+copiaba `school_year_id` de `plannings.school_year_id` (también
+hardcodeado, ver entrada anterior) en cada inserción.
+
+**Fix aplicado (4 bloques SQL + 2 cambios de código):**
+1. Columna `ciclo_escolar` agregada a `pda_coverage`, backfill vía JOIN
+   con `plannings.ciclo_escolar` para las 26 filas con `planning_id`
+   válido; las 58 filas huérfanas (planeaciones ya no existentes, datos
+   de ejercicio de la cuenta de prueba) se etiquetaron por default al
+   ciclo activo — sin impacto real, es data de prueba.
+2. Restricción única movida de `(user_id, school_year_id, pda_literal)`
+   a `(user_id, ciclo_escolar, pda_literal)`.
+3. Función `registrar_pda_coverage()` actualizada para copiar
+   `NEW.ciclo_escolar` (de `plannings`, ya poblado desde el fix anterior)
+   y usar `ciclo_escolar` en el `ON CONFLICT` de las 4 secciones
+   (principal + 3 transversales).
+4. Vista `pda_coverage_avanzada` actualizada para exponer `ciclo_escolar`
+   (agregada al FINAL de la lista de columnas — Postgres no permite
+   insertar columnas en medio con `CREATE OR REPLACE VIEW`, solo agregar
+   al final; intentarlo en medio da error 42P16).
+5. Código: `mi-avance/page.tsx` y `obtenerTrayectoriaPDA()` en
+   `generar-planeacion/route.ts` ahora filtran por
+   `.eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)`.
+
+**Pendiente relacionado (no resuelto hoy, no bloqueante):** la consulta de
+`plannings` en `mi-avance/page.tsx` (líneas ~192-196) tampoco filtra por
+`ciclo_escolar` — sigue mostrando planeaciones de todos los ciclos
+mezcladas. Es la funcionalidad completa de "historial multi-ciclo con
+selector ciclo+grupo" ya anotada en el roadmap — no es un fix de una
+línea, requiere diseño de UI (selector), se deja aparte.
+
+**Archivos tocados:** `app/mi-avance/page.tsx`, `app/api/generar-planeacion/route.ts`
+
+**Tablas/columnas/funciones involucradas:** `pda_coverage.ciclo_escolar`, `pda_coverage_avanzada` (vista), función `registrar_pda_coverage()`, restricción única `pda_coverage_user_id_ciclo_escolar_pda_literal_key`
+
+---
+
 ## Plantilla para nuevas entradas
 
 ```
