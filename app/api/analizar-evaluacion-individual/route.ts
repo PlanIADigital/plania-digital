@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 
+// [ago 2026] Sin esto, la función corre con el límite de tiempo por defecto
+// de Vercel. Con max_tokens en 48,000 (necesario para cubrir 35 alumnos) y
+// el reintento automático si el modelo se trunca, una sola ejecución puede
+// tardar bastante más que antes (cuando max_tokens era 8,000 y terminaba
+// rápido). Mismo patrón ya usado en generar-planeacion/route.ts y
+// extraer-texto/route.ts.
+export const maxDuration = 300
+
 const client = new Anthropic()
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
