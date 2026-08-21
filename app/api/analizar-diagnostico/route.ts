@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
-
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -138,9 +138,10 @@ Analiza el diagnóstico, extrae las necesidades pedagógicas reales ignorando da
         // 5.4 Insertar la nueva versión activa
         const { error: historialError } = await supabase
           .from('documentos_historial')
-          .insert({
+                    .insert({
             user_id: userIdInterno,
             seccion: SECCION_HISTORIAL,
+            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
             version_numero: nuevaVersion,
             contenido: JSON.stringify(resultado.pdas_sugeridos),
             resumen: resumenCorto,

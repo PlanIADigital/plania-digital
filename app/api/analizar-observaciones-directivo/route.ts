@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
-
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -96,16 +96,16 @@ Responde ÚNICAMENTE con JSON puro, sin markdown ni backticks:
 
         const { error: historialError } = await supabaseAdmin
           .from('documentos_historial')
-          .insert({
+                    .insert({
             user_id: userIdInterno,
             seccion: SECCION_HISTORIAL,
+            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
             version_numero: nuevaVersion,
             contenido: JSON.stringify(resultado),
             resumen: resumenCorto,
             archivo_formato: 'texto',
             activo: true,
           })
-
         if (historialError) {
           console.error('Error guardando historial de observaciones de dirección:', historialError)
         }

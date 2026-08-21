@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 // rápido). Mismo patrón ya usado en generar-planeacion/route.ts y
 // extraer-texto/route.ts.
 export const maxDuration = 300
-
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -311,9 +311,10 @@ Responde SOLO con JSON válido, sin texto adicional:
         const resumenCorto = `${totalAlumnos} alumnos analizados${alumnosConNEE > 0 ? `, ${alumnosConNEE} con NEE` : ''}`
         const { error: historialError } = await supabase
           .from('documentos_historial')
-          .insert({
+                    .insert({
             user_id: userIdInterno,
             seccion: SECCION_HISTORIAL,
+            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
             version_numero: nuevaVersion,
             contenido: JSON.stringify(resultado),
             resumen: resumenCorto,
