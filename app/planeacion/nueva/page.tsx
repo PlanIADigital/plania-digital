@@ -1047,7 +1047,12 @@ function NuevaPlaneacionInner() {
                 <label style={s.label}>Nombre del proyecto *</label>
                 <input ref={refNombreInput} placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={{ ...s.input, ...estiloResaltado('nombre') }} />
                 {campoInvalido === 'nombre' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
-                <label style={s.label}>Situación problema *</label>
+                                <label style={s.label}>Situación problema *</label>
+                {problematicasPA.length === 0 && (
+                  <p style={{ fontSize: 12, color: '#92400E', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '8px 10px', margin: '0 0 8px' }}>
+                    💡 Aún no has subido tu Programa Analítico en Mi Grupo — cuando lo subas, aquí podrás elegir directamente entre las problemáticas de tu jardín en vez de escribirlas a mano.
+                  </p>
+                )}
                 {problematicasPA.length > 0 && (
                   <select
                     value=""
