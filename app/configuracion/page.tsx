@@ -18,6 +18,9 @@ export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+  const [editandoWhatsapp, setEditandoWhatsapp] = useState(false)
+  const [whatsappValor, setWhatsappValor] = useState('')
+  const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // [ago 2026] Trasladado desde app/mi-grupo/page.tsx (Sección 4) —
@@ -62,9 +65,23 @@ export default function ConfiguracionPage() {
       .update({ avatar_url: urlData.publicUrl + '?t=' + Date.now() })
       .eq('auth_uid', profile.auth_uid)
     if (updateErr) { setSaveMsg('⚠️ Error al guardar: ' + updateErr.message); setUploading(false); return }
-    setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
+        setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
     setSaveMsg('✅ Foto actualizada correctamente')
     setUploading(false)
+  }
+
+  async function guardarWhatsapp() {
+    if (!profile || !whatsappValor.trim()) return
+    setGuardandoWhatsapp(true)
+    const { error } = await supabase
+      .from('users')
+      .update({ whatsapp: whatsappValor.trim() })
+      .eq('auth_uid', profile.auth_uid)
+    if (!error) {
+      setProfile((prev: any) => ({ ...prev, whatsapp: whatsappValor.trim() }))
+      setEditandoWhatsapp(false)
+    }
+    setGuardandoWhatsapp(false)
   }
 
   // [ago 2026] Trasladado desde app/mi-grupo/page.tsx tal cual — misma
@@ -195,12 +212,51 @@ export default function ConfiguracionPage() {
               { label: 'CCT principal', value: profile?.cct_primary },
               { label: 'Turno', value: turnoLabel[profile?.shift_primary] ?? profile?.shift_primary },
               { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
-            ].map(item => (
+                        ].map(item => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
                 <span style={{ fontSize: 13, color: '#888' }}>{item.label}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{item.value || '—'}</span>
               </div>
             ))}
+            {/* WhatsApp — único campo editable de esta tarjeta, el resto son
+                de solo lectura porque dependen de otro flujo (CCT, rol, etc.) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: '#888' }}>WhatsApp</span>
+              {!editandoWhatsapp ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{profile?.whatsapp || '—'}</span>
+                  <button
+                    onClick={() => { setWhatsappValor(profile?.whatsapp || ''); setEditandoWhatsapp(true) }}
+                    style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    Editar
+                  </button>
+                </span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    value={whatsappValor}
+                    onChange={e => setWhatsappValor(e.target.value)}
+                    placeholder="10 dígitos"
+                    style={{ width: 130, padding: '5px 8px', fontSize: 13, borderRadius: 6, border: '1px solid #D8D6F0', outline: 'none' }}
+                  />
+                  <button
+                    onClick={guardarWhatsapp}
+                    disabled={guardandoWhatsapp || !whatsappValor.trim()}
+                    style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {guardandoWhatsapp ? '...' : 'Guardar'}
+                  </button>
+                  <button
+                    onClick={() => setEditandoWhatsapp(false)}
+                    disabled={guardandoWhatsapp}
+                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer' }}
+                  >
+                    Cancelar
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* MI ESTILO DE NARRACIÓN — tercera columna, mismo grid */}
