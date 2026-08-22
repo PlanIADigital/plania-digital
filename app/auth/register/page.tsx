@@ -10,7 +10,7 @@ const ROLES = [
   { value: 'educador', label: 'Educador', activo: true },
   { value: 'maestra_musica', label: 'Maestra de música', activo: false },
   { value: 'maestro_musica', label: 'Maestro de música', activo: false },
-  { value: 'directivo', label: 'Directivo', activo: true },
+  { value: 'directivo', label: 'Directivo', activo: false },
 ]
 
 const ROLES_ACTIVOS = ROLES.filter(r => r.activo)
