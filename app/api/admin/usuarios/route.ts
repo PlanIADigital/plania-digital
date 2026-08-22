@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('full_name, email, role, cct_primary, membership_status, created_at')
+      .select('auth_uid, full_name, email, role, cct_primary, membership_status, created_at, es_fundadora')
       .eq('is_super_admin', false)
       .order('created_at', { ascending: false })
 
