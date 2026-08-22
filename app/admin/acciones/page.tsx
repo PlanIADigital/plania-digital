@@ -22,7 +22,7 @@ export default function AccionesPage() {
       href: '/admin/calendario',
       link: 'Ir a Calendario SEP →',
     },
-    {
+        {
       frecuencia: 'Inicio de ciclo',
       color: '#EEEDFE',
       texto: '#3C3489',
@@ -30,6 +30,15 @@ export default function AccionesPage() {
       desc: 'datos.gob.mx → dataset: catalogo_centros_trabajo_sep. Requiere sesión activa en el sitio.',
       href: '/admin/cct',
       link: 'Ir a Catálogo CCTs →',
+    },
+    {
+      frecuencia: 'Fin de ciclo',
+      color: '#FEE2E2',
+      texto: '#991B1B',
+      label: 'Cerrar ciclo escolar',
+      desc: 'Congela diagnósticos y limpia campos activos de todas las cuentas. Ejecutar cuando la mayoría de los calendarios estatales ya haya terminado clases (normalmente primera-segunda semana de julio).',
+      href: '/admin/cerrar-ciclo',
+      link: 'Ir a Cerrar Ciclo →',
     },
     {
       frecuencia: 'Por evento',
