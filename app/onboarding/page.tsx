@@ -15,6 +15,7 @@ const TURNOS = ['matutino', 'vespertino', 'discontinuo']
 export default function OnboardingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [verificando, setVerificando] = useState(true)
   const [error, setError] = useState('')
   const [cctInfo, setCctInfo] = useState<{ estado: string; sostenimiento: string; nivel: string; valido: boolean; nombre?: string; error?: string } | null>(null)
   const [cctLoading, setCctLoading] = useState(false)
@@ -40,6 +41,7 @@ export default function OnboardingPage() {
         return
       }
       if (data?.role) setUserRole(data.role)
+      setVerificando(false)
     }
     loadRole()
   }, [])
@@ -131,7 +133,13 @@ export default function OnboardingPage() {
     borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
     marginBottom: 18, background: 'white', cursor: 'pointer'
   }
-
+    if (verificando) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#3D3A8C', fontSize: 14 }}>Cargando...</p>
+      </div>
+    )
+  }
   return (
     <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 480 }}>
