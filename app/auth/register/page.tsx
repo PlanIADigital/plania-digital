@@ -19,13 +19,14 @@ export default function RegisterPage() {
   const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleRegister() {
-    if (!fullName || !email || !password || !role) { setError('Completa todos los campos, incluyendo tu rol'); return }
+    if (!fullName || !email || !whatsapp || !password || !role) { setError('Completa todos los campos, incluyendo tu rol'); return }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     setError('')
@@ -33,7 +34,7 @@ export default function RegisterPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName, role },
+        data: { full_name: fullName, role, whatsapp },
         emailRedirectTo: `${window.location.origin}/onboarding`
       }
     })
@@ -87,14 +88,20 @@ export default function RegisterPage() {
             style={inputStyle}
           />
 
-          <label style={labelStyle}>Correo electrónico</label>
+                    <label style={labelStyle}>Correo electrónico</label>
           <input
             placeholder="tu@correo.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             style={inputStyle}
           />
-
+          <label style={labelStyle}>WhatsApp</label>
+          <input
+            placeholder="10 dígitos, ej. 8112345678"
+            value={whatsapp}
+            onChange={e => setWhatsapp(e.target.value)}
+            style={inputStyle}
+          />
           <label style={labelStyle}>Contraseña</label>
           <input
             placeholder="Mínimo 6 caracteres"
