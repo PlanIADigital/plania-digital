@@ -33,8 +33,12 @@ export default function OnboardingPage() {
         if (s) { session = s; break }
         await new Promise(r => setTimeout(r, 800))
       }
-      if (!session) { router.push('/auth/login'); return }
-      const { data } = await supabase.from('users').select('role').eq('auth_uid', session.user.id).single()
+            if (!session) { router.push('/auth/login'); return }
+      const { data } = await supabase.from('users').select('role, profile_completed').eq('auth_uid', session.user.id).single()
+      if (data?.profile_completed) {
+        router.push(data.role === 'directivo' ? '/directivo/dashboard' : '/dashboard')
+        return
+      }
       if (data?.role) setUserRole(data.role)
     }
     loadRole()
