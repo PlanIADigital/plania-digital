@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import DetalleModal from '@/components/DetalleModal'
 
 const supabase = createClient()
 
@@ -49,6 +50,8 @@ export default function VerPlaneacionPage() {
   // en vuelo, evitando doble clic o carrera de peticiones).
   const [guardandoCodigo, setGuardandoCodigo] = useState<string>('')
   const [rubricasDB, setRubricasDB] = useState<any[]>([])
+  const [modalExportarAbierto, setModalExportarAbierto] = useState(false)
+  const [descargandoEstilo, setDescargandoEstilo] = useState<string | null>(null)
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -110,7 +113,47 @@ export default function VerPlaneacionPage() {
 const instrumentosEvaluacion: any[] = rubricasDB.length > 0
   ? rubricasDB.map(r => ({ ...r.content_json, _rubricaId: r.id }))
   : (Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : []))
-  const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
+    const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
+
+  async function descargarWord(estilo: 'institucional' | 'clasica') {
+    setDescargandoEstilo(estilo)
+    try {
+      const res = await fetch('/api/exportar-word', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estilo,
+          proyecto: {
+            project_name: planeacion.project_name,
+            situacion_problema: planeacion.situacion_problema,
+            finalidad: planeacion.finalidad,
+            metodologia: planeacion.metodologia,
+            starts_on: planeacion.starts_on,
+            ends_on: planeacion.ends_on,
+            campo_principal: camposFormativos[0] || '',
+            pda_principal: planeacion.pda_literal,
+          },
+          dias,
+          ajustes_por_dia: content.ajustes_por_dia || [],
+          instrumentos_evaluacion: instrumentosEvaluacion,
+        }),
+      })
+      if (!res.ok) throw new Error('No se pudo generar el documento')
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${planeacion.project_name || 'planeacion'}.docx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      setModalExportarAbierto(false)
+    } catch {
+      alert('Hubo un error al generar el documento. Intenta de nuevo.')
+    }
+    setDescargandoEstilo(null)
+  }
 
   // [jul 2026] Construye el código real (LEN-1, SPC-14...) para un PDA
   // dado su campo formativo y su id de pda_catalog. Regresa null si
@@ -279,12 +322,20 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
       <main style={{ flex: 1, padding: '32px 40px',  }}>
 
         {/* Encabezado */}
-        <div style={{ marginBottom: 32 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#3D3A8C', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>← Volver</button>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{planeacion.project_name}</h1>
-          <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>
-            {planeacion.metodologia} · {planeacion.starts_on} al {planeacion.ends_on} · {dias.length} días hábiles
-          </p>
+        <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' as const }}>
+          <div>
+            <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#3D3A8C', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>← Volver</button>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1A2E', margin: '0 0 4px' }}>{planeacion.project_name}</h1>
+            <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>
+              {planeacion.metodologia} · {planeacion.starts_on} al {planeacion.ends_on} · {dias.length} días hábiles
+            </p>
+          </div>
+          <button
+            onClick={() => setModalExportarAbierto(true)}
+            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+          >
+            ⬇️ Descargar Word
+          </button>
         </div>
 
         {/* Datos del proyecto */}
@@ -585,7 +636,7 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
             (antes de jul 2026) que aún guardan el bloque único al final.
             Si ya existe el formato nuevo por día, esta sección no se
             muestra para evitar duplicar la información. */}
-        {!hayAjustesPorDia && ajustesLegacyTexto && (
+                {!hayAjustesPorDia && ajustesLegacyTexto && (
           <>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '32px 0 16px' }}>Ajustes razonables</h2>
             <div style={{ ...s.card, padding: '16px 20px' }}>
@@ -594,6 +645,43 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
           </>
         )}
 
+        {/* [ago 2026] Modal de exportación a Word — 2 tarjetas seleccionables,
+            cada una dispara la descarga con su plantilla correspondiente. */}
+        {modalExportarAbierto && (
+          <DetalleModal titulo="Descargar como Word" onClose={() => setModalExportarAbierto(false)}>
+            <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 16px' }}>Elige el estilo con el que quieres exportar tu planeación.</p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+              {[
+                { id: 'institucional' as const, nombre: 'Institucional Índigo', desc: 'Calibri, colores de marca PlanIA', fuenteMuestra: 'sans-serif', color: '#3D3A8C', acento: '#00A896' },
+                { id: 'clasica' as const, nombre: 'Clásica Serif', desc: 'Georgia, tono sobrio y editorial', fuenteMuestra: 'Georgia, serif', color: '#1A1A2E', acento: '#3D3A8C' },
+              ].map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => descargarWord(p.id)}
+                  disabled={descargandoEstilo !== null}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' as const,
+                    background: 'white', border: '1.5px solid #E0DFF5', borderRadius: 10, padding: '14px 16px',
+                    cursor: descargandoEstilo !== null ? 'default' : 'pointer', opacity: descargandoEstilo && descargandoEstilo !== p.id ? 0.5 : 1,
+                  }}
+                >
+                  <div style={{ width: 48, height: 60, borderRadius: 4, background: 'white', border: `2px solid ${p.color}`, flexShrink: 0, padding: 6, display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                    <div style={{ height: 4, width: '70%', background: p.color, borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '90%', background: p.acento, borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '85%', background: '#D1D5DB', borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '85%', background: '#D1D5DB', borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '60%', background: '#D1D5DB', borderRadius: 1 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#1A1A2E', fontFamily: p.fuenteMuestra }}>{p.nombre}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: '#6B7280' }}>{p.desc}</p>
+                  </div>
+                  {descargandoEstilo === p.id && <span style={{ fontSize: 12, color: '#3D3A8C' }}>Generando...</span>}
+                </button>
+              ))}
+            </div>
+          </DetalleModal>
+        )}
       </main>
       </Sidebar>}
     </div>
