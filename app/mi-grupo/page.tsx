@@ -621,6 +621,23 @@ async function darDeBajaAlumno(id: string) {
             </p>
           </div>
 
+                    {/* [ago 2026] Banner de MÍA — avisa cuando falta 3.1 o 3.2 (Diagnóstico
+              Grupal/Individual), los dos insumos clave para personalizar las
+              planeaciones. No bloquea nada (Cero Fricción) — la educadora
+              puede seguir generando planeaciones sin ellos, solo se le
+              recuerda que no estarán personalizadas hasta que los suba. */}
+          {(!guardado || !evalCompleta) && (
+            <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#92400E', lineHeight: 1.6 }}>
+                💡 <strong>MÍA:</strong> {!guardado && !evalCompleta
+                  ? 'aún no has subido tu Diagnóstico Grupal ni tu Diagnóstico Individual'
+                  : !guardado
+                    ? 'aún no has subido tu Diagnóstico Grupal'
+                    : 'aún no has subido tu Diagnóstico Individual'
+                } — tus planeaciones no estarán personalizadas hasta entonces.
+              </p>
+            </div>
+          )}
           {discrepanciaAlumnos && (
             <div style={{ background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' as const }}>
               <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', lineHeight: 1.6, flex: 1, minWidth: 260 }}>
