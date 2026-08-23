@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 
 const supabase = createClient()
 
+const LEGAL_VERSION = '2026-08-v1'
+
 const ROLES = [
   { value: 'educadora', label: 'Educadora', activo: true },
   { value: 'educador', label: 'Educador', activo: true },
@@ -22,19 +24,30 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('')
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
+  const [aceptaPrivacidad, setAceptaPrivacidad] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleRegister() {
     if (!fullName || !email || !whatsapp || !password || !role) { setError('Completa todos los campos, incluyendo tu rol'); return }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (!aceptaTerminos || !aceptaPrivacidad) { setError('Debes aceptar los Términos y el Aviso de Privacidad para continuar'); return }
     setLoading(true)
     setError('')
+    const ahora = new Date().toISOString()
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role, whatsapp },
+        data: {
+          full_name: fullName,
+          role,
+          whatsapp,
+          terminos_aceptados_en: ahora,
+          privacidad_aceptada_en: ahora,
+          legal_version: LEGAL_VERSION,
+        },
         emailRedirectTo: `${window.location.origin}/onboarding`
       }
     })
@@ -88,7 +101,7 @@ export default function RegisterPage() {
             style={inputStyle}
           />
 
-                    <label style={labelStyle}>Correo electrónico</label>
+          <label style={labelStyle}>Correo electrónico</label>
           <input
             placeholder="tu@correo.com"
             value={email}
@@ -123,6 +136,36 @@ export default function RegisterPage() {
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={aceptaTerminos}
+              onChange={e => setAceptaTerminos(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <span style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>
+              He leído y acepto los{' '}
+              <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: '#3D3A8C', fontWeight: 600 }}>
+                Términos y Condiciones
+              </a>
+            </span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 20, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={aceptaPrivacidad}
+              onChange={e => setAceptaPrivacidad(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <span style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>
+              He leído y acepto el{' '}
+              <a href="/privacidad" target="_blank" rel="noopener noreferrer" style={{ color: '#3D3A8C', fontWeight: 600 }}>
+                Aviso de Privacidad
+              </a>
+            </span>
+          </label>
 
           {error && (
             <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
