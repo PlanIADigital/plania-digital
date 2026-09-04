@@ -1,7 +1,6 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
-import { MISIONES_ACTIVO } from '@/lib/featureFlags'
 import { useTheme } from '@/components/ThemeProvider'
 
 const supabase = createClient()
@@ -12,7 +11,7 @@ const NAV_ITEMS = [
   { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
   { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
   { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
-  { label: 'Misiones',          path: '/misiones',         icon: '🎓', activo: MISIONES_ACTIVO },
+  { label: 'Misiones',         path: '/misiones',         icon: '🎓', activo: false },
   { label: 'Calendario',       path: null,                icon: '📅', activo: false },
   { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
   { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
