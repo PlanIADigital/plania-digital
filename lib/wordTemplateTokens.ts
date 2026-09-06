@@ -25,11 +25,14 @@ export const PAGINA = {
   ancho: 15840,   // 11"
   alto: 12240,    // 8.5"
 
+  // OJO: nombres en inglés (top/bottom/left/right) porque este
+  // objeto se pasa TAL CUAL a la propiedad `margin` de docx —
+  // no traducir, o vuelve a tronar el tipo IPageMarginAttributes.
   margenes: {
-    arriba: 1000,   // 0.694"
-    abajo: 1000,
-    izquierda: 1000,
-    derecha: 1000,
+    top: 1000,     // 0.694"
+    bottom: 1000,
+    left: 1000,
+    right: 1000,
   },
 } as const;
 
