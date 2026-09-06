@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import DetalleModal from '@/components/DetalleModal'
 
 const supabase = createClient()
 
@@ -50,8 +49,11 @@ export default function VerPlaneacionPage() {
   // en vuelo, evitando doble clic o carrera de peticiones).
   const [guardandoCodigo, setGuardandoCodigo] = useState<string>('')
   const [rubricasDB, setRubricasDB] = useState<any[]>([])
-  const [modalExportarAbierto, setModalExportarAbierto] = useState(false)
-  const [descargandoEstilo, setDescargandoEstilo] = useState<string | null>(null)
+  // [sep 2026] Ya no hay modal de selección de estilo — solo existe
+  // "Institucional Índigo", así que el botón descarga directo. Este
+  // booleano solo controla el estado visual del botón mientras genera.
+  const [exportando, setExportando] = useState(false)
+
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -108,21 +110,90 @@ export default function VerPlaneacionPage() {
   // muy antiguas generadas antes de este cambio, para no romper su
   // vista si alguien las vuelve a abrir.
   // [ago 2026] Las rúbricas ahora viven en la tabla dedicada `rubrics` (ver rubricasDB, cargado en el useEffect inicial).
-// Respaldo a content.instrumentos_evaluacion / instrumento_evaluacion solo para planeaciones generadas
-// antes de esta migración, que nunca llegaron a insertar filas en `rubrics`.
-const instrumentosEvaluacion: any[] = rubricasDB.length > 0
-  ? rubricasDB.map(r => ({ ...r.content_json, _rubricaId: r.id }))
-  : (Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : []))
-    const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
+  // Respaldo a content.instrumentos_evaluacion / instrumento_evaluacion solo para planeaciones generadas
+  // antes de esta migración, que nunca llegaron a insertar filas en `rubrics`.
+  const instrumentosEvaluacion: any[] = rubricasDB.length > 0
+    ? rubricasDB.map(r => ({ ...r.content_json, _rubricaId: r.id }))
+    : (Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : []))
+  const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
 
-  async function descargarWord(estilo: 'institucional' | 'clasica') {
-    setDescargandoEstilo(estilo)
+  // [jul 2026] Campos formativos involucrados: el principal siempre
+  // primero, luego cada campo de un transversal ACTIVO que no se haya
+  // listado ya (evita duplicar si un transversal comparte el mismo
+  // campo que el principal).
+  const camposFormativos: string[] = []
+  if (planeacion.pda_campo) camposFormativos.push(planeacion.pda_campo)
+  ;[1, 2, 3].forEach(n => {
+    const activo = planeacion[`transversal_${n}_activo`]
+    const campo = planeacion[`transversal_${n}_campo`]
+    if (activo && campo && !camposFormativos.includes(campo)) camposFormativos.push(campo)
+  })
+
+  function codigoPDA(campo: string | null, id: string | null): string | null {
+    if (!campo || !id) return null
+    const prefijo = PREFIJO_POR_CAMPO[campo]
+    const posicion = posicionesPorId[id]
+    if (!prefijo || posicion == null) return null
+    return `${prefijo}-${posicion}`
+  }
+
+  // [jul 2026] Segmentos de PDA a mostrar: principal primero (con su
+  // código si está disponible), luego cada transversal activo en su
+  // propia línea, separados por salto — para que quede claro que el
+  // proyecto está vinculado a varios PDAs, no solo al principal.
+  const segmentosPDA: { codigo: string | null; texto: string }[] = []
+  if (planeacion.pda_literal) {
+    segmentosPDA.push({ codigo: codigoPDA(planeacion.pda_campo, planeacion.pda_id), texto: planeacion.pda_literal })
+  }
+  ;[1, 2, 3].forEach(n => {
+    const activo = planeacion[`transversal_${n}_activo`]
+    const pdaTexto = planeacion[`transversal_${n}_pda`]
+    if (activo && pdaTexto) {
+      segmentosPDA.push({
+        codigo: codigoPDA(planeacion[`transversal_${n}_campo`], planeacion[`transversal_${n}_id`]),
+        texto: pdaTexto,
+      })
+    }
+  })
+
+  // [sep 2026] Tabla curricular completa para el Word — un renglón por
+  // cada campo formativo trabajado (principal + transversales activos),
+  // cada uno con su propio contenido y PDA. Esto alimenta directamente
+  // a campos_formativos en el body de exportar-word.
+  const tablaCurricularParaWord = [
+    {
+      campo: planeacion.pda_campo || '',
+      contenido: planeacion.pda_contenido || '',
+      pdaCodigo: segmentosPDA[0]?.codigo || null,
+      pdaTexto: segmentosPDA[0]?.texto || '',
+    },
+    ...[1, 2, 3].map(n => {
+      const activo = planeacion[`transversal_${n}_activo`]
+      const campo = planeacion[`transversal_${n}_campo`]
+      if (!activo || !campo) return null
+      return {
+        campo,
+        contenido: planeacion[`transversal_${n}_contenido`] || '',
+        pdaCodigo: codigoPDA(campo, planeacion[`transversal_${n}_id`]),
+        pdaTexto: planeacion[`transversal_${n}_pda`] || '',
+      }
+    }).filter((c): c is NonNullable<typeof c> => !!c),
+  ]
+
+  async function descargarWord() {
+    setExportando(true)
     try {
       const res = await fetch('/api/exportar-word', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          estilo,
+          institucional: {
+            jardin: profile.school_name,
+            cct: profile.cct_primary,
+            educadora: profile.full_name,
+            grado: profile.grado,
+            turno: profile.shift_primary,
+          },
           proyecto: {
             project_name: planeacion.project_name,
             situacion_problema: planeacion.situacion_problema,
@@ -130,10 +201,14 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
             metodologia: planeacion.metodologia,
             starts_on: planeacion.starts_on,
             ends_on: planeacion.ends_on,
-            campo_principal: camposFormativos[0] || '',
-            pda_principal: planeacion.pda_literal,
           },
+          campos_formativos: tablaCurricularParaWord,
+          ejes: [
+            { nombre: planeacion.eje_principal },
+            { nombre: planeacion.eje_secundario },
+          ].filter(e => !!e.nombre),
           dias,
+          dias_especiales: diasEspeciales,
           ajustes_por_dia: content.ajustes_por_dia || [],
           instrumentos_evaluacion: instrumentosEvaluacion,
         }),
@@ -148,19 +223,12 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-      setModalExportarAbierto(false)
     } catch {
       alert('Hubo un error al generar el documento. Intenta de nuevo.')
     }
-    setDescargandoEstilo(null)
+    setExportando(false)
   }
 
-  // [jul 2026] Construye el código real (LEN-1, SPC-14...) para un PDA
-  // dado su campo formativo y su id de pda_catalog. Regresa null si
-  // falta cualquier pieza (id no guardado, campo sin prefijo
-  // conocido, etc.) — en ese caso el llamador simplemente muestra el
-  // texto literal sin código, sin romper la vista.
-  // texto literal sin código, sin romper la vista.
   async function descartarRubrica(rubricaId: string) {
     const confirmar = window.confirm('¿Descartar esta rúbrica? Ya no aparecerá en esta planeación.')
     if (!confirmar) return
@@ -171,7 +239,6 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
     }
     setRubricasDB(prev => prev.filter(r => r.id !== rubricaId))
   }
-  // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
   // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
   // pantalla al instante (optimista) y en paralelo guarda en
   // Supabase vía el endpoint. Si el guardado falla, revierte el
@@ -217,45 +284,6 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
     }
     setGuardandoCodigo('')
   }
-
-  function codigoPDA(campo: string | null, id: string | null): string | null {
-    if (!campo || !id) return null
-    const prefijo = PREFIJO_POR_CAMPO[campo]
-    const posicion = posicionesPorId[id]
-    if (!prefijo || posicion == null) return null
-    return `${prefijo}-${posicion}`
-  }
-
-  // [jul 2026] Campos formativos involucrados: el principal siempre
-  // primero, luego cada campo de un transversal ACTIVO que no se haya
-  // listado ya (evita duplicar si un transversal comparte el mismo
-  // campo que el principal).
-  const camposFormativos: string[] = []
-  if (planeacion.pda_campo) camposFormativos.push(planeacion.pda_campo)
-  ;[1, 2, 3].forEach(n => {
-    const activo = planeacion[`transversal_${n}_activo`]
-    const campo = planeacion[`transversal_${n}_campo`]
-    if (activo && campo && !camposFormativos.includes(campo)) camposFormativos.push(campo)
-  })
-
-  // [jul 2026] Segmentos de PDA a mostrar: principal primero (con su
-  // código si está disponible), luego cada transversal activo en su
-  // propia línea, separados por salto — para que quede claro que el
-  // proyecto está vinculado a varios PDAs, no solo al principal.
-  const segmentosPDA: { codigo: string | null; texto: string }[] = []
-  if (planeacion.pda_literal) {
-    segmentosPDA.push({ codigo: codigoPDA(planeacion.pda_campo, planeacion.pda_id), texto: planeacion.pda_literal })
-  }
-  ;[1, 2, 3].forEach(n => {
-    const activo = planeacion[`transversal_${n}_activo`]
-    const pdaTexto = planeacion[`transversal_${n}_pda`]
-    if (activo && pdaTexto) {
-      segmentosPDA.push({
-        codigo: codigoPDA(planeacion[`transversal_${n}_campo`], planeacion[`transversal_${n}_id`]),
-        texto: pdaTexto,
-      })
-    }
-  })
 
   // Ajustes por día (formato nuevo, jul 2026). Puede haber VARIAS
   // entradas con el mismo número de día (una por cada alumno) — se
@@ -331,10 +359,11 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
             </p>
           </div>
           <button
-            onClick={() => setModalExportarAbierto(true)}
-            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+            onClick={descargarWord}
+            disabled={exportando}
+            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: exportando ? 'default' : 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0, opacity: exportando ? 0.7 : 1 }}
           >
-            ⬇️ Descargar Word
+            {exportando ? 'Generando…' : '⬇️ Descargar Word'}
           </button>
         </div>
 
@@ -636,51 +665,13 @@ const instrumentosEvaluacion: any[] = rubricasDB.length > 0
             (antes de jul 2026) que aún guardan el bloque único al final.
             Si ya existe el formato nuevo por día, esta sección no se
             muestra para evitar duplicar la información. */}
-                {!hayAjustesPorDia && ajustesLegacyTexto && (
+        {!hayAjustesPorDia && ajustesLegacyTexto && (
           <>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E', margin: '32px 0 16px' }}>Ajustes razonables</h2>
             <div style={{ ...s.card, padding: '16px 20px' }}>
               <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' as const }}>{ajustesLegacyTexto}</p>
             </div>
           </>
-        )}
-
-        {/* [ago 2026] Modal de exportación a Word — 2 tarjetas seleccionables,
-            cada una dispara la descarga con su plantilla correspondiente. */}
-        {modalExportarAbierto && (
-          <DetalleModal titulo="Descargar como Word" onClose={() => setModalExportarAbierto(false)}>
-            <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 16px' }}>Elige el estilo con el que quieres exportar tu planeación.</p>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-              {[
-                { id: 'institucional' as const, nombre: 'Institucional Índigo', desc: 'Calibri, colores de marca PlanIA', fuenteMuestra: 'sans-serif', color: '#3D3A8C', acento: '#00A896' },
-                { id: 'clasica' as const, nombre: 'Clásica Serif', desc: 'Georgia, tono sobrio y editorial', fuenteMuestra: 'Georgia, serif', color: '#1A1A2E', acento: '#3D3A8C' },
-              ].map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => descargarWord(p.id)}
-                  disabled={descargandoEstilo !== null}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' as const,
-                    background: 'white', border: '1.5px solid #E0DFF5', borderRadius: 10, padding: '14px 16px',
-                    cursor: descargandoEstilo !== null ? 'default' : 'pointer', opacity: descargandoEstilo && descargandoEstilo !== p.id ? 0.5 : 1,
-                  }}
-                >
-                  <div style={{ width: 48, height: 60, borderRadius: 4, background: 'white', border: `2px solid ${p.color}`, flexShrink: 0, padding: 6, display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
-                    <div style={{ height: 4, width: '70%', background: p.color, borderRadius: 1 }} />
-                    <div style={{ height: 2, width: '90%', background: p.acento, borderRadius: 1 }} />
-                    <div style={{ height: 2, width: '85%', background: '#D1D5DB', borderRadius: 1 }} />
-                    <div style={{ height: 2, width: '85%', background: '#D1D5DB', borderRadius: 1 }} />
-                    <div style={{ height: 2, width: '60%', background: '#D1D5DB', borderRadius: 1 }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#1A1A2E', fontFamily: p.fuenteMuestra }}>{p.nombre}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: '#6B7280' }}>{p.desc}</p>
-                  </div>
-                  {descargandoEstilo === p.id && <span style={{ fontSize: 12, color: '#3D3A8C' }}>Generando...</span>}
-                </button>
-              ))}
-            </div>
-          </DetalleModal>
         )}
       </main>
       </Sidebar>}
