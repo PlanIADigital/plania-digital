@@ -664,6 +664,7 @@ function NuevaPlaneacionInner() {
         setProgreso(prev => ({ ...prev, estado: 'completado', faseActual: '¡Tu planeación está lista!' }))
         await new Promise(r => setTimeout(r, TIEMPO_CONFIRMACION_FINAL))
         setResult(data.planeacion)
+           console.log('🔍 DEBUG metodologia:', JSON.stringify(form.metodologia), '| form completo:', form)
         const { data: savedData, error: saveError } = await supabase.from('plannings').insert({
           user_id: profile.id,
           project_name: form.nombre_proyecto,
