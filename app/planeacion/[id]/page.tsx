@@ -239,53 +239,7 @@ export default function VerPlaneacionPage() {
     }
     setRubricasDB(prev => prev.filter(r => r.id !== rubricaId))
   }
-  // [jul 2026] Marca el nivel de logro de un alumno: actualiza la
-  // pantalla al instante (optimista) y en paralelo guarda en
-  // Supabase vía el endpoint. Si el guardado falla, revierte el
-  // cambio visual y muestra el error — nunca deja la pantalla
-  // mostrando algo que no se guardó de verdad.
-  async function marcarNivel(codigo: string, nivelNuevo: string) {
-    const nivelAnterior = planeacion?.content_json?.instrumento_evaluacion?.registro_alumnos
-      ?.find((a: any) => a.codigo === codigo)?.nivel_marcado || null
-
-    setGuardandoCodigo(codigo)
-    setPlaneacion((prev: any) => {
-      const content = prev.content_json || prev.content
-      const instrumento = content.instrumento_evaluacion
-      const registroActualizado = instrumento.registro_alumnos.map((a: any) =>
-        a.codigo === codigo ? { ...a, nivel_marcado: nivelNuevo || null } : a
-      )
-      const contentActualizado = { ...content, instrumento_evaluacion: { ...instrumento, registro_alumnos: registroActualizado } }
-      return prev.content_json ? { ...prev, content_json: contentActualizado } : { ...prev, content: contentActualizado }
-    })
-
-    try {
-      const res = await fetch('/api/marcar-nivel-alumno', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auth_uid: authUid, planning_id: params.id, codigo, nivel: nivelNuevo }),
-      })
-      const data = await res.json()
-      if (!data.ok) {
-        // Revertir si falló
-        setPlaneacion((prev: any) => {
-          const content = prev.content_json || prev.content
-          const instrumento = content.instrumento_evaluacion
-          const registroRevertido = instrumento.registro_alumnos.map((a: any) =>
-            a.codigo === codigo ? { ...a, nivel_marcado: nivelAnterior } : a
-          )
-          const contentRevertido = { ...content, instrumento_evaluacion: { ...instrumento, registro_alumnos: registroRevertido } }
-          return prev.content_json ? { ...prev, content_json: contentRevertido } : { ...prev, content: contentRevertido }
-        })
-        alert('No se pudo guardar el nivel: ' + (data.error || 'error desconocido'))
-      }
-    } catch {
-      alert('Error de conexión al guardar el nivel.')
-    }
-    setGuardandoCodigo('')
-  }
-
-  // Ajustes por día (formato nuevo, jul 2026). Puede haber VARIAS
+    // Ajustes por día (formato nuevo, jul 2026). Puede haber VARIAS
   // entradas con el mismo número de día (una por cada alumno) — se
   // ACUMULAN en una lista, nunca se sobrescriben entre sí.
   const ajustesPorDia: { numero: number; codigo?: string; ajuste: string }[] = content.ajustes_por_dia || []
@@ -581,59 +535,7 @@ export default function VerPlaneacionPage() {
                 )}
               </div>
             ))}
-
-            {/* Escala estimativa de logro — tabla de registro por alumno */}
-            {Array.isArray(instrumentosEvaluacion[0]?.registro_alumnos) && instrumentosEvaluacion[0].registro_alumnos.length > 0 && (
-              <div style={s.card}>
-                <div style={s.cardHeader}>
-                  <p style={s.sectionTitle}>Escala estimativa de logro</p>
-                </div>
-                <table style={s.table}>
-                  <thead>
-                    <tr>
-                      <td style={{ ...s.tdLabel, background: '#F9FAFB', borderTop: 'none', width: 100 }}>Alumno</td>
-                      <td style={{ ...s.tdLabel, background: '#F9FAFB', borderTop: 'none' }}>Nivel de logro</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {instrumentosEvaluacion[0].registro_alumnos.map((alumno: any, i: number) => {
-                      const estiloNivel = alumno.nivel_marcado
-                        ? (ESTILO_POR_NIVEL[alumno.nivel_marcado] || { color: '#374151', fondo: 'white' })
-                        : { color: '#374151', fondo: 'white' }
-                      return (
-                        <tr key={i}>
-                          <td style={s.tdValue}>{alumno.codigo}</td>
-                          <td style={s.tdValue}>
-                            <select
-                              value={alumno.nivel_marcado || ''}
-                              disabled={guardandoCodigo === alumno.codigo}
-                              onChange={(e) => marcarNivel(alumno.codigo, e.target.value)}
-                              style={{
-                                padding: '6px 10px',
-                                borderRadius: 6,
-                                border: '1px solid #D1D5DB',
-                                fontSize: 13,
-                                color: estiloNivel.color,
-                                background: estiloNivel.fondo,
-                                fontWeight: alumno.nivel_marcado ? 600 : 400,
-                                cursor: guardandoCodigo === alumno.codigo ? 'default' : 'pointer',
-                                opacity: guardandoCodigo === alumno.codigo ? 0.6 : 1,
-                              }}
-                            >
-                              <option value="">Sin marcar</option>
-                              <option value="Logrado">Logrado</option>
-                              <option value="En proceso">En proceso</option>
-                              <option value="Requiere apoyo">Requiere apoyo</option>
-                            </select>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+                      </>
         )}
 
         {/* Rúbrica — RESPALDO solo para planeaciones antiguas (antes de
