@@ -380,8 +380,7 @@ export default function VerPlaneacionPage() {
               {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
               {/* NOTA: el campo interno se llama "finalidad" en BD y en el código, pero se muestra como "Propósito" — término alineado a NEM 2022. */}
               {planeacion.finalidad && <tr><td style={s.tdLabel}>Propósito</td><td style={s.tdValue}>{planeacion.finalidad}</td></tr>}
-              {planeacion.metodologia && <tr><td style={s.tdLabel}>Modalidad / Metodología</td><td style={s.tdValue}>{planeacion.metodologia}</td></tr>}
-
+              
               {/* Bloque 2 — Campo Formativo Principal (agrupado con su Contenido y su PDA) */}
               <tr>
                 <td style={s.tdLabel}>CF Principal</td>
