@@ -376,6 +376,7 @@ export default function VerPlaneacionPage() {
             <tbody>
               {/* Bloque 1 — Datos generales */}
               <tr><td style={s.tdLabel}>Nombre</td><td style={s.tdValue}>{planeacion.project_name}</td></tr>
+              {planeacion.metodologia && <tr><td style={s.tdLabel}>Modalidad</td><td style={s.tdValue}>{planeacion.metodologia}</td></tr>}
               {planeacion.situacion_problema && <tr><td style={s.tdLabel}>Situación problema</td><td style={s.tdValue}>{planeacion.situacion_problema}</td></tr>}
               {/* NOTA: el campo interno se llama "finalidad" en BD y en el código, pero se muestra como "Propósito" — término alineado a NEM 2022. */}
               {planeacion.finalidad && <tr><td style={s.tdLabel}>Propósito</td><td style={s.tdValue}>{planeacion.finalidad}</td></tr>}
