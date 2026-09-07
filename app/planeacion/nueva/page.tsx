@@ -669,6 +669,7 @@ function NuevaPlaneacionInner() {
           project_name: form.nombre_proyecto,
           situacion_problema: form.situacion_problema,
           finalidad: form.finalidad,
+          metodologia: form.metodologia,
           pda_campo: principalCampo,
           pda_contenido: contenidosElegidos[0]?.contenido || '',
           pda_literal: todasPdasSeleccionadas.map(p => p.pda).join(' | '),
