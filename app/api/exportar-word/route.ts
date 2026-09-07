@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------
     const texto = (t: string, opts: {
       bold?: boolean; italics?: boolean; color?: string; font?: string; size?: number
+      permitirVacio?: boolean  // true = respetar cadena vacía (espaciadores); false/omitido = mostrar '—' si no hay dato
     } = {}) => new TextRun({
-      text: t || '—',
+      text: t ? t : (opts.permitirVacio ? '' : '—'),
       bold: opts.bold,
       italics: opts.italics,
       color: opts.color || COLOR.negroAzulado,
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
     const parrafo = (t: string, opts: {
       before?: number; after?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType]
       bold?: boolean; italics?: boolean; color?: string; font?: string; size?: number
+      permitirVacio?: boolean
     } = {}) => new Paragraph({
       spacing: { before: opts.before ?? 0, after: opts.after ?? 100 },
       alignment: opts.align,
@@ -177,12 +179,12 @@ export async function POST(request: NextRequest) {
       parrafo(proyecto.project_name || 'Planeación didáctica', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.xl, after: 40 }),
       parrafo(`Modalidad: ${proyecto.metodologia || '—'}`, { color: COLOR.grisSuave, size: TAMANO.md, after: 200 }),
       tarjetaDatosGenerales,
-      parrafo('', { before: 200 }),
+      parrafo('', { before: 200, permitirVacio: true }),
       etiqueta('Problemática'), parrafo(proyecto.situacion_problema),
       etiqueta('Propósito'), parrafo(proyecto.finalidad),
       etiqueta('Tabla curricular'), tablaCurricular,
     ]
-    if (tablaEjes) bloque1.push(parrafo('', { before: 160 }), etiqueta('Ejes articuladores'), tablaEjes)
+    if (tablaEjes) bloque1.push(parrafo('', { before: 160, permitirVacio: true }), etiqueta('Ejes articuladores'), tablaEjes)
 
     // ------------------------------------------------------------
     // BLOQUE 2 — Cuerpo por Momento (agrupado dinámicamente)
@@ -226,9 +228,12 @@ export async function POST(request: NextRequest) {
         ],
       }))
       const ajustesParrafos = ajustesDelDia.length > 0
+        // OJO: a.ajuste ya trae el código incluido al inicio del texto
+        // (ej. "R.G.-1.- Antes de pedir..."), generado así por el
+        // agente. NO anteponer a.codigo aquí o se duplica.
         ? ajustesDelDia.map((a: any, i: number) => new Paragraph({
           spacing: { after: i < ajustesDelDia.length - 1 ? 100 : 0 },
-          children: [texto(`${a.codigo}.— `, { bold: true, color: COLOR.indigo, size: TAMANO.sm }), texto(a.ajuste, { size: TAMANO.sm })],
+          children: [texto(a.ajuste, { size: TAMANO.sm })],
         }))
         : [parrafo('—', { color: COLOR.grisSuave, size: TAMANO.sm })]
 
@@ -293,7 +298,7 @@ export async function POST(request: NextRequest) {
       // sep 2026). Evaluación Formativa: descripción generada
       // pendiente (generarDescripcionEvaluacionFormativa()) — por
       // ahora también en blanco.
-      return [etiqueta(titulo), parrafo('', { after: 300 })]
+      return [etiqueta(titulo), parrafo('', { after: 300, permitirVacio: true })]
     }
 
     function rubricaCompleta(r: any) {
@@ -378,9 +383,9 @@ export async function POST(request: NextRequest) {
       etiqueta('Rúbricas de evaluación'),
       ...rubricas.flatMap(rubricaCompleta),
       dosColumnas('Adecuaciones curriculares', 'Evaluación del proyecto'),
-      parrafo('', { before: 160 }),
+      parrafo('', { before: 160, permitirVacio: true }),
       dosColumnas('Actividades PMC y P.A.', 'Programas externos'),
-      parrafo('', { before: 300 }),
+      parrafo('', { before: 300, permitirVacio: true }),
       bloqueFirmas(inst.educadora),
     ]
 
