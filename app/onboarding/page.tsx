@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation'
 
 const supabase = createClient()
 
-const GRADOS = [
-  { value: '1er Grado', label: '1er Grado' },
-  { value: '2do Grado', label: '2do Grado' },
-  { value: '3er Grado', label: '3er Grado' },
-]
 const TURNOS = ['matutino', 'vespertino', 'discontinuo']
 
 export default function OnboardingPage() {
@@ -22,9 +17,18 @@ export default function OnboardingPage() {
   const [userRole, setUserRole] = useState<string>('')
   const [form, setForm] = useState({
     cct: '',
-    grado: '',
     turno: '',
+    zona: '',
+    sector: '',
+    region: '',
   })
+
+  // Sugerencias de Zona/Sector/Región desde el catálogo oficial SEP o el
+  // consenso comunitario -- se piden en paralelo a decodificar-cct, no lo
+  // reemplazan (decodificar-cct sigue siendo la fuente de estado/nombre/
+  // sostenimiento, que alimentan el calendario escolar y otras funciones).
+  const [cctLookup, setCctLookup] = useState<any>(null)
+  const [cctLookupLoading, setCctLookupLoading] = useState(false)
 
   useEffect(() => {
     async function loadRole() {
@@ -54,8 +58,10 @@ export default function OnboardingPage() {
     const val = value.toUpperCase()
     update('cct', val)
     setCctInfo(null)
+    setCctLookup(null)
     if (val.length === 10) {
       setCctLoading(true)
+      setCctLookupLoading(true)
       try {
         const res = await fetch('/api/decodificar-cct', {
           method: 'POST',
@@ -64,11 +70,30 @@ export default function OnboardingPage() {
         })
         const data = await res.json()
         setCctInfo(data)
-        if (data.turno) update('turno', data.turno)
       } catch {
         setCctInfo({ estado: '', sostenimiento: '', nivel: '', valido: false, error: 'No se pudo verificar el CCT' })
       } finally {
         setCctLoading(false)
+      }
+
+      try {
+        const resLookup = await fetch(`/api/cct-lookup?cv_cct=${val}`)
+        const dataLookup = await resLookup.json()
+        if (dataLookup.encontrado) {
+          setCctLookup(dataLookup)
+          setForm(prev => ({
+            ...prev,
+            zona: dataLookup.campos.zona.valor || '',
+            sector: dataLookup.campos.sector.valor || '',
+            region: dataLookup.campos.region.valor || '',
+            turno: prev.turno || (dataLookup.turno?.valor ? dataLookup.turno.valor.toLowerCase() : ''),
+          }))
+        }
+      } catch {
+        // silencioso -- si falla, Zona/Sector/Región simplemente se quedan
+        // vacías y editables, la educadora las captura a mano
+      } finally {
+        setCctLookupLoading(false)
       }
     }
   }
@@ -82,34 +107,58 @@ export default function OnboardingPage() {
       setError('El CCT ingresado no es válido. Verifica e intenta de nuevo.')
       return
     }
-    if (userRole !== 'directivo' && !form.grado) {
-      setError('Selecciona el grado que atiendes')
-      return
-    }
     if (!form.turno) {
       setError('Selecciona el turno')
+      return
+    }
+    if (!form.zona.trim() || !form.sector.trim() || !form.region.trim()) {
+      setError('Completa Zona, Sector y Región (escribe "No aplica" si tu jardín no tiene Sector asignado)')
       return
     }
     setLoading(true)
     setError('')
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.push('/auth/login'); return }
+
     const { error: err } = await supabase
       .from('users')
       .update({
         cct_primary: form.cct.toUpperCase(),
         shift_primary: form.turno,
-        grado: form.grado,
         profile_completed: true,
         estado: cctInfo?.estado || null,
         sostenimiento: cctInfo?.sostenimiento || null,
         nivel_educativo: cctInfo?.nivel || null,
         school_name: cctInfo?.nombre || null,
-        total_alumnos: null,
-        contexto_grupo: null,
       })
       .eq('auth_uid', session.user.id)
     if (err) { setError(err.message); setLoading(false); return }
+
+    // Guarda Zona/Sector/Región/Turno en el consenso comunitario -- mismo
+    // mecanismo que usa Mi Grupo, para que desde el primer registro se
+    // alimente el catálogo compartido.
+    try {
+      const campos: { campo: 'zona' | 'sector' | 'region' | 'turno'; valor: string }[] = [
+        { campo: 'zona', valor: form.zona },
+        { campo: 'sector', valor: form.sector },
+        { campo: 'region', valor: form.region },
+        { campo: 'turno', valor: form.turno },
+      ]
+      for (const { campo, valor } of campos) {
+        await fetch('/api/cct-confirmar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ cv_cct: form.cct.toUpperCase(), campo, valor }),
+        })
+      }
+    } catch {
+      // silencioso -- si falla el consenso comunitario, el perfil ya se
+      // guardó bien (arriba); no bloqueamos el avance de la educadora por esto
+    }
+
     if (userRole === 'directivo') {
       router.push('/directivo/dashboard')
     } else {
@@ -133,6 +182,13 @@ export default function OnboardingPage() {
     borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
     marginBottom: 18, background: 'white', cursor: 'pointer'
   }
+
+  const inputChicoStyle = {
+    display: 'block', width: '100%', padding: '9px 10px', fontSize: 13,
+    borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const,
+    outline: 'none', fontFamily: 'sans-serif', background: 'white'
+  }
+
     if (verificando) {
     return (
       <div style={{ minHeight: '100vh', background: '#E8F5F2', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -163,12 +219,12 @@ export default function OnboardingPage() {
 
           <div style={{ marginBottom: 28 }}>
             <h2 style={{ color: '#1A1A2E', margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>
-              Completa tu perfil
+              Datos institucionales de tu jardín
             </h2>
             <p style={{ color: '#888', fontSize: 13, margin: 0, lineHeight: 1.5 }}>
               {userRole === 'directivo'
                 ? 'Esta información vincula tu cuenta con el jardín de niños que diriges.'
-                : 'Esta información permite que tus planeaciones reflejen el contexto real de tu grupo.'}
+                : 'Esta información identifica el jardín donde laboras. Lo que atiende tu grupo (PDAs, diagnósticos, etc.) se configura después, en Mi Grupo.'}
             </p>
           </div>
 
@@ -205,54 +261,46 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Grado y Turno en la misma fila — solo educadores */}
-          {userRole !== 'directivo' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 0 }}>
-              <div>
-                <label style={labelStyle}>Grado que atiendes</label>
-                <select
-                  value={form.grado}
-                  onChange={e => update('grado', e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="" disabled>— Selecciona —</option>
-                  {GRADOS.map(g => (
-                    <option key={g.value} value={g.value}>{g.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Turno que atiendes</label>
-                <select
-                  value={form.turno}
-                  onChange={e => update('turno', e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="" disabled>— Selecciona —</option>
-                  {TURNOS.map(t => (
-                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                  ))}
-                </select>
+          {/* Zona / Sector / Región -- sugeridos por cct-lookup, editables */}
+          {form.cct.length === 10 && (
+            <div style={{ marginBottom: 18 }}>
+              {cctLookupLoading && (
+                <p style={{ fontSize: 12, color: '#888', margin: '0 0 8px' }}>Buscando Zona/Sector/Región...</p>
+              )}
+              {cctLookup && (
+                <p style={{ fontSize: 11, color: '#0F6E56', margin: '0 0 8px' }}>
+                  📍 Sugerido del catálogo oficial SEP — revisa que sea correcto y corrígelo si hace falta.
+                </p>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Zona</label>
+                  <input value={form.zona} onChange={e => update('zona', e.target.value)} style={inputChicoStyle} />
+                </div>
+                <div>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Sector</label>
+                  <input value={form.sector} onChange={e => update('sector', e.target.value)} placeholder="o &quot;No aplica&quot;" style={inputChicoStyle} />
+                </div>
+                <div>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Región</label>
+                  <input value={form.region} onChange={e => update('region', e.target.value)} style={inputChicoStyle} />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Turno solo — para directivo */}
-          {userRole === 'directivo' && (
-            <>
-              <label style={labelStyle}>Turno</label>
-              <select
-                value={form.turno}
-                onChange={e => update('turno', e.target.value)}
-                style={selectStyle}
-              >
-                <option value="" disabled>— Selecciona —</option>
-                {TURNOS.map(t => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                ))}
-              </select>
-            </>
-          )}
+          {/* Turno */}
+          <label style={labelStyle}>Turno</label>
+          <select
+            value={form.turno}
+            onChange={e => update('turno', e.target.value)}
+            style={selectStyle}
+          >
+            <option value="" disabled>— Selecciona —</option>
+            {TURNOS.map(t => (
+              <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+            ))}
+          </select>
 
           {error && (
             <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '10px 14px', borderRadius: 8, marginBottom: 20 }}>
