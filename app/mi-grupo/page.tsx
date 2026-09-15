@@ -104,7 +104,7 @@ function TiempoGuardado({ fechaISO }: { fechaISO?: string }) {
 }
 
 const GRADO_MAP: Record<string, string> = { '1er Grado': '1°', '2do Grado': '2°', '3er Grado': '3°' }
-
+const GRADOS_OPCIONES = ['1er Grado', '2do Grado', '3er Grado']
 type OrigenConteo = '3.1' | '3.2'
 interface DiscrepanciaAlumnos {
   detectado: number
@@ -115,6 +115,8 @@ export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [alumnosGuardado, setAlumnosGuardado] = useState(false)
+  const [gradoGuardado, setGradoGuardado] = useState(false)
+  const [grupoLetraGuardado, setGrupoLetraGuardado] = useState(false)
   const [discrepanciaAlumnos, setDiscrepanciaAlumnos] = useState<DiscrepanciaAlumnos | null>(null)
 
   // Timestamps de guardado para las secciones con historial versionado —
@@ -265,6 +267,25 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
     if (session) {
       await supabase.from('users').update({ total_alumnos: nuevoTotal }).eq('auth_uid', session.user.id)
     }
+  }
+  async function actualizarGrado(nuevoGrado: string) {
+    setProfile((prev: any) => ({ ...prev, grado: nuevoGrado }))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      await supabase.from('users').update({ grado: nuevoGrado }).eq('auth_uid', session.user.id)
+    }
+    setGradoGuardado(true)
+    setTimeout(() => setGradoGuardado(false), 2000)
+  }
+ 
+  async function actualizarGrupoLetra(nuevaLetra: string) {
+    setProfile((prev: any) => ({ ...prev, grupo_letra: nuevaLetra }))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      await supabase.from('users').update({ grupo_letra: nuevaLetra }).eq('auth_uid', session.user.id)
+    }
+    setGrupoLetraGuardado(true)
+    setTimeout(() => setGrupoLetraGuardado(false), 2000)
   }
 
   async function confirmarActualizarAlumnos() {
@@ -616,8 +637,7 @@ async function darDeBajaAlumno(id: string) {
             <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
             <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13 }}>
               {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Grupo:</strong> {profile.grado || '2°'} A · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Alumnos:</strong> <input type="number" min="1" max="50" placeholder="24" value={profile.total_alumnos || ''} onChange={async (e) => { const val = parseInt(e.target.value); if (!val || val < 1) return; await actualizarTotalAlumnos(val); setAlumnosGuardado(true); setTimeout(() => setAlumnosGuardado(false), 2000); }} style={{ width: 44, padding: '1px 4px', fontSize: 13, fontWeight: 700, borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.4)', textAlign: 'center', outline: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', display: 'inline-block', verticalAlign: 'middle' }} />
-              {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 4 }}>✓</span>}
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
             </p>
           </div>
 
@@ -638,6 +658,55 @@ async function darDeBajaAlumno(id: string) {
               </p>
             </div>
           )}
+          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' as const }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              👥 Configura tu grupo
+            </p>
+            <div>
+              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Grado</label>
+              <select
+                value={profile.grado || ''}
+                onChange={(e) => actualizarGrado(e.target.value)}
+                style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
+              >
+                <option value="" disabled>— Selecciona —</option>
+                {GRADOS_OPCIONES.map(g => (
+                  <option key={g} value={g}>{GRADO_MAP[g]}</option>
+                ))}
+              </select>
+              {gradoGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Grupo</label>
+              <select
+                value={profile.grupo_letra || ''}
+                onChange={(e) => actualizarGrupoLetra(e.target.value)}
+                style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
+              >
+                <option value="" disabled>— Selecciona —</option>
+                {['A', 'B', 'C', 'D', 'E'].map(l => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+              {grupoLetraGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Alumnos</label>
+              <input
+                type="number" min="1" max="50" placeholder="24"
+                value={profile.total_alumnos || ''}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value)
+                  if (!val || val < 1) return
+                  await actualizarTotalAlumnos(val)
+                  setAlumnosGuardado(true)
+                  setTimeout(() => setAlumnosGuardado(false), 2000)
+                }}
+                style={{ width: 70, padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
+              />
+              {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
+            </div>
+          </div>
           {discrepanciaAlumnos && (
             <div style={{ background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' as const }}>
               <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', lineHeight: 1.6, flex: 1, minWidth: 260 }}>

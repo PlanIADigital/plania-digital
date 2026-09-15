@@ -139,13 +139,6 @@ export default function ConfiguracionPage() {
     maestro_musica: 'Maestro de música',
     directivo: 'Directivo',
   }
-
-  const turnoLabel: Record<string, string> = {
-    matutino: 'Matutino',
-    vespertino: 'Vespertino',
-    discontinuo: 'Discontinuo',
-  }
-
   const membresiaLabel: Record<string, string> = {
     trial: 'Prueba gratuita',
     active: 'Activa',
@@ -209,8 +202,6 @@ export default function ConfiguracionPage() {
               { label: 'Nombre completo', value: profile?.full_name },
               { label: 'Correo electrónico', value: profile?.email },
               { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
-              { label: 'CCT principal', value: profile?.cct_primary },
-              { label: 'Turno', value: turnoLabel[profile?.shift_primary] ?? profile?.shift_primary },
               { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
                         ].map(item => (
               <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
