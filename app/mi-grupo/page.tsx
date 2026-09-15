@@ -776,7 +776,7 @@ async function darDeBajaAlumno(id: string) {
                   </div>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <p style={s.subTitle}>1.2 · Programa Analítico</p>
-                    <p style={s.desc}>PDA Y Contenidos priorizados por el colectivo.<br/>Acepta formato .docx, .pptx, .pdf.</p>
+                    <p style={s.desc}>Contenidos y PDA Priorizados.<br/>Acepta formato Docx, Pptx, Pdf.</p>
                     {!paActivo ? (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                         <label style={{ ...s.btn, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
