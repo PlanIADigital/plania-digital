@@ -152,6 +152,16 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0 }}>
               {profile?.full_name}
             </p>
+            {profile?.es_fundadora && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'rgba(255,255,255,0.15)', color: '#FCD34D',
+                fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
+                letterSpacing: '0.03em',
+              }}>
+                ⭐ Fundadora
+              </span>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Modo oscuro</span>
               <ThemeToggle />
