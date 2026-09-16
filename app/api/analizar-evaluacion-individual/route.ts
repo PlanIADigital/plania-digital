@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 
 // [ago 2026] Sin esto, la función corre con el límite de tiempo por defecto
 // de Vercel. Con max_tokens en 48,000 (necesario para cubrir 35 alumnos) y
@@ -11,10 +11,6 @@ import { createClient } from '@supabase/supabase-js'
 export const maxDuration = 300
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-)
 
 const SECCION_HISTORIAL = 'diagnostico_individual'
 

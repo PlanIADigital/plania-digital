@@ -9,7 +9,7 @@
 //  lib/calendarioEscolar.ts) para que nunca puedan desincronizarse.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 export async function GET(request: NextRequest) {
@@ -23,12 +23,7 @@ export async function GET(request: NextRequest) {
     if (!estado || !fechaInicio || !fechaFin) {
       return NextResponse.json({ error: 'Faltan parámetros (estado, fecha_inicio, fecha_fin)' }, { status: 400 })
     }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
-
+    
     const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estado, ciclo)
     const todosDias = calcularDiasHabiles(calDatos, fechaInicio, fechaFin)
     const diasHabilesReales = todosDias.filter(d => !d.esCTE && !d.motivo).length

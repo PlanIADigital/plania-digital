@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const client = new Anthropic()
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-)
 
 const SECCION_HISTORIAL = 'diagnostico_grupal'
 

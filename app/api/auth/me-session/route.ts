@@ -3,7 +3,7 @@
 //  app/api/auth/me-session/route.ts
 // ============================================================
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(request: Request) {
   try {
@@ -13,11 +13,6 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.replace('Bearer ', '')
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
 
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
     if (error || !user) {

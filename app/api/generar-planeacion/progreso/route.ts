@@ -3,17 +3,13 @@
 //  app/api/generar-planeacion/progreso/route.ts
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     const { job_id, user_id } = await request.json()
     if (!job_id) {
       return NextResponse.json({ error: 'Falta job_id' }, { status: 400 })
     }
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
     const { error } = await supabaseAdmin.from('generacion_progreso').insert({
       job_id,
       user_id: user_id || null,
@@ -35,10 +31,7 @@ export async function GET(request: NextRequest) {
     if (!jobId) {
       return NextResponse.json({ error: 'Falta job_id' }, { status: 400 })
     }
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
+    
     const { data, error } = await supabaseAdmin
       .from('generacion_progreso')
       .select('*')

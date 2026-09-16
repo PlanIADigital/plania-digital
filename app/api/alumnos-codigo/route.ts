@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 
 async function resolverUserId(auth_uid: string): Promise<string | null> {
   const { data, error } = await supabase
@@ -80,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errorExistentes.message }, { status: 500 })
   }
 
-  const codigosExistentes = (existentes || []).map(r => r.codigo)
+  const codigosExistentes = (existentes || []).map((r: any) => r.codigo)
 
   if (accion === 'bootstrap') {
     if (codigosExistentes.length > 0) {

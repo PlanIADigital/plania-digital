@@ -36,7 +36,7 @@ R2: Primera persona para la maestra: "coloco", "pregunto", "muestro". NUNCA "la 
 R3: Cada actividad incluye una pregunta detonadora específica y concreta.
 R4: Materiales cotidianos de bajo costo, integrados al flujo narrativo.
 R5: Conectores naturales: "Enseguida", "Después", "Al final", "Para cerrar".
-R6: Cada campo (inicio/desarrollo/cierre) tiene 3 a 5 oraciones fluidas.
+R6: Cada campo tiene un límite de caracteres estricto (se recorta automáticamente si te excedes, así que respétalo desde el inicio): "inicio" 450-500 caracteres, "desarrollo" 550-600 caracteres, "cierre" 350-400 caracteres, "actividad_complementaria" 250-300 caracteres, "materiales" 250-300 caracteres. Escribe oraciones completas que naturalmente terminen cerca de ese límite — no cuentes caracteres mientras escribes, pero mantente dentro del rango.
 R7: Al menos una vez por día, incluye el propósito pedagógico entre paréntesis, con voz cálida de maestra explicándole a otra maestra. PROHIBIDO usar dentro del paréntesis —o en cualquier otra parte del texto narrativo— términos técnicos o de configuración interna como "PDA", "verbo central", "regla", "indicador", "rúbrica", "sistema" o "agente". El paréntesis debe sonar 100% a razonamiento pedagógico genuino, nunca a que el sistema se "asoma" explicando su propia lógica interna. MAL: "(esto porque es el verbo central del PDA)". BIEN: "(esto con el fin de que los niños conecten la idea con lo que ya viven en su patio)".
 R8: Incluye al menos una acción observable evaluable por día.
 R4-PDA: El verbo central del PDA debe aparecer EJECUTADO en las actividades, no mencionado. MAL (mención pasiva, prohibido): "se realiza el mantra de relajación" / "se trabaja con las plantas". BIEN (acción ejecutada): "Cierro los ojos junto con los niños y repetimos en voz baja: 'estoy tranquilo, estoy en calma'..." — el sujeto (niño o maestra en primera persona) debe estar haciendo la acción dentro del texto, nunca solo nombrándola.
@@ -83,7 +83,7 @@ REGLA CRÍTICA — LONGITUD Y FORMA DEL DESCRIPTOR (NO OPCIONAL):
 Cada descriptor es UNA a DOS oraciones, máximo. Sintetiza el PATRÓN GENERAL de desempeño que viste repetirse en la narrativa — nunca enumeres instancia por instancia ni menciones "Día 1", "Día 2", etc. PROHIBIDO construir el descriptor como una bitácora o resumen cronológico de la planeación. MAL (prohibido, formato bitácora): "El alumno nombra la emoción en el ejercicio de espejo (Día 1); construye acuerdos (Día 2); identifica la zona corporal (Día 3)...". BIEN (correcto, patrón sintetizado): "Identifica y nombra por sí mismo las emociones propias y ajenas, y ofrece ayuda concreta a un compañero sin necesitar que el docente se lo indique". Usa la narrativa de los días solo como evidencia interna para decidir QUÉ tan alto es el nivel de logro — el texto final del descriptor debe leerse como el mismo tipo de frase breve y general que usarías para describir la rúbrica de cualquier otro PDA, sin importar cuántos días tuvo la planeación.
 
 REGLA CRÍTICA — AJUSTES RAZONABLES POR DÍA, NORMATIVA SEP (NO OPCIONAL):
-Si se te proporciona una lista de alumnos con necesidades de inclusión, la atención a CADA UNO de ellos debe aparecer en TODOS Y CADA UNO de los días hábiles de la planeación, sin excepción — la inclusión no es opcional ni depende de tu criterio sobre si "amerita" ese día. Genera UNA entrada por cada alumno en cada día, ligada siempre a la actividad CONCRETA de ese día (el material real, el momento exacto, la consigna que ya está escrita en la narrativa de ese día específico) — nunca genérica, nunca repetida textualmente entre días, pero SIEMPRE presente. Redacta cada ajuste basándote en el texto de "acciones" de cada alumno, que describe su necesidad real y concreta — alumnos distintos con necesidades distintas deben producir ajustes claramente distintos en contenido y enfoque. Usa SIEMPRE el código del alumno (nunca un diagnóstico ni una etiqueta clínica) y comienza cada ajuste con "Código.- " (ej. "R.G.-1.- "). CADA AJUSTE DEBE SER BREVE: máximo 1-2 oraciones — no un párrafo largo, ya que en planeaciones con muchos días y varios alumnos el volumen total crece rápido y debe mantenerse manejable. Si hay 2 alumnos y 5 días, debes producir 10 entradas en total (2 por día), no menos. Si NO hay alumnos con necesidades de inclusión registrados, responde con un arreglo vacío en "ajustes_por_dia".
+Si se te proporciona una lista de alumnos con necesidades de inclusión, la atención a CADA UNO de ellos debe aparecer en TODOS Y CADA UNO de los días hábiles de la planeación, sin excepción — la inclusión no es opcional ni depende de tu criterio sobre si "amerita" ese día. Genera UNA entrada por cada alumno en cada día, ligada siempre a la actividad CONCRETA de ese día (el material real, el momento exacto, la consigna que ya está escrita en la narrativa de ese día específico) — nunca genérica, nunca repetida textualmente entre días, pero SIEMPRE presente. Redacta cada ajuste basándote en el texto de "acciones" de cada alumno, que describe su necesidad real y concreta — alumnos distintos con necesidades distintas deben producir ajustes claramente distintos en contenido y enfoque. Usa SIEMPRE el código del alumno (nunca un diagnóstico ni una etiqueta clínica) y comienza cada ajuste con "Código.- " (ej. "R.G.-1.- "). CADA AJUSTE DEBE SER BREVE: 300-400 caracteres (aprox. 1-2 oraciones) — no un párrafo largo, ya que en planeaciones con muchos días y varios alumnos el volumen total crece rápido y debe mantenerse manejable. Este límite se aplica automáticamente después si te excedes, pero respétalo desde el inicio. Si hay 2 alumnos y 5 días, debes producir 10 entradas en total (2 por día), no menos. Si NO hay alumnos con necesidades de inclusión registrados, responde con un arreglo vacío en "ajustes_por_dia".
 
 REGLA CRÍTICA — FORMATO JSON: Cada valor de texto debe ser una SOLA cadena continua, sin saltos de línea reales dentro de ella. PROHIBIDO usar comillas dobles (") dentro del texto — usa SIEMPRE comillas simples (') para diálogos o énfasis.
 
@@ -207,6 +207,39 @@ function parsearJSONRobusto(rawContent: string): any {
   }
 }
 
+// Límites de caracteres por campo -- deben coincidir con las cifras que le
+// pedimos al modelo en R6 (SYSTEM_PROMPT_DIAS) y en SYSTEM_PROMPT_CIERRE.
+// Esto es la RED DE SEGURIDAD: el modelo casi siempre respeta el rango
+// pedido en el prompt, pero los LLM no son 100% precisos con conteos
+// exactos -- si se excede, se recorta aquí antes de guardar la planeación.
+const LIMITES_CARACTERES: Partial<Record<keyof DiaGenerado, number>> = {
+  inicio: 500,
+  desarrollo: 600,
+  cierre: 400,
+  actividad_complementaria: 300,
+  materiales: 300,
+}
+const LIMITE_AJUSTE = 400
+
+// Recorta al punto/exclamación/pregunta más cercano ANTES del límite, nunca
+// a media palabra. Si no hay un cierre de oración razonable cerca (más de
+// la mitad del límite), recorta a la última palabra completa en su lugar.
+function recortarAlLimite(texto: string, limite: number): string {
+  if (!texto || texto.length <= limite) return texto
+  const cortado = texto.slice(0, limite)
+  const ultimoCierre = Math.max(
+    cortado.lastIndexOf('.'),
+    cortado.lastIndexOf('!'),
+    cortado.lastIndexOf('?')
+  )
+  if (ultimoCierre > limite * 0.5) {
+    return cortado.slice(0, ultimoCierre + 1)
+  }
+  const ultimoEspacio = cortado.lastIndexOf(' ')
+  const base = ultimoEspacio > 0 ? cortado.slice(0, ultimoEspacio) : cortado
+  return base.trim() + '...'
+}
+
 function validarDiaCompleto(dia: DiaGenerado): DiaGenerado {
   const camposObligatorios: (keyof DiaGenerado)[] = ['momento_modalidad', 'inicio', 'desarrollo', 'cierre', 'materiales']
   for (const campo of camposObligatorios) {
@@ -223,6 +256,17 @@ function validarDiaCompleto(dia: DiaGenerado): DiaGenerado {
   if (dia.actividad_complementaria === undefined || dia.actividad_complementaria === null) {
     dia.actividad_complementaria = ''
   }
+
+  // Red de seguridad: recorta cualquier campo que se haya excedido del límite
+  for (const campo of Object.keys(LIMITES_CARACTERES) as (keyof DiaGenerado)[]) {
+    const limite = LIMITES_CARACTERES[campo]
+    const valor = dia[campo]
+    if (limite && valor && String(valor).length > limite) {
+      console.error(`✂️ RECORTE AUTOMÁTICO — día ${dia.numero}, campo "${campo}" vino con ${String(valor).length} caracteres (límite ${limite}), se recortó.`)
+      ;(dia as any)[campo] = recortarAlLimite(String(valor), limite)
+    }
+  }
+
   return dia
 }
 
@@ -231,6 +275,13 @@ function validarAjustesCompletos(
   totalDias: number,
   alumnosInclusion: { codigo: string }[]
 ): AjusteDia[] {
+  // Red de seguridad: recorta cualquier ajuste que se haya excedido del límite
+  for (const a of ajustes) {
+    if (a.ajuste && a.ajuste.length > LIMITE_AJUSTE) {
+      console.error(`✂️ RECORTE AUTOMÁTICO — ajuste día ${a.numero}, código "${a.codigo}" vino con ${a.ajuste.length} caracteres (límite ${LIMITE_AJUSTE}), se recortó.`)
+      a.ajuste = recortarAlLimite(a.ajuste, LIMITE_AJUSTE)
+    }
+  }
   if (!alumnosInclusion || alumnosInclusion.length === 0) return ajustes
   const resultado = [...ajustes]
   for (let numero = 1; numero <= totalDias; numero++) {
@@ -545,11 +596,8 @@ export async function POST(request: NextRequest) {
     const { form, profile, job_id } = await request.json()
     jobId = job_id
 
-    const { createClient } = await import('@supabase/supabase-js')
-    supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SECRET_KEY!
-    )
+    const { supabaseAdmin: clienteAdmin } = await import('@/lib/supabase')
+    supabaseAdmin = clienteAdmin
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
