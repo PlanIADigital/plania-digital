@@ -43,15 +43,15 @@ export default function CatalogoPage() {
     setCargandoEstado(false)
   }
 
-  async function verificarCCT() {
+    async function verificarCCT() {
     if (!cct.trim()) return
     setLoading(true)
     setError('')
     setResultado(null)
     try {
-      const res = await fetch(`/api/decodificar-cct?cct=${cct.trim().toUpperCase()}`)
+      const res = await fetch(`/api/cct-lookup?cv_cct=${cct.trim().toUpperCase()}`)
       const data = await res.json()
-      if (data.error) { setError('CCT no encontrado en el catálogo.'); }
+      if (!data.encontrado) { setError('CCT no encontrado en el catálogo.'); }
       else { setResultado(data) }
     } catch {
       setError('Error al consultar el catálogo.')
@@ -273,19 +273,21 @@ export default function CatalogoPage() {
             <div className="space-y-1">
               <div className="flex gap-2">
                 <span className="text-xs text-gray-500 w-24">Nombre</span>
-                <span className="text-xs text-gray-900 font-medium">{resultado.nombre || resultado.school_name || '—'}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-xs text-gray-500 w-24">Municipio</span>
-                <span className="text-xs text-gray-900">{resultado.municipio || '—'}</span>
+                <span className="text-xs text-gray-900 font-medium">{resultado.nombre_jardin || '—'}</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-xs text-gray-500 w-24">Estado</span>
                 <span className="text-xs text-gray-900">{resultado.estado || '—'}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-xs text-gray-500 w-24">Sostenimiento</span>
-                <span className="text-xs text-gray-900">{resultado.sostenimiento || resultado.tipo || '—'}</span>
+                <span className="text-xs text-gray-500 w-24">Zona / Sector / Región</span>
+                <span className="text-xs text-gray-900">
+                  {resultado.campos?.zona?.valor || '—'} / {resultado.campos?.sector?.valor || '—'} / {resultado.campos?.region?.valor || '—'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-xs text-gray-500 w-24">Turno</span>
+                <span className="text-xs text-gray-900">{resultado.turno?.valor || '—'}</span>
               </div>
             </div>
           </div>
