@@ -25,27 +25,27 @@ import {
   Header, Footer, PageNumber, AlignmentType, BorderStyle, WidthType,
   ShadingType, VerticalAlign, PageBreak,
 } from 'docx'
-import { PAGINA, COLOR, FUENTE, TAMANO, RELLENO_CELDA } from '@/lib/wordTemplateTokens'
+import { PAGINA, COLOR, FUENTE, TAMANO, RELLENO_CELDA, BORDE } from '@/lib/wordTemplateTokens'
 
 // ------------------------------------------------------------
 // Bordes reutilizables (derivados de wordTemplateTokens, no
 // números sueltos)
 // ------------------------------------------------------------
 const bordeEstandar = {
-  top: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
-  bottom: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
-  left: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
-  right: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
-  insideVertical: { style: BorderStyle.SINGLE, size: 2, color: COLOR.grisSuave },
+  top: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
+  bottom: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
+  left: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
+  right: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
+  insideVertical: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
 }
 const bordeSuave = {
-  top: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
-  bottom: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
-  left: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
-  right: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
-  insideVertical: { style: BorderStyle.SINGLE, size: 2, color: COLOR.indigoClaro },
+  top: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
+  bottom: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
+  left: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
+  right: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
+  insideHorizontal: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
+  insideVertical: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
 }
 const sinBorde = {
   top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
         children: [
           new TableCell({ width: { size: anchoColumnas[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(dia.fecha, { bold: true })] }),
           new TableCell({ width: { size: anchoColumnas[1], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: actividades }),
-          new TableCell({ width: { size: anchoColumnas[2], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: ajustesParrafos }),
+          new TableCell({ width: { size: anchoColumnas[2], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, borders: { left: { style: BorderStyle.SINGLE, size: BORDE.acentoGrosor, color: BORDE.acentoColor } }, children: ajustesParrafos,}),
           new TableCell({ width: { size: anchoColumnas[3], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.actividad_complementaria || '—', { size: TAMANO.sm })] }),
           new TableCell({ width: { size: anchoColumnas[4], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.materiales || '—', { size: TAMANO.sm })] }),
         ],
