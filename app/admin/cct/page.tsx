@@ -279,11 +279,17 @@ export default function CatalogoPage() {
                 <span className="text-xs text-gray-500 w-24">Estado</span>
                 <span className="text-xs text-gray-900">{resultado.estado || '—'}</span>
               </div>
+                            <div className="flex gap-2">
+                <span className="text-xs text-gray-500 w-24">Zona</span>
+                <span className="text-xs text-gray-900">{resultado.campos?.zona?.valor || '—'}</span>
+              </div>
               <div className="flex gap-2">
-                <span className="text-xs text-gray-500 w-24">Zona / Sector / Región</span>
-                <span className="text-xs text-gray-900">
-                  {resultado.campos?.zona?.valor || '—'} / {resultado.campos?.sector?.valor || '—'} / {resultado.campos?.region?.valor || '—'}
-                </span>
+                <span className="text-xs text-gray-500 w-24">Sector</span>
+                <span className="text-xs text-gray-900">{resultado.campos?.sector?.valor || '—'}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-xs text-gray-500 w-24">Región</span>
+                <span className="text-xs text-gray-900">{resultado.campos?.region?.valor || '—'}</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-xs text-gray-500 w-24">Turno</span>
