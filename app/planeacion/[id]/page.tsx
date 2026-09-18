@@ -203,10 +203,13 @@ export default function VerPlaneacionPage() {
             ends_on: planeacion.ends_on,
           },
           campos_formativos: tablaCurricularParaWord,
-          ejes: [
-            { nombre: planeacion.eje_principal },
-            { nombre: planeacion.eje_secundario },
-          ].filter(e => !!e.nombre),
+          ejes: [planeacion.eje_principal, planeacion.eje_secundario]
+            .filter(Boolean)
+            .map((nombre) => {
+              const encontrado = (content.ejes || []).find((e: any) => e.nombre === nombre)
+              return { nombre, descripcion: encontrado?.descripcion || '' }
+            }),
+          evaluacion_formativa: content.evaluacion_formativa || '',
           dias,
           dias_especiales: diasEspeciales,
           ajustes_por_dia: content.ajustes_por_dia || [],

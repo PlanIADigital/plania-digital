@@ -12,9 +12,15 @@
 //  Bloque 2 = Cuerpo por Momento (agrupado dinámicamente por
 //             dia.momento_modalidad — funciona para cualquier
 //             modalidad sin cambios de código)
-//  Bloque 3 = Cierre (evaluación formativa, rúbricas por PDA,
-//             adecuaciones/evaluación proyecto/PMC/programas en
-//             blanco para llenar a mano, firmas)
+//  Bloque 3 = Cierre — DOS PARTES (sep 2026, revisión con
+//             impresión real):
+//             3a) Evaluación formativa + cajas en blanco
+//                 (adecuaciones/evaluación proyecto/PMC/programas)
+//                 + firmas — HORIZONTAL, misma sección que 1 y 2.
+//             3b) Rúbricas por PDA — VERTICAL, sección NUEVA
+//                 aparte (una tabla vertical de alumnos cabe en
+//                 una sola página; en horizontal se partía en 2
+//                 hojas por rúbrica). Va al final del documento.
 //
 //  NOTA: la plantilla "Clásica Serif" se retiró (sep 2026) para
 //  simplificar el lanzamiento — solo existe Institucional Índigo.
@@ -71,6 +77,7 @@ export async function POST(request: NextRequest) {
     const diasEspeciales: any[] = Array.isArray(body.dias_especiales) ? body.dias_especiales : []
     const ajustesPorDia: any[] = Array.isArray(body.ajustes_por_dia) ? body.ajustes_por_dia : []
     const rubricas: any[] = Array.isArray(body.instrumentos_evaluacion) ? body.instrumentos_evaluacion : []
+    const evaluacionFormativa: string = body.evaluacion_formativa || ''
 
     // ------------------------------------------------------------
     // Helpers de texto
@@ -100,6 +107,35 @@ export async function POST(request: NextRequest) {
     const etiqueta = (t: string) => parrafo(t.toUpperCase(), {
       before: 160, after: 50, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm,
     })
+
+    // ------------------------------------------------------------
+    // Encabezado / pie — factory porque cada SECCIÓN de Word
+    // necesita su PROPIA instancia de Header/Footer (no se
+    // reutiliza el mismo objeto entre secciones).
+    // ------------------------------------------------------------
+    function crearHeader() {
+      return new Header({
+        children: [new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [
+            new TextRun({ text: '✦ PlanIA ', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
+            new TextRun({ text: 'Digital', bold: true, color: COLOR.cian, font: FUENTE.titulo, size: TAMANO.sm }),
+            new TextRun({ text: ' ✦', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
+          ],
+        })],
+      })
+    }
+    function crearFooter() {
+      return new Footer({
+        children: [new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text: 'Generado con PlanIA Digital · plania.digital   ·   Pág. ', color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
+            new TextRun({ children: [PageNumber.CURRENT], color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
+          ],
+        })],
+      })
+    }
 
     // ------------------------------------------------------------
     // BLOQUE 1 — Institucional + Pedagógico
@@ -290,7 +326,8 @@ export async function POST(request: NextRequest) {
     cerrarMomentoActual()
 
     // ------------------------------------------------------------
-    // BLOQUE 3 — Cierre
+    // BLOQUE 3a — Cierre (HORIZONTAL): evaluación formativa, cajas
+    // en blanco, firmas. Va antes de las rúbricas.
     // ------------------------------------------------------------
     function cajaVacia(titulo: string) {
       // Adecuaciones/Evaluación del proyecto/PMC/Programas: la
@@ -299,48 +336,6 @@ export async function POST(request: NextRequest) {
       // pendiente (generarDescripcionEvaluacionFormativa()) — por
       // ahora también en blanco.
       return [etiqueta(titulo), parrafo('', { after: 300, permitirVacio: true })]
-    }
-
-    function rubricaCompleta(r: any) {
-      const encNiveles = new TableRow({
-        tableHeader: true,
-        children: ['NIVEL', 'DESCRIPTOR'].map((t, i) => new TableCell({
-          width: { size: i === 0 ? 22 : 78, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-          margins: RELLENO_CELDA.normal, children: [parrafo(t, { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
-        })),
-      })
-      const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
-      const filasNiveles = niveles.map((n) => {
-        const s = SEMAFORO[n.etiqueta] || { fondo: COLOR.indigoClaro, texto: COLOR.indigo }
-        return new TableRow({
-          children: [
-            new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: s.fondo }, margins: RELLENO_CELDA.normal, children: [parrafo(n.etiqueta, { bold: true, color: s.texto })] }),
-            new TableCell({ width: { size: 78, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(n.descriptor, { size: TAMANO.sm })] }),
-          ],
-        })
-      })
-      const alumnos: string[] = Array.isArray(r.registro_alumnos) ? r.registro_alumnos.map((a: any) => a.codigo) : []
-      const encAlumnos = new TableRow({
-        tableHeader: true,
-        children: ['ALUMNO', ...niveles.map((n) => n.etiqueta)].map((t, i) => new TableCell({
-          width: { size: i === 0 ? 34 : 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
-          margins: RELLENO_CELDA.compacto, children: [parrafo(t, { bold: true, color: COLOR.indigo, size: TAMANO.sm })],
-        })),
-      })
-      const filasAlumnos = alumnos.map((codigo) => new TableRow({
-        children: [
-          new TableCell({ width: { size: 34, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { bold: true })] }),
-          ...niveles.map(() => new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('☐', { align: AlignmentType.CENTER, color: COLOR.grisSuave })] })),
-        ],
-      }))
-
-      return [
-        new Paragraph({ children: [new PageBreak()] }), // cada rúbrica inicia en página propia (REGLAS.rubricaSaltoPaginaPropio)
-        parrafo(`${r.campo} — ${r.pda}`, { after: 100, italics: true }),
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encNiveles, ...filasNiveles] }),
-        parrafo('Escala estimativa de logro', { before: 160, after: 60, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encAlumnos, ...filasAlumnos] }),
-      ]
     }
 
     function dosColumnas(t1: string, t2: string) {
@@ -378,10 +373,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const bloque3: (Paragraph | Table)[] = [
-      ...cajaVacia('Evaluación formativa'),
-      etiqueta('Rúbricas de evaluación'),
-      ...rubricas.flatMap(rubricaCompleta),
+    const bloque3a: (Paragraph | Table)[] = [
+      etiqueta('Evaluación formativa'),
+      parrafo(evaluacionFormativa, { after: 300 }),
       dosColumnas('Adecuaciones curriculares', 'Evaluación del proyecto'),
       parrafo('', { before: 160, permitirVacio: true }),
       dosColumnas('Actividades PMC y P.A.', 'Programas externos'),
@@ -390,42 +384,88 @@ export async function POST(request: NextRequest) {
     ]
 
     // ------------------------------------------------------------
-    // Ensamblar documento
+    // BLOQUE 3b — Rúbricas (VERTICAL): sección aparte al final,
+    // una por PDA. cada rúbrica inicia en página propia — pero la
+    // PRIMERA no necesita salto manual porque el cambio de sección
+    // ya fuerza página nueva (evita una hoja en blanco extra).
+    // ------------------------------------------------------------
+    function rubricaCompleta(r: any, esPrimera: boolean) {
+      const encNiveles = new TableRow({
+        tableHeader: true,
+        children: ['NIVEL', 'DESCRIPTOR'].map((t, i) => new TableCell({
+          width: { size: i === 0 ? 22 : 78, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
+          margins: RELLENO_CELDA.normal, children: [parrafo(t, { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
+        })),
+      })
+      const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
+      const filasNiveles = niveles.map((n) => {
+        const s = SEMAFORO[n.etiqueta] || { fondo: COLOR.indigoClaro, texto: COLOR.indigo }
+        return new TableRow({
+          children: [
+            new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: s.fondo }, margins: RELLENO_CELDA.normal, children: [parrafo(n.etiqueta, { bold: true, color: s.texto })] }),
+            new TableCell({ width: { size: 78, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(n.descriptor, { size: TAMANO.sm })] }),
+          ],
+        })
+      })
+      const alumnos: string[] = Array.isArray(r.registro_alumnos) ? r.registro_alumnos.map((a: any) => a.codigo) : []
+      const encAlumnos = new TableRow({
+        tableHeader: true,
+        children: ['ALUMNO', ...niveles.map((n) => n.etiqueta)].map((t, i) => new TableCell({
+          width: { size: i === 0 ? 34 : 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+          margins: RELLENO_CELDA.compacto, children: [parrafo(t, { bold: true, color: COLOR.indigo, size: TAMANO.sm })],
+        })),
+      })
+      const filasAlumnos = alumnos.map((codigo) => new TableRow({
+        children: [
+          new TableCell({ width: { size: 34, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { bold: true })] }),
+          ...niveles.map(() => new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('☐', { align: AlignmentType.CENTER, color: COLOR.grisSuave })] })),
+        ],
+      }))
+
+      const bloques: (Paragraph | Table)[] = []
+      if (!esPrimera) bloques.push(new Paragraph({ children: [new PageBreak()] })) // solo entre rúbricas, no antes de la 1a
+      bloques.push(
+        parrafo(`${r.campo} — ${r.pda}`, { after: 100, italics: true }),
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encNiveles, ...filasNiveles] }),
+        parrafo('Escala estimativa de logro', { before: 160, after: 60, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encAlumnos, ...filasAlumnos] }),
+      )
+      return bloques
+    }
+
+    const bloque3b: (Paragraph | Table)[] = [
+      etiqueta('Rúbricas de evaluación'),
+      ...rubricas.flatMap((r, i) => rubricaCompleta(r, i === 0)),
+    ]
+
+    // ------------------------------------------------------------
+    // Ensamblar documento — 2 secciones: horizontal (Bloques 1, 2,
+    // 3a) y vertical (Bloque 3b, rúbricas). Cada sección lleva su
+    // propia instancia de Header/Footer.
     // ------------------------------------------------------------
     const doc = new Document({
-      sections: [{
-        properties: { page: { size: { width: PAGINA.ancho, height: PAGINA.alto }, margin: PAGINA.margenes } },
-        headers: {
-          default: new Header({
-            children: [new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new TextRun({ text: '✦ PlanIA ', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-                new TextRun({ text: 'Digital', bold: true, color: COLOR.cian, font: FUENTE.titulo, size: TAMANO.sm }),
-                new TextRun({ text: ' ✦', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-              ],
-            })],
-          }),
+      sections: [
+        {
+          properties: { page: { size: { width: PAGINA.ancho, height: PAGINA.alto }, margin: PAGINA.margenes } },
+          headers: { default: crearHeader() },
+          footers: { default: crearFooter() },
+          children: [
+            ...bloque1,
+            new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque1 → Bloque2
+            ...bloque2,
+            new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque2 → Bloque3a
+            ...bloque3a,
+          ],
         },
-        footers: {
-          default: new Footer({
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({ text: 'Generado con PlanIA Digital · plania.digital   ·   Pág. ', color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
-                new TextRun({ children: [PageNumber.CURRENT], color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
-              ],
-            })],
-          }),
+        {
+          properties: { page: { size: { width: PAGINA.alto, height: PAGINA.ancho }, margin: PAGINA.margenes } }, // dimensiones invertidas = vertical
+          headers: { default: crearHeader() },
+          footers: { default: crearFooter() },
+          children: [
+            ...bloque3b,
+          ],
         },
-        children: [
-          ...bloque1,
-          new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque1 → Bloque2
-          ...bloque2,
-          new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque2 → Bloque3
-          ...bloque3,
-        ],
-      }],
+      ],
     })
 
     const buffer = await Packer.toBuffer(doc)

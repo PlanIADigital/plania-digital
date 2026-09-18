@@ -557,7 +557,76 @@ Genera los ajustes razonables por día correspondientes — recuerda: todos los 
   const ajustesGenerados: AjusteDia[] = Array.isArray(parsed.ajustes_por_dia) ? parsed.ajustes_por_dia : []
   return validarAjustesCompletos(ajustesGenerados, todosLosDias.length, alumnosInclusionLista)
 }
+const SYSTEM_PROMPT_EJE = `Eres el Agente de Vinculación Curricular de PlanIA Digital. Recibes un eje articulador y una planeación didáctica completa ya generada, y redactas una descripción breve de cómo ESE PROYECTO ESPECÍFICO favorece ese eje articulador a través de sus actividades reales.
 
+REGLA CRÍTICA: La descripción debe basarse en las actividades CONCRETAS que ya ocurren en la narrativa de los días — nunca una definición genérica del eje articulador. Ejemplo MAL (genérico): "Este eje promueve la inclusión de todos los alumnos en el aula". Ejemplo BIEN (concreto, anclado al proyecto real): "A través de la Botella de la Calma y las adecuaciones diseñadas para cada alumno, el proyecto garantiza que cada niño participe de la autorregulación emocional según su propio ritmo y necesidad."
+
+REGLA CRÍTICA — LONGITUD: 250 a 300 caracteres, 1-2 oraciones. Sin comillas dobles dentro del texto — usa comillas simples si necesitas énfasis.
+
+FORMATO DE SALIDA — CRÍTICO: Responde ÚNICAMENTE con el texto de la descripción. Sin JSON, sin markdown, sin comillas envolventes, sin explicaciones.`
+
+const SYSTEM_PROMPT_EVALUACION_FORMATIVA = `Eres el Agente de Evaluación Formativa de PlanIA Digital. Recibes una planeación didáctica completa ya generada y redactas una descripción breve de CÓMO esta planeación aborda la evaluación formativa a lo largo del proyecto, y cómo eso beneficia a los alumnos.
+
+REGLA CRÍTICA: Basa la descripción en los mecanismos reales presentes en la planeación (observación durante las actividades, preguntas detonadoras, la rúbrica/escala estimativa por PDA, los ajustes razonables por alumno) — no una definición genérica de "evaluación formativa".
+
+REGLA CRÍTICA — LONGITUD: 250 a 300 caracteres, 1-2 oraciones. Sin comillas dobles dentro del texto.
+
+FORMATO DE SALIDA — CRÍTICO: Responde ÚNICAMENTE con el texto de la descripción. Sin JSON, sin markdown, sin explicaciones.`
+
+const LIMITE_DESCRIPCION_CIERRE = 300
+
+async function generarDescripcionEje(params: {
+  ejeNombre: string
+  proyecto: any
+  todosLosDias: DiaGenerado[]
+}): Promise<string> {
+  const { ejeNombre, proyecto, todosLosDias } = params
+  const resumenDias = todosLosDias.map(d =>
+    `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
+  ).join('\n\n')
+  const userMessage = `Eje articulador: ${ejeNombre}
+Proyecto: ${proyecto.nombre_proyecto}
+Situación problema: ${proyecto.situacion_problema}
+PLANEACIÓN COMPLETA YA GENERADA:
+${resumenDias}
+Redacta la descripción de cómo este proyecto específico favorece este eje articulador.`
+  console.error(`⏱️ INICIO llamada Claude (descripción eje "${ejeNombre}") — ${new Date().toISOString()}`)
+  const inicio = Date.now()
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 300,
+    system: SYSTEM_PROMPT_EJE,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+  console.error(`⏱️ FIN llamada Claude (descripción eje) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  const content = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+  return recortarAlLimite(content, LIMITE_DESCRIPCION_CIERRE)
+}
+
+async function generarDescripcionEvaluacionFormativa(params: {
+  proyecto: any
+  todosLosDias: DiaGenerado[]
+}): Promise<string> {
+  const { proyecto, todosLosDias } = params
+  const resumenDias = todosLosDias.map(d =>
+    `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
+  ).join('\n\n')
+  const userMessage = `Proyecto: ${proyecto.nombre_proyecto}
+PLANEACIÓN COMPLETA YA GENERADA:
+${resumenDias}
+Redacta la descripción de cómo esta planeación aborda la evaluación formativa.`
+  console.error(`⏱️ INICIO llamada Claude (evaluación formativa) — ${new Date().toISOString()}`)
+  const inicio = Date.now()
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 300,
+    system: SYSTEM_PROMPT_EVALUACION_FORMATIVA,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+  console.error(`⏱️ FIN llamada Claude (evaluación formativa) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  const content = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+  return recortarAlLimite(content, LIMITE_DESCRIPCION_CIERRE)
+}
 async function generarUnaRubrica(params: {
   pdaTexto: string
   campoFormativo: string
@@ -785,7 +854,33 @@ export async function POST(request: NextRequest) {
       })
       rubricas.push({ ...instrumento, pda_evaluado: p.pdaTexto, es_principal: p.esPrincipal })
     }
+    if (jobId) {
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        fase_actual: 'Redactando la vinculación de ejes articuladores...',
+      })
+    }
 
+    const ejesTexto = [form.eje_principal, form.eje_secundario].filter(Boolean)
+    const ejesFinal: { nombre: string; descripcion: string }[] = []
+    for (const ejeNombre of ejesTexto) {
+      const descripcion = await generarDescripcionEje({
+        ejeNombre,
+        proyecto: form,
+        todosLosDias: todasLasDiasGeneradas,
+      })
+      ejesFinal.push({ nombre: ejeNombre, descripcion })
+    }
+
+    if (jobId) {
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        fase_actual: 'Redactando la evaluación formativa...',
+      })
+    }
+
+    const evaluacionFormativa = await generarDescripcionEvaluacionFormativa({
+      proyecto: form,
+      todosLosDias: todasLasDiasGeneradas,
+    })
     const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
     const codigosInclusion = new Set(
       (Array.isArray(profile.alumnos_inclusion) ? profile.alumnos_inclusion : []).map((a: any) => a.codigo)
@@ -816,6 +911,8 @@ export async function POST(request: NextRequest) {
       dias: diasFinal,
       instrumentos_evaluacion: rubricasConRegistro,
       ajustes_por_dia,
+      ejes: ejesFinal,
+      evaluacion_formativa: evaluacionFormativa,
     }
 
     planeacion.dias_especiales = [
