@@ -84,7 +84,26 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             Planea. Conecta. Transforma.
           </p>
         </div>
-
+        {/* Ficha institucional — fuente única de verdad para Jardín/CCT/Zona/
+            Sector/Región/Turno. Vive aquí una sola vez para no repetirla en
+            cada encabezado; clic lleva a Configuración para corregirla. */}
+        <button
+          onClick={() => router.push('/configuracion')}
+          style={{
+            margin: '12px 12px 4px', padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+            cursor: 'pointer', textAlign: 'left', display: 'block', width: 'calc(100% - 24px)',
+          }}
+        >
+          <p style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3 }}>
+            {profile?.school_name || 'Jardín de Niños'}
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6 }}>
+            CCT {profile?.cct_primary || '—'}<br/>
+            Zona {profile?.zona || '—'} · Sector {profile?.sector || '—'} · Región {profile?.region || '—'}<br/>
+            {profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '—'}
+          </p>
+        </button>
         {/* Nav */}
         <nav style={{ padding: '16px 12px', flex: 1 }}>
           {NAV_ITEMS.map((item) => {
