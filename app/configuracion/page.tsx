@@ -21,6 +21,18 @@ export default function ConfiguracionPage() {
   const [editandoWhatsapp, setEditandoWhatsapp] = useState(false)
   const [whatsappValor, setWhatsappValor] = useState('')
   const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
+
+  // Datos institucionales — Zona/Sector/Región/Turno, sugeridos del
+  // catálogo oficial SEP y confirmables aquí (misma fuente única de
+  // verdad que usan Mi Grupo y el onboarding).
+  const [datosCctSugeridos, setDatosCctSugeridos] = useState<any>(null)
+  const [zonaEditable, setZonaEditable] = useState('')
+  const [sectorEditable, setSectorEditable] = useState('')
+  const [regionEditable, setRegionEditable] = useState('')
+  const [turnoEditable, setTurnoEditable] = useState('')
+  const [confirmandoInstitucional, setConfirmandoInstitucional] = useState(false)
+  const [institucionalConfirmado, setInstitucionalConfirmado] = useState(false)
+  const [editandoInstitucional, setEditandoInstitucional] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // [ago 2026] Trasladado desde app/mi-grupo/page.tsx (Sección 4) —
@@ -40,8 +52,26 @@ export default function ConfiguracionPage() {
       const { data } = await supabase
         .from('users').select('*')
         .eq('auth_uid', session.user.id).single()
-      if (!data) { router.push('/auth/login'); return }
+            if (!data) { router.push('/auth/login'); return }
       setProfile(data)
+
+      setInstitucionalConfirmado(!!data.zona_confirmada && !!data.sector_confirmada && !!data.region_confirmada)
+      setTurnoEditable(data.shift_primary || '')
+      if (data.cct_primary) {
+        try {
+          const resCct = await fetch(`/api/cct-lookup?cv_cct=${data.cct_primary}`)
+          const jsonCct = await resCct.json()
+          if (jsonCct.encontrado) {
+            setDatosCctSugeridos(jsonCct)
+            setZonaEditable(data.zona_confirmada ? (data.zona || '') : (jsonCct.campos.zona.valor || ''))
+            setSectorEditable(data.sector_confirmada ? (data.sector || '') : (jsonCct.campos.sector.valor || ''))
+            setRegionEditable(data.region_confirmada ? (data.region || '') : (jsonCct.campos.region.valor || ''))
+          }
+        } catch {
+          // silencioso -- si falla, los campos se quedan vacíos y editables
+        }
+      }
+
       if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
       setLoading(false)
     }
@@ -68,6 +98,45 @@ export default function ConfiguracionPage() {
         setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
     setSaveMsg('✅ Foto actualizada correctamente')
     setUploading(false)
+  }
+  async function confirmarDatosInstitucionales() {
+    setConfirmandoInstitucional(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setConfirmandoInstitucional(false); return }
+      const campos: { campo: 'zona' | 'sector' | 'region' | 'turno'; valor: string }[] = [
+        { campo: 'zona', valor: zonaEditable },
+        { campo: 'sector', valor: sectorEditable },
+        { campo: 'region', valor: regionEditable },
+        { campo: 'turno', valor: turnoEditable },
+      ]
+      for (const { campo, valor } of campos) {
+        if (!valor.trim()) continue
+        await fetch('/api/cct-confirmar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ cv_cct: profile.cct_primary, campo, valor }),
+        })
+      }
+      setProfile((prev: any) => ({
+        ...prev,
+        zona: zonaEditable,
+        sector: sectorEditable,
+        region: regionEditable,
+        shift_primary: turnoEditable,
+        zona_confirmada: true,
+        sector_confirmada: true,
+        region_confirmada: true,
+      }))
+      setInstitucionalConfirmado(true)
+      setEditandoInstitucional(false)
+    } catch {
+      // silencioso -- si falla, la tarjeta sigue en modo edición para reintentar
+    }
+    setConfirmandoInstitucional(false)
   }
 
   async function guardarWhatsapp() {
@@ -155,9 +224,87 @@ export default function ConfiguracionPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 32px' }}>
 
-        {/* ENCABEZADO */}
+                {/* ENCABEZADO */}
         <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '28px 32px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
+        </div>
+
+        {/* DATOS INSTITUCIONALES — fuente única de verdad para CCT/Zona/Sector/Región/Turno */}
+        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS INSTITUCIONALES</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
+            <span style={{ fontSize: 13, color: '#888' }}>CCT</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{profile?.cct_primary || '—'}</span>
+          </div>
+
+          {institucionalConfirmado && !editandoInstitucional ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {[
+                  { label: 'Zona', valor: profile?.zona },
+                  { label: 'Sector', valor: profile?.sector },
+                  { label: 'Región', valor: profile?.region },
+                  { label: 'Turno', valor: profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '' },
+                ].map(item => (
+                  <div key={item.label}>
+                    <p style={{ fontSize: 11, color: '#888', fontWeight: 600, margin: '0 0 4px' }}>{item.label}</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{item.valor || '—'}</p>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setEditandoInstitucional(true)}
+                style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                Editar
+              </button>
+            </>
+          ) : (
+            <>
+              {datosCctSugeridos && (
+                <p style={{ fontSize: 11, color: '#0F6E56', margin: '0 0 12px' }}>
+                  📍 Sugerido del catálogo oficial SEP — revisa que sea correcto y corrígelo si hace falta.
+                </p>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Zona</label>
+                  <input value={zonaEditable} onChange={e => setZonaEditable(e.target.value)}
+                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Sector</label>
+                  <input value={sectorEditable} onChange={e => setSectorEditable(e.target.value)} placeholder='o "No aplica"'
+                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Región</label>
+                  <input value={regionEditable} onChange={e => setRegionEditable(e.target.value)}
+                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Turno</label>
+                  <select value={turnoEditable} onChange={e => setTurnoEditable(e.target.value)}
+                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', background: 'white' }}>
+                    <option value="" disabled>— Selecciona —</option>
+                    <option value="matutino">Matutino</option>
+                    <option value="vespertino">Vespertino</option>
+                    <option value="discontinuo">Discontinuo</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={confirmarDatosInstitucionales} disabled={confirmandoInstitucional}
+                  style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: confirmandoInstitucional ? 'default' : 'pointer', opacity: confirmandoInstitucional ? 0.6 : 1 }}>
+                  {confirmandoInstitucional ? 'Guardando...' : '✅ Confirmar'}
+                </button>
+                {institucionalConfirmado && (
+                  <button onClick={() => setEditandoInstitucional(false)}
+                    style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'stretch' }}>
