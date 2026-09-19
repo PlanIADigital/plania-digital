@@ -64,7 +64,16 @@ const SEMAFORO: Record<string, { fondo: string; texto: string }> = {
   'En proceso': { fondo: COLOR.procesoFondo, texto: COLOR.procesoTexto },
   'Requiere apoyo': { fondo: COLOR.apoyoFondo, texto: COLOR.apoyoTexto },
 }
-
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function formatearFechaCorta(iso: string): string {
+  if (!iso) return '—'
+  const d = new Date(iso + 'T12:00:00')
+  return `${d.getDate()} ${MESES_CORTO[d.getMonth()]}`
+}
+function formatearRangoFechas(inicio: string, fin: string): string {
+  if (!inicio || !fin) return '—'
+  return `${formatearFechaCorta(inicio)} al ${formatearFechaCorta(fin)}`
+}
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -153,14 +162,14 @@ export async function POST(request: NextRequest) {
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: bordeEstandar,
       rows: [
-        new TableRow({
+                new TableRow({
           children: [
             new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROYECTO', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
             new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.project_name)] }),
-            new TableCell({ width: { size: 12, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia)] }),
-            new TableCell({ width: { size: 12, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(`${proyecto.starts_on || '—'} al ${proyecto.ends_on || '—'}`)] }),
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia)] }),
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(formatearRangoFechas(proyecto.starts_on, proyecto.ends_on), { align: AlignmentType.CENTER })] }),
           ],
         }),
         new TableRow({
