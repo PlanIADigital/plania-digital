@@ -220,94 +220,84 @@ export default function ConfiguracionPage() {
 
   const cardTitleStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px', textAlign: 'center' }
 
+  // Fila label/valor de solo lectura — mismo patrón que ya usa "Datos de cuenta"
+  const filaLectura = (label: string, valor?: string | null) => (
+    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
+      <span style={{ fontSize: 13, color: '#888' }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{valor || '—'}</span>
+    </div>
+  )
+
+  const campoEditable: React.CSSProperties = { display: 'block', width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 12 }
+
   return (
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 32px' }}>
 
-                {/* ENCABEZADO */}
+        {/* ENCABEZADO */}
         <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '28px 32px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
         </div>
 
-        {/* DATOS INSTITUCIONALES — fuente única de verdad para CCT/Zona/Sector/Región/Turno */}
-        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, marginBottom: 24 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS INSTITUCIONALES</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
-            <span style={{ fontSize: 13, color: '#888' }}>CCT</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{profile?.cct_primary || '—'}</span>
-          </div>
-
-          {institucionalConfirmado && !editandoInstitucional ? (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-                {[
-                  { label: 'Zona', valor: profile?.zona },
-                  { label: 'Sector', valor: profile?.sector },
-                  { label: 'Región', valor: profile?.region },
-                  { label: 'Turno', valor: profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <p style={{ fontSize: 11, color: '#888', fontWeight: 600, margin: '0 0 4px' }}>{item.label}</p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{item.valor || '—'}</p>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setEditandoInstitucional(true)}
-                style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                Editar
-              </button>
-            </>
-          ) : (
-            <>
-              {datosCctSugeridos && (
-                <p style={{ fontSize: 11, color: '#0F6E56', margin: '0 0 12px' }}>
-                  📍 Sugerido del catálogo oficial SEP — revisa que sea correcto y corrígelo si hace falta.
-                </p>
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Zona</label>
-                  <input value={zonaEditable} onChange={e => setZonaEditable(e.target.value)}
-                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Sector</label>
-                  <input value={sectorEditable} onChange={e => setSectorEditable(e.target.value)} placeholder='o "No aplica"'
-                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Región</label>
-                  <input value={regionEditable} onChange={e => setRegionEditable(e.target.value)}
-                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Turno</label>
-                  <select value={turnoEditable} onChange={e => setTurnoEditable(e.target.value)}
-                    style={{ width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', background: 'white' }}>
-                    <option value="" disabled>— Selecciona —</option>
-                    <option value="matutino">Matutino</option>
-                    <option value="vespertino">Vespertino</option>
-                    <option value="discontinuo">Discontinuo</option>
-                  </select>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={confirmarDatosInstitucionales} disabled={confirmandoInstitucional}
-                  style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: confirmandoInstitucional ? 'default' : 'pointer', opacity: confirmandoInstitucional ? 0.6 : 1 }}>
-                  {confirmandoInstitucional ? 'Guardando...' : '✅ Confirmar'}
-                </button>
-                {institucionalConfirmado && (
-                  <button onClick={() => setEditandoInstitucional(false)}
-                    style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    Cancelar
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'stretch' }}>
+
+          {/* DATOS INSTITUCIONALES — fuente única de verdad para CCT/Zona/Sector/Región/Turno */}
+          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS INSTITUCIONALES</p>
+
+            {filaLectura('CCT', profile?.cct_primary)}
+
+            {institucionalConfirmado && !editandoInstitucional ? (
+              <>
+                {filaLectura('Zona', profile?.zona)}
+                {filaLectura('Sector', profile?.sector)}
+                {filaLectura('Región', profile?.region)}
+                {filaLectura('Turno', profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '')}
+                <button onClick={() => setEditandoInstitucional(true)}
+                  style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  Editar
+                </button>
+              </>
+            ) : (
+              <>
+                {datosCctSugeridos && (
+                  <p style={{ fontSize: 11, color: '#0F6E56', margin: '0 0 12px' }}>
+                    📍 Sugerido del catálogo oficial SEP — revisa que sea correcto y corrígelo si hace falta.
+                  </p>
+                )}
+                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Zona</label>
+                <input value={zonaEditable} onChange={e => setZonaEditable(e.target.value)} style={campoEditable} />
+
+                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Sector</label>
+                <input value={sectorEditable} onChange={e => setSectorEditable(e.target.value)} placeholder='o "No aplica"' style={campoEditable} />
+
+                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Región</label>
+                <input value={regionEditable} onChange={e => setRegionEditable(e.target.value)} style={campoEditable} />
+
+                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Turno</label>
+                <select value={turnoEditable} onChange={e => setTurnoEditable(e.target.value)}
+                  style={{ ...campoEditable, background: 'white', cursor: 'pointer' }}>
+                  <option value="" disabled>— Selecciona —</option>
+                  <option value="matutino">Matutino</option>
+                  <option value="vespertino">Vespertino</option>
+                  <option value="discontinuo">Discontinuo</option>
+                </select>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button onClick={confirmarDatosInstitucionales} disabled={confirmandoInstitucional}
+                    style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: confirmandoInstitucional ? 'default' : 'pointer', opacity: confirmandoInstitucional ? 0.6 : 1 }}>
+                    {confirmandoInstitucional ? 'Guardando...' : '✅ Confirmar'}
+                  </button>
+                  {institucionalConfirmado && (
+                    <button onClick={() => setEditandoInstitucional(false)}
+                      style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* FOTO DE PERFIL */}
           <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, textAlign: 'center' }}>
@@ -350,12 +340,7 @@ export default function ConfiguracionPage() {
               { label: 'Correo electrónico', value: profile?.email },
               { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
               { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
-                        ].map(item => (
-              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
-                <span style={{ fontSize: 13, color: '#888' }}>{item.label}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{item.value || '—'}</span>
-              </div>
-            ))}
+                        ].map(item => filaLectura(item.label, item.value))}
             {/* WhatsApp — único campo editable de esta tarjeta, el resto son
                 de solo lectura porque dependen de otro flujo (CCT, rol, etc.) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -397,60 +382,56 @@ export default function ConfiguracionPage() {
             </div>
           </div>
 
-          {/* MI ESTILO DE NARRACIÓN — tercera columna, mismo grid */}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, textAlign: 'center' as const, height: '100%' }}>
-            <p style={cardTitleStyle}>MI ESTILO DE NARRACIÓN</p>
-            <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.5, textAlign: 'center' }}>
-              Comparte cómo escribes: una carta, unas notas o cualquier texto tuyo.<br/>La finalidad es que aprendamos de tu tono y estilo personal.<br/>MÍA aprenderá de ti para que tus planeaciones tengan tu estilo pedagógico.
-            </p>
-            {!estiloGuardado ? (
-              <div>
-                <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
-                  placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
-                  style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
-                />
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
-                  <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
-                  style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar'}
-                  </button>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    {analizandoEstilo ? '🔍 Analizando...' : '📎 Subir'}
-                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
-                  </label>
-                  {/* [ago 2026] Solo aparece si había un estilo guardado antes de
-                      entrar a editar — si es la primera vez (nunca hubo nada
-                      guardado), no hay a qué "cancelar" volver. */}
-                  {resultadoEstilo && (
-                    <button
-                      type="button"
-                      disabled={analizandoEstilo}
-                      onClick={() => { setEstiloGuardado(true); setEstiloTexto(''); setErrorEstilo('') }}
-                      style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoEstilo ? 'default' : 'pointer' }}>
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-                {errorEstilo && (
-                  <p style={{ marginTop: 10, fontSize: 12, color: '#991b1b', background: '#fee2e2', padding: '6px 10px', borderRadius: 6, display: 'inline-block' }}>{errorEstilo}</p>
-                )}
-                <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
-              </div>
-            ) : (
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#065f46', margin: '0 0 4px' }}>✅ Estilo de escritura guardado</p>
-                {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '0 0 12px' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
-                {/* [ago 2026] Ya NO borra resultadoEstilo aquí — solo abre el
-                    formulario. Así, si el usuario decide no continuar, "Cancelar"
-                    puede restaurar la vista guardada sin haber perdido el dato. */}
-                <button onClick={() => setEstiloGuardado(false)}
-                  style={{ background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  ↑ Actualizar
-                </button>
-              </div>
-            )}
-          </div>
+        </div>
 
+        <div style={{ height: 24 }} />
+
+        {/* MI ESTILO DE NARRACIÓN — ahora ancho completo, delgada */}
+        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '20px 32px', boxSizing: 'border-box' as const, textAlign: 'center' as const }}>
+          <p style={cardTitleStyle}>MI ESTILO DE NARRACIÓN</p>
+          <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.5, textAlign: 'center' }}>
+            Comparte cómo escribes: una carta, unas notas o cualquier texto tuyo. La finalidad es que aprendamos de tu tono y estilo personal. MÍA aprenderá de ti para que tus planeaciones tengan tu estilo pedagógico.
+          </p>
+          {!estiloGuardado ? (
+            <div style={{ maxWidth: 640, margin: '0 auto' }}>
+              <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
+                placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
+                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
+              />
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
+                style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar'}
+                </button>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  {analizandoEstilo ? '🔍 Analizando...' : '📎 Subir'}
+                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
+                </label>
+                {resultadoEstilo && (
+                  <button
+                    type="button"
+                    disabled={analizandoEstilo}
+                    onClick={() => { setEstiloGuardado(true); setEstiloTexto(''); setErrorEstilo('') }}
+                    style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoEstilo ? 'default' : 'pointer' }}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+              {errorEstilo && (
+                <p style={{ marginTop: 10, fontSize: 12, color: '#991b1b', background: '#fee2e2', padding: '6px 10px', borderRadius: 6, display: 'inline-block' }}>{errorEstilo}</p>
+              )}
+              <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#065f46', margin: '0 0 4px' }}>✅ Estilo de escritura guardado</p>
+              {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '0 0 12px' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
+              <button onClick={() => setEstiloGuardado(false)}
+                style={{ background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                ↑ Actualizar
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ height: 40 }} />
