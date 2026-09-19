@@ -78,7 +78,8 @@ export const FUENTE = {
 export const TAMANO = {
   xs: 15,    // 7.5pt — pie de página, número de página, fino
   sm: 17,    // 8.5pt — encabezados de tabla angostos, etiquetas pequeñas
-  base: 20,  // 10pt  — texto de cuerpo, contenido de celdas
+  contenido: 18, // 9pt — todo el texto dentro de celdas de contenido pedagógico (uniforme)
+  base: 20,  // 10pt  — texto de cuerpo general
   md: 22,    // 11pt  — subtítulos (nombre del proyecto), texto destacado
   mdl: 24,   // 12pt  — bloque institucional: línea de Educadora/Grupo
   lg: 26,    // 13pt  — banda de Momento/Día, nombre del Jardín en el encabezado

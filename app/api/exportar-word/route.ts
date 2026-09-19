@@ -91,7 +91,10 @@ export async function POST(request: NextRequest) {
       italics: opts.italics,
       color: opts.color || COLOR.negroAzulado,
       font: opts.font || FUENTE.cuerpo,
-      size: opts.size || TAMANO.base,
+      // 9pt uniforme para todo el contenido de tablas que no especifica
+      // su propio tamaño (etiquetas/encabezados de diseño sí lo
+      // especifican explícito, así que no se ven afectados).
+      size: opts.size || TAMANO.contenido,
     })
 
     const parrafo = (t: string, opts: {
