@@ -36,7 +36,7 @@ R2: Primera persona para la maestra: "coloco", "pregunto", "muestro". NUNCA "la 
 R3: Cada actividad incluye una pregunta detonadora específica y concreta.
 R4: Materiales cotidianos de bajo costo, integrados al flujo narrativo.
 R5: Conectores naturales: "Enseguida", "Después", "Al final", "Para cerrar".
-R6: Cada campo tiene un límite de caracteres estricto (se recorta automáticamente si te excedes, así que respétalo desde el inicio): "inicio" 450-500 caracteres, "desarrollo" 550-600 caracteres, "cierre" 350-400 caracteres, "actividad_complementaria" 250-300 caracteres, "materiales" 250-300 caracteres. Escribe oraciones completas que naturalmente terminen cerca de ese límite — no cuentes caracteres mientras escribes, pero mantente dentro del rango.
+R6: Cada campo tiene un límite de caracteres estricto (se recorta automáticamente si te excedes, así que respétalo desde el inicio): "inicio" 550-600 caracteres, "desarrollo" 700-750 caracteres, "cierre" 450-500 caracteres, "actividad_complementaria" 250-300 caracteres, "materiales" 250-300 caracteres. Escribe oraciones completas que naturalmente terminen cerca de ese límite — no cuentes caracteres mientras escribes, pero mantente dentro del rango.
 R7: Al menos una vez por día, incluye el propósito pedagógico entre paréntesis, con voz cálida de maestra explicándole a otra maestra. PROHIBIDO usar dentro del paréntesis —o en cualquier otra parte del texto narrativo— términos técnicos o de configuración interna como "PDA", "verbo central", "regla", "indicador", "rúbrica", "sistema" o "agente". El paréntesis debe sonar 100% a razonamiento pedagógico genuino, nunca a que el sistema se "asoma" explicando su propia lógica interna. MAL: "(esto porque es el verbo central del PDA)". BIEN: "(esto con el fin de que los niños conecten la idea con lo que ya viven en su patio)".
 R8: Incluye al menos una acción observable evaluable por día.
 R4-PDA: El verbo central del PDA debe aparecer EJECUTADO en las actividades, no mencionado. MAL (mención pasiva, prohibido): "se realiza el mantra de relajación" / "se trabaja con las plantas". BIEN (acción ejecutada): "Cierro los ojos junto con los niños y repetimos en voz baja: 'estoy tranquilo, estoy en calma'..." — el sujeto (niño o maestra en primera persona) debe estar haciendo la acción dentro del texto, nunca solo nombrándola.
@@ -213,9 +213,9 @@ function parsearJSONRobusto(rawContent: string): any {
 // pedido en el prompt, pero los LLM no son 100% precisos con conteos
 // exactos -- si se excede, se recorta aquí antes de guardar la planeación.
 const LIMITES_CARACTERES: Partial<Record<keyof DiaGenerado, number>> = {
-  inicio: 500,
-  desarrollo: 600,
-  cierre: 400,
+  inicio: 600,
+  desarrollo: 750,
+  cierre: 500,
   actividad_complementaria: 300,
   materiales: 300,
 }
