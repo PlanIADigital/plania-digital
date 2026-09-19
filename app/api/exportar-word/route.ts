@@ -251,11 +251,22 @@ export async function POST(request: NextRequest) {
           width: { size: anchoColumnas[i], type: WidthType.PERCENTAGE },
           shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
           margins: RELLENO_CELDA.normal,
-          children: [parrafo(t, { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
         })),
       })
     }
+    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    const MESES_NOMBRE = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
+    function parrafosFechaTresLineas(dia: any) {
+      if (!dia.fecha_iso) return [parrafo(dia.fecha, { align: AlignmentType.CENTER, bold: true, size: TAMANO.base })]
+      const d = new Date(dia.fecha_iso + 'T12:00:00')
+      return [
+        parrafo(DIAS_SEMANA[d.getDay()], { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
+        parrafo(String(d.getDate()), { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
+        parrafo(MESES_NOMBRE[d.getMonth()], { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
+      ]
+    }
     function filaDia(dia: any) {
       const ajustesDelDia = ajustesPorDia.filter((a) => a.numero === dia.numero)
       const actividades = ['Inicio', 'Desarrollo', 'Cierre'].map((et, i) => new Paragraph({
@@ -278,7 +289,7 @@ export async function POST(request: NextRequest) {
       return new TableRow({
         cantSplit: true, // TRUE = no se parte entre páginas (ver wordTemplateTokens.REGLAS)
         children: [
-          new TableCell({ width: { size: anchoColumnas[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(dia.fecha, { bold: true })] }),
+          new TableCell({ width: { size: anchoColumnas[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosFechaTresLineas(dia) }),
           new TableCell({ width: { size: anchoColumnas[1], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: actividades }),
           new TableCell({ width: { size: anchoColumnas[2], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, borders: { left: { style: BorderStyle.SINGLE, size: BORDE.acentoGrosor, color: BORDE.acentoColor } }, children: ajustesParrafos,}),
           new TableCell({ width: { size: anchoColumnas[3], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.actividad_complementaria || '—', { size: TAMANO.sm })] }),
