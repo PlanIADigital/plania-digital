@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
@@ -192,7 +193,12 @@ export default function VerPlaneacionPage() {
             cct: profile.cct_primary,
             educadora: profile.full_name,
             grado: profile.grado,
+            grupo_letra: profile.grupo_letra,
             turno: profile.shift_primary,
+            zona: profile.zona,
+            sector: profile.sector,
+            region: profile.region,
+            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
           },
           proyecto: {
             project_name: planeacion.project_name,

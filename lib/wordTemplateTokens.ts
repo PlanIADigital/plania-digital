@@ -80,7 +80,8 @@ export const TAMANO = {
   sm: 17,    // 8.5pt — encabezados de tabla angostos, etiquetas pequeñas
   base: 20,  // 10pt  — texto de cuerpo, contenido de celdas
   md: 22,    // 11pt  — subtítulos (nombre del proyecto), texto destacado
-  lg: 26,    // 13pt  — banda de Momento/Día
+  mdl: 24,   // 12pt  — bloque institucional: línea de Educadora/Grupo
+  lg: 26,    // 13pt  — banda de Momento/Día, nombre del Jardín en el encabezado
   xl: 40,    // 20pt  — título del documento (H1, una sola vez)
 } as const;
 

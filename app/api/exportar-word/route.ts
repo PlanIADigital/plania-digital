@@ -136,41 +136,45 @@ export async function POST(request: NextRequest) {
         })],
       })
     }
-
     // ------------------------------------------------------------
     // BLOQUE 1 — Institucional + Pedagógico
     // ------------------------------------------------------------
-    const tarjetaDatosGenerales = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { ...sinBorde, insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: COLOR.blanco } },
-      rows: [
-        ['Jardín de Niños', `${inst.jardin || '—'} (${inst.cct || '—'})`],
-        ['Educadora', inst.educadora || '—'],
-        ['Grupo', `${inst.grado || '—'}${inst.turno ? ' · Turno ' + inst.turno : ''}`],
-        ['Periodo', `${proyecto.starts_on || '—'} al ${proyecto.ends_on || '—'}`],
-      ].map(([label, valor]) => new TableRow({
-        children: [
-          new TableCell({
-            width: { size: 30, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta },
-            margins: { ...RELLENO_CELDA.normal, left: 200 },
-            children: [parrafo(label, { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
-          }),
-          new TableCell({
-            width: { size: 70, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta },
-            margins: { ...RELLENO_CELDA.normal, right: 200 },
-            children: [parrafo(valor)],
-          }),
-        ],
-      })),
-    })
+        const bloqueInstitucional: Paragraph[] = [
+      parrafo(inst.jardin || 'Jardín de Niños', { align: AlignmentType.CENTER, bold: true, font: FUENTE.titulo, size: TAMANO.lg, after: 20 }),
+      parrafo(`CCT ${inst.cct || '—'} Zona ${inst.zona || '—'} Sector ${inst.sector || '—'} Región ${inst.region || '—'}`, { align: AlignmentType.CENTER, font: FUENTE.titulo, size: TAMANO.md, after: 20 }),
+      parrafo(`Ciclo Escolar ${inst.ciclo_escolar || '—'}`, { align: AlignmentType.CENTER, font: FUENTE.titulo, size: TAMANO.base, after: 200 }),
+      parrafo(`Educadora ${inst.educadora || '—'} del Grupo ${inst.grado || '—'} ${inst.grupo_letra || ''}`.trim(), { align: AlignmentType.CENTER, bold: true, font: FUENTE.titulo, size: TAMANO.mdl, after: 300 }),
+    ]
 
-    const tablaCurricular = new Table({
+    const tablaProyecto = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: bordeEstandar,
       rows: [
         new TableRow({
+          children: [
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROYECTO', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.project_name)] }),
+            new TableCell({ width: { size: 12, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia)] }),
+            new TableCell({ width: { size: 12, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 13, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(`${proyecto.starts_on || '—'} al ${proyecto.ends_on || '—'}`)] }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROBLEMÁTICA', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.situacion_problema)] }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROPÓSITO', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.finalidad)] }),
+          ],
+        }),
+        new TableRow({
           tableHeader: true,
-          children: ['CAMPO FORMATIVO', 'CONTENIDO', 'PDA'].map((t, i) => new TableCell({
+          children: ['C. FORMATIVO', 'CONTENIDO', 'PROCESO DE DESARROLLO DE APRENDIZAJE'].map((t, i) => new TableCell({
             width: { size: i === 0 ? 24 : 38, type: WidthType.PERCENTAGE },
             shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
             margins: RELLENO_CELDA.normal,
@@ -211,14 +215,9 @@ export async function POST(request: NextRequest) {
       ],
     }) : null
 
-    const bloque1: (Paragraph | Table)[] = [
-      parrafo(proyecto.project_name || 'Planeación didáctica', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.xl, after: 40 }),
-      parrafo(`Modalidad: ${proyecto.metodologia || '—'}`, { color: COLOR.grisSuave, size: TAMANO.md, after: 200 }),
-      tarjetaDatosGenerales,
-      parrafo('', { before: 200, permitirVacio: true }),
-      etiqueta('Problemática'), parrafo(proyecto.situacion_problema),
-      etiqueta('Propósito'), parrafo(proyecto.finalidad),
-      etiqueta('Tabla curricular'), tablaCurricular,
+        const bloque1: (Paragraph | Table)[] = [
+      ...bloqueInstitucional,
+      tablaProyecto,
     ]
     if (tablaEjes) bloque1.push(parrafo('', { before: 160, permitirVacio: true }), etiqueta('Ejes articuladores'), tablaEjes)
 
