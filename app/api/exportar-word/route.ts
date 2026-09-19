@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
         children: [new Paragraph({
           alignment: AlignmentType.CENTER,
           children: [
-            new TextRun({ text: 'Generado con PlanIA Digital · plania.digital   ·   Pág. ', color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
+            new TextRun({ text: 'Generado con PlanIA Digital · Pág. ', color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
             new TextRun({ children: [PageNumber.CURRENT], color: COLOR.grisSuave, font: FUENTE.cuerpo, size: TAMANO.xs }),
           ],
         })],
