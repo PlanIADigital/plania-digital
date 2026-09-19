@@ -125,16 +125,22 @@ export async function POST(request: NextRequest) {
     // necesita su PROPIA instancia de Header/Footer (no se
     // reutiliza el mismo objeto entre secciones).
     // ------------------------------------------------------------
-    function crearHeader() {
+        function crearHeader() {
       return new Header({
-        children: [new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [
-            new TextRun({ text: '✦ PlanIA ', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-            new TextRun({ text: 'Digital', bold: true, color: COLOR.cian, font: FUENTE.titulo, size: TAMANO.sm }),
-            new TextRun({ text: ' ✦', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-          ],
-        })],
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({ text: '✦ PlanIA ', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
+              new TextRun({ text: 'Digital', bold: true, color: COLOR.cian, font: FUENTE.titulo, size: TAMANO.sm }),
+              new TextRun({ text: ' ✦', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
+            ],
+          }),
+          // Línea en blanco estructural dentro del encabezado — separa el
+          // logo del contenido del cuerpo sin depender de un párrafo en
+          // el body que alguien podría borrar con un retroceso.
+          new Paragraph({ text: '' }),
+        ],
       })
     }
     function crearFooter() {
@@ -234,7 +240,7 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------
     // BLOQUE 2 — Cuerpo por Momento (agrupado dinámicamente)
     // ------------------------------------------------------------
-    const anchoColumnas = [8, 40, 24, 14, 14] // Fecha | Actividades | Ajustes | Act.Compl. | Recursos
+    const anchoColumnas = [8, 36, 22, 17, 17] // Fecha | Actividades | Ajustes | Act.Compl. | Recursos
 
     function bandaMomento(nombre: string) {
       return new Table({
@@ -245,7 +251,7 @@ export async function POST(request: NextRequest) {
           children: [new TableCell({
             columnSpan: 5, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
             margins: RELLENO_CELDA.amplio,
-            children: [parrafo(`MOMENTO · ${nombre.toUpperCase()}`, { align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.lg })],
+            children: [parrafo(`MOMENTO · ${nombre.toUpperCase()}`, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.lg })],
           })],
         })],
       })
@@ -258,7 +264,7 @@ export async function POST(request: NextRequest) {
           width: { size: anchoColumnas[i], type: WidthType.PERCENTAGE },
           shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
           margins: RELLENO_CELDA.normal,
-          children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
         })),
       })
     }
@@ -278,6 +284,7 @@ export async function POST(request: NextRequest) {
       const ajustesDelDia = ajustesPorDia.filter((a) => a.numero === dia.numero)
       const actividades = ['Inicio', 'Desarrollo', 'Cierre'].map((et, i) => new Paragraph({
         spacing: { after: i < 2 ? 120 : 0 },
+        alignment: AlignmentType.JUSTIFIED,
         children: [
           texto(`${et}: `, { bold: true }),
           texto(dia[et.toLowerCase()], {}),
@@ -289,6 +296,7 @@ export async function POST(request: NextRequest) {
         // agente. NO anteponer a.codigo aquí o se duplica.
         ? ajustesDelDia.map((a: any, i: number) => new Paragraph({
           spacing: { after: i < ajustesDelDia.length - 1 ? 100 : 0 },
+          alignment: AlignmentType.JUSTIFIED,
           children: [texto(a.ajuste, { size: TAMANO.sm })],
         }))
         : [parrafo('—', { color: COLOR.grisSuave, size: TAMANO.sm })]
@@ -299,8 +307,8 @@ export async function POST(request: NextRequest) {
           new TableCell({ width: { size: anchoColumnas[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosFechaTresLineas(dia) }),
           new TableCell({ width: { size: anchoColumnas[1], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: actividades }),
           new TableCell({ width: { size: anchoColumnas[2], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, borders: { left: { style: BorderStyle.SINGLE, size: BORDE.acentoGrosor, color: BORDE.acentoColor } }, children: ajustesParrafos,}),
-          new TableCell({ width: { size: anchoColumnas[3], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.actividad_complementaria || '—', { size: TAMANO.sm })] }),
-          new TableCell({ width: { size: anchoColumnas[4], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.materiales || '—', { size: TAMANO.sm })] }),
+          new TableCell({ width: { size: anchoColumnas[3], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.actividad_complementaria || '—', { align: AlignmentType.CENTER, size: TAMANO.sm })] }),
+          new TableCell({ width: { size: anchoColumnas[4], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.materiales || '—', { align: AlignmentType.CENTER, size: TAMANO.sm })] }),
         ],
       })
     }
@@ -321,6 +329,7 @@ export async function POST(request: NextRequest) {
     const bloque2: (Paragraph | Table)[] = []
     let momentoActual: string | null = null
     let filasMomentoActual: TableRow[] = []
+    let esPrimerMomento = true
 
     function cerrarMomentoActual() {
       if (momentoActual && filasMomentoActual.length > 0) {
@@ -338,6 +347,10 @@ export async function POST(request: NextRequest) {
       }
       if (item.momento_modalidad !== momentoActual) {
         cerrarMomentoActual()
+        // Cada Momento inicia en página nueva — el primero ya viene
+        // precedido por el salto Bloque1→Bloque2, así que no se duplica.
+        if (!esPrimerMomento) bloque2.push(new Paragraph({ children: [new PageBreak()] }))
+        esPrimerMomento = false
         bloque2.push(bandaMomento(item.momento_modalidad))
         momentoActual = item.momento_modalidad
       }
