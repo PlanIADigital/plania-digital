@@ -48,6 +48,25 @@ function ThemeToggle() {
   )
 }
 
+// Abrevia el nombre del jardín para la ficha del sidebar: quita el prefijo
+// "Jardín de Niños", lo pasa a formato título (por si viene en MAYÚSCULAS
+// en la base) y reduce el último apellido a su inicial — así un nombre
+// largo no se corta ni empuja el diseño.
+function nombreJardinCorto(nombreCompleto?: string | null): string {
+  if (!nombreCompleto) return 'Jardín de Niños'
+  let base = nombreCompleto
+    .replace(/^Jard[ií]n de Ni[ñn]os Ind[ií]gena\s*/i, '')
+    .replace(/^Jard[ií]n de Ni[ñn]os\s*/i, '')
+    .replace(/^Centro de Educaci[oó]n Preescolar\s*/i, '')
+    .trim()
+  base = base.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase())
+  const palabras = base.split(' ').filter(Boolean)
+  if (palabras.length > 2) {
+    palabras[palabras.length - 1] = palabras[palabras.length - 1].charAt(0).toUpperCase() + '.'
+  }
+  return `JN ${palabras.join(' ')}`
+}
+
 export default function Sidebar({ profile, children }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -95,13 +114,12 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             cursor: 'pointer', textAlign: 'left', display: 'block', width: 'calc(100% - 24px)',
           }}
         >
-          <p style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3 }}>
-            {profile?.school_name || 'Jardín de Niños'}
+          <p style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3, textAlign: 'center' }}>
+            {nombreJardinCorto(profile?.school_name)}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6 }}>
-            CCT {profile?.cct_primary || '—'}<br/>
-            Zona {profile?.zona || '—'} · Sector {profile?.sector || '—'} · Región {profile?.region || '—'}<br/>
-            {profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '—'}
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6, textAlign: 'center' }}>
+            CCT {profile?.cct_primary || '—'} · {profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '—'}<br/>
+            Zona {profile?.zona || '—'} · Sector {profile?.sector || '—'} · Región {profile?.region || '—'}
           </p>
         </button>
         {/* Nav */}
