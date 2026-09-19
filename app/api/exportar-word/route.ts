@@ -29,7 +29,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   Header, Footer, PageNumber, AlignmentType, BorderStyle, WidthType,
-  ShadingType, VerticalAlign, PageBreak,
+  ShadingType, VerticalAlign, PageBreak, TableLayoutType,
 } from 'docx'
 import { PAGINA, COLOR, FUENTE, TAMANO, RELLENO_CELDA, BORDE } from '@/lib/wordTemplateTokens'
 
@@ -152,87 +152,85 @@ export async function POST(request: NextRequest) {
     // BLOQUE 1 — Institucional + Pedagógico
     // ------------------------------------------------------------
         const bloqueInstitucional: Paragraph[] = [
-      parrafo(inst.jardin || 'Jardín de Niños', { align: AlignmentType.CENTER, bold: true, font: FUENTE.titulo, size: TAMANO.lg, after: 20 }),
-      parrafo(`CCT ${inst.cct || '—'} Zona ${inst.zona || '—'} Sector ${inst.sector || '—'} Región ${inst.region || '—'}`, { align: AlignmentType.CENTER, font: FUENTE.titulo, size: TAMANO.md, after: 20 }),
-      parrafo(`Ciclo Escolar ${inst.ciclo_escolar || '—'}`, { align: AlignmentType.CENTER, font: FUENTE.titulo, size: TAMANO.base, after: 200 }),
-      parrafo(`Educadora ${inst.educadora || '—'} del Grupo ${inst.grado || '—'} ${inst.grupo_letra || ''}`.trim(), { align: AlignmentType.CENTER, bold: true, font: FUENTE.titulo, size: TAMANO.mdl, after: 300 }),
+      parrafo(inst.jardin || 'Jardín de Niños', { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.lg, after: 20 }),
+      parrafo(`CCT ${inst.cct || '—'} Zona ${inst.zona || '—'} Sector ${inst.sector || '—'} Región ${inst.region || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.md, after: 20 }),
+      parrafo(`Ciclo Escolar ${inst.ciclo_escolar || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.base, after: 200 }),
+      parrafo(`Educadora ${inst.educadora || '—'} del Grupo ${inst.grado || '—'} ${inst.grupo_letra || ''}`.trim(), { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.mdl, after: 300 }),
     ]
+
+    // Rejilla única de 20 columnas iguales (5% cada una) para toda la
+    // tabla pedagógica — cualquier ajuste futuro se describe en "cuántas
+    // columnas de 20 ocupa esta celda", sin fracciones raras. Incluye
+    // Proyecto/Problemática/Propósito/Campos/Ejes, todo en UNA tabla
+    // (Word no reconcilia bien columnas entre filas de distinto número
+    // de celdas si son tablas separadas o sin columnSpan explícito).
+    const GRID20 = Array(20).fill(5)
+    const gw = (cuantas: number) => cuantas * 5
 
     const tablaProyecto = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      layout: TableLayoutType.FIXED,
       borders: bordeEstandar,
       rows: [
-                new TableRow({
+        new TableRow({
           children: [
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROYECTO', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.project_name)] }),
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia)] }),
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(formatearRangoFechas(proyecto.starts_on, proyecto.ends_on), { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROYECTO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(8), type: WidthType.PERCENTAGE }, columnSpan: 8, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.project_name, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(formatearRangoFechas(proyecto.starts_on, proyecto.ends_on), { align: AlignmentType.CENTER })] }),
           ],
         }),
         new TableRow({
           children: [
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROBLEMÁTICA', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.situacion_problema)] }),
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROBLEMÁTICA', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.situacion_problema, { align: AlignmentType.JUSTIFIED })] }),
           ],
         }),
         new TableRow({
           children: [
-            new TableCell({ width: { size: 10, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROPÓSITO', { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 90, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.finalidad)] }),
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROPÓSITO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.finalidad, { align: AlignmentType.JUSTIFIED })] }),
           ],
         }),
         new TableRow({
           tableHeader: true,
-          children: ['C. FORMATIVO', 'CONTENIDO', 'PROCESO DE DESARROLLO DE APRENDIZAJE'].map((t, i) => new TableCell({
-            width: { size: i === 0 ? 24 : 38, type: WidthType.PERCENTAGE },
-            shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-            margins: RELLENO_CELDA.normal,
-            children: [parrafo(t, { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
-          })),
+          children: [
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('C. FORMATIVO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(7), type: WidthType.PERCENTAGE }, columnSpan: 7, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('CONTENIDO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            new TableCell({ width: { size: gw(10), type: WidthType.PERCENTAGE }, columnSpan: 10, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROCESO DE DESARROLLO DE APRENDIZAJE', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+          ],
         }),
         ...camposFormativos.map((c) => new TableRow({
           children: [
-            new TableCell({ width: { size: 24, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { bold: true })] }),
-            new TableCell({ width: { size: 38, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido)] }),
-            new TableCell({ width: { size: 38, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(`${c.pdaCodigo ? c.pdaCodigo + ' — ' : ''}${c.pdaTexto || ''}`)] }),
+            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo })] }),
+            new TableCell({ width: { size: gw(7), type: WidthType.PERCENTAGE }, columnSpan: 7, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: gw(10), type: WidthType.PERCENTAGE }, columnSpan: 10, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(`${c.pdaCodigo ? c.pdaCodigo + ' — ' : ''}${c.pdaTexto || ''}`, { align: AlignmentType.JUSTIFIED })] }),
           ],
         })),
+        ...(ejes.filter((e) => !!e.nombre).length > 0 ? [
+          new TableRow({
+            tableHeader: true,
+            children: [
+              new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('EJE ARTICULADOR', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+              new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('¿CÓMO SE FAVORECE?', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
+            ],
+          }),
+          ...ejes.filter((e) => !!e.nombre).map((e) => new TableRow({
+            children: [
+              new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.nombre, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo })] }),
+              new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.descripcion || '—', { align: e.descripcion ? AlignmentType.JUSTIFIED : AlignmentType.CENTER, italics: !e.descripcion, color: e.descripcion ? undefined : COLOR.grisSuave })] }),
+            ],
+          })),
+        ] : []),
       ],
     })
 
-    const ejesActivos = ejes.filter((e) => !!e.nombre)
-    const tablaEjes = ejesActivos.length > 0 ? new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: bordeEstandar,
-      rows: [
-        new TableRow({
-          tableHeader: true,
-          children: ['EJE ARTICULADOR', '¿CÓMO SE FAVORECE?'].map((t, i) => new TableCell({
-            width: { size: i === 0 ? 30 : 70, type: WidthType.PERCENTAGE },
-            shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-            margins: RELLENO_CELDA.normal,
-            children: [parrafo(t, { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
-          })),
-        }),
-        ...ejesActivos.map((e) => new TableRow({
-          children: [
-            new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(e.nombre, { bold: true, color: COLOR.indigo })] }),
-            // e.descripcion aún no se genera (pendiente: generarDescripcionEje()) — se deja en blanco.
-            new TableCell({ width: { size: 70, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(e.descripcion || '—', { italics: !e.descripcion, color: e.descripcion ? undefined : COLOR.grisSuave })] }),
-          ],
-        })),
-      ],
-    }) : null
-
-        const bloque1: (Paragraph | Table)[] = [
+    const bloque1: (Paragraph | Table)[] = [
       ...bloqueInstitucional,
       tablaProyecto,
     ]
-    if (tablaEjes) bloque1.push(parrafo('', { before: 160, permitirVacio: true }), etiqueta('Ejes articuladores'), tablaEjes)
-
     // ------------------------------------------------------------
     // BLOQUE 2 — Cuerpo por Momento (agrupado dinámicamente)
     // ------------------------------------------------------------
