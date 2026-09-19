@@ -632,13 +632,9 @@ async function darDeBajaAlumno(id: string) {
             input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
             input[type=number] { -moz-appearance: textfield; }
           `}</style>
-          {/* ENCABEZADO */}
+          {/* ENCABEZADO — institucional vive solo en la ficha del Sidebar */}
           <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '14px 32px', marginBottom: 20, textAlign: 'center' }}>
-            <h2 style={{ color: 'white', margin: '0 0 4px', fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
-            <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13 }}>
-              {profile.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile.cct_primary} · <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Turno:</strong> {profile.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''}
-            </p>
+            <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
           </div>
 
                     {/* [ago 2026] Banner de MÍA — avisa cuando falta 3.1 o 3.2 (Diagnóstico

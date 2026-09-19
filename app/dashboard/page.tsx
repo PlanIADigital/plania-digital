@@ -75,17 +75,11 @@ export default function DashboardPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 32px' }}>
 
-        {/* FILA 1 — Saludo completo */}
+      {/* FILA 1 — Saludo (institucional ahora vive solo en la ficha del Sidebar) */}
         <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '16px 32px', marginBottom: 24, textAlign: 'center' }}>
-          <h2 style={{ color: 'white', marginTop: 0, marginBottom: 6, fontSize: 24, fontWeight: 800, letterSpacing: '0.02em' }}>
+          <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.02em' }}>
             ¡HOLA, {profile?.full_name?.toUpperCase()}! 👋
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 13 }}>
-            {profile?.school_name && <><strong style={{ color: 'rgba(255,255,255,0.9)' }}>JN:</strong> {nombreCorto(profile.school_name)} · </>}
-            <strong style={{ color: 'rgba(255,255,255,0.9)' }}>CCT:</strong> {profile?.cct_primary} · 
-            <strong style={{ color: 'rgba(255,255,255,0.9)' }}> Turno:</strong> {turnoLabel[profile?.shift_primary] ?? profile?.shift_primary} · 
-            <strong style={{ color: 'rgba(255,255,255,0.9)' }}> Rol:</strong> {rolLabel[profile?.role] ?? profile?.role}
-          </p>
         </div>
 
         {/* FILA 2 — 2 columnas */}
