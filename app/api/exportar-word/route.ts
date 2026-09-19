@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
         tableHeader: true,
         children: ['NIVEL', 'DESCRIPTOR'].map((t, i) => new TableCell({
           width: { size: i === 0 ? 22 : 78, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-          margins: RELLENO_CELDA.normal, children: [parrafo(t, { bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
+          margins: RELLENO_CELDA.normal, children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
         })),
       })
       const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
@@ -415,23 +415,29 @@ export async function POST(request: NextRequest) {
         const s = SEMAFORO[n.etiqueta] || { fondo: COLOR.indigoClaro, texto: COLOR.indigo }
         return new TableRow({
           children: [
-            new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: s.fondo }, margins: RELLENO_CELDA.normal, children: [parrafo(n.etiqueta, { bold: true, color: s.texto })] }),
-            new TableCell({ width: { size: 78, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(n.descriptor, { size: TAMANO.sm })] }),
+            new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: s.fondo }, margins: RELLENO_CELDA.normal, children: [parrafo(n.etiqueta, { align: AlignmentType.CENTER, bold: true, color: s.texto })] }),
+            new TableCell({ width: { size: 78, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(n.descriptor, { align: AlignmentType.JUSTIFIED, size: TAMANO.contenido })] }),
           ],
         })
       })
       const alumnos: string[] = Array.isArray(r.registro_alumnos) ? r.registro_alumnos.map((a: any) => a.codigo) : []
+      const anchoColNumero = 6
+      const anchoColAlumno = 28
+      const anchoColNivel = Math.floor((100 - anchoColNumero - anchoColAlumno) / niveles.length)
       const encAlumnos = new TableRow({
         tableHeader: true,
-        children: ['ALUMNO', ...niveles.map((n) => n.etiqueta)].map((t, i) => new TableCell({
-          width: { size: i === 0 ? 34 : 22, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
-          margins: RELLENO_CELDA.compacto, children: [parrafo(t, { bold: true, color: COLOR.indigo, size: TAMANO.sm })],
+        children: ['Nº', 'ALUMNO', ...niveles.map((n) => n.etiqueta)].map((t, i) => new TableCell({
+          width: { size: i === 0 ? anchoColNumero : i === 1 ? anchoColAlumno : anchoColNivel, type: WidthType.PERCENTAGE },
+          shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+          margins: RELLENO_CELDA.compacto,
+          children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, size: TAMANO.sm })],
         })),
       })
-      const filasAlumnos = alumnos.map((codigo) => new TableRow({
+      const filasAlumnos = alumnos.map((codigo, idx) => new TableRow({
         children: [
-          new TableCell({ width: { size: 34, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { bold: true })] }),
-          ...niveles.map(() => new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('☐', { align: AlignmentType.CENTER, color: COLOR.grisSuave })] })),
+          new TableCell({ width: { size: anchoColNumero, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(String(idx + 1), { align: AlignmentType.CENTER, bold: true })] }),
+          new TableCell({ width: { size: anchoColAlumno, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { bold: true })] }),
+          ...niveles.map(() => new TableCell({ width: { size: anchoColNivel, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('', { permitirVacio: true })] })),
         ],
       }))
 
