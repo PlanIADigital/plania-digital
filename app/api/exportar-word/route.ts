@@ -2,28 +2,38 @@
 //  PlanIA Digital — Exportar planeación a Word (.docx)
 //  app/api/exportar-word/route.ts
 //
-//  Rediseño sep 2026: plantilla "Institucional Índigo" con
-//  estructura de 3 bloques (ver lib/wordTemplateTokens.ts para
-//  toda constante de diseño — este archivo NUNCA debe escribir
-//  un color/tamaño/margen a mano).
+//  Rediseño sep 2026 (v2): plantilla "Institucional Índigo",
+//  UNA sola sección vertical (portrait) de punta a punta — se
+//  abandona el diseño horizontal de 6 columnas y la sección
+//  aparte para rúbricas. Motivo: el diseño horizontal forzaba
+//  `cantSplit` + altura fija por fila, lo que producía headers
+//  huérfanos y páginas en blanco desperdiciadas. La tabla de
+//  cada día ahora es de 2 columnas (etiqueta | contenido, una
+//  fila por Inicio/Desarrollo/Cierre/Ajustes/Complementaria/
+//  Recursos) sin `cantSplit` — Word corta la fila sola entre
+//  páginas sin repetir el encabezado (confirmado con pruebas
+//  reales, sep 2026).
 //
 //  Bloque 1 = Institucional + Pedagógico (encabezado, proyecto,
-//             problemática, propósito, tabla curricular, ejes)
+//             problemática, propósito, tabla curricular con
+//             Indicador, ejes, aspectos curriculares relevantes,
+//             evaluación formativa — esta última se movió aquí
+//             desde el cierre, sep 2026).
 //  Bloque 2 = Cuerpo por Momento (agrupado dinámicamente por
-//             dia.momento_modalidad — funciona para cualquier
-//             modalidad sin cambios de código)
-//  Bloque 3 = Cierre — DOS PARTES (sep 2026, revisión con
-//             impresión real):
-//             3a) Evaluación formativa + cajas en blanco
-//                 (adecuaciones/evaluación proyecto/PMC/programas)
-//                 + firmas — HORIZONTAL, misma sección que 1 y 2.
-//             3b) Rúbricas por PDA — VERTICAL, sección NUEVA
-//                 aparte (una tabla vertical de alumnos cabe en
-//                 una sola página; en horizontal se partía en 2
-//                 hojas por rúbrica). Va al final del documento.
+//             dia.momento_modalidad). Todo corre sin saltos de
+//             página forzados entre días ni entre Momentos.
+//  Bloque 3 = Rúbricas por PDA (Criterio + 3 niveles + lista de
+//             alumnos) — cada rúbrica en su propia página, y
+//             luego Adecuaciones/PMC/Firmas corren sin salto.
 //
-//  NOTA: la plantilla "Clásica Serif" se retiró (sep 2026) para
-//  simplificar el lanzamiento — solo existe Institucional Índigo.
+//  Puntos de salto de página forzado (únicos en todo el doc):
+//    Bloque 1 → Bloque 2 · Bloque 2 → Bloque 3 (1a rúbrica) ·
+//    antes de cada rúbrica siguiente a la 1a · después de la
+//    última rúbrica, antes de Adecuaciones.
+//
+//  Ver lib/wordTemplateTokens.ts para toda constante de diseño
+//  — este archivo NUNCA debe escribir un color/tamaño/margen a
+//  mano.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import {
@@ -45,14 +55,6 @@ const bordeEstandar = {
   insideHorizontal: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
   insideVertical: { style: BorderStyle.SINGLE, size: BORDE.estandarGrosor, color: BORDE.estandarColor },
 }
-const bordeSuave = {
-  top: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-  bottom: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-  left: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-  right: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-  insideHorizontal: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-  insideVertical: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: BORDE.finaColor },
-}
 const sinBorde = {
   top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
   left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
@@ -65,6 +67,9 @@ const SEMAFORO: Record<string, { fondo: string; texto: string }> = {
   'Requiere apoyo': { fondo: COLOR.apoyoFondo, texto: COLOR.apoyoTexto },
 }
 const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const MESES_NOMBRE = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
 function formatearFechaCorta(iso: string): string {
   if (!iso) return '—'
   const d = new Date(iso + 'T12:00:00')
@@ -74,6 +79,16 @@ function formatearRangoFechas(inicio: string, fin: string): string {
   if (!inicio || !fin) return '—'
   return `${formatearFechaCorta(inicio)} al ${formatearFechaCorta(fin)}`
 }
+function formatearFechaLarga(iso: string, fallback: string): string {
+  if (!iso) return fallback || '—'
+  const d = new Date(iso + 'T12:00:00')
+  return `${DIAS_SEMANA[d.getDay()]} ${d.getDate()} de ${MESES_NOMBRE[d.getMonth()]}`
+}
+// Escapa caracteres especiales de regex en un código de alumno (ej. "R.G.-1")
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -100,9 +115,6 @@ export async function POST(request: NextRequest) {
       italics: opts.italics,
       color: opts.color || COLOR.negroAzulado,
       font: opts.font || FUENTE.cuerpo,
-      // 9pt uniforme para todo el contenido de tablas que no especifica
-      // su propio tamaño (etiquetas/encabezados de diseño sí lo
-      // especifican explícito, así que no se ven afectados).
       size: opts.size || TAMANO.contenido,
     })
 
@@ -116,16 +128,44 @@ export async function POST(request: NextRequest) {
       children: [texto(t, opts)],
     })
 
-    const etiqueta = (t: string) => parrafo(t.toUpperCase(), {
-      before: 160, after: 50, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm,
+    // Título de sección — negrita índigo con línea inferior cian,
+    // igual para Bloque 1, la banda "NOMBRE DEL PROYECTO" y cada
+    // encabezado de rúbrica en Bloque 3 (una sola fuente de verdad).
+    const tituloSeccion = (t: string, opts: { before?: number } = {}) => new Paragraph({
+      spacing: { before: opts.before ?? 200, after: 100 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: COLOR.cian, space: 4 } },
+      children: [texto(t.toUpperCase(), { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.md })],
     })
 
+    // "CÓDIGO — texto" → código en negrita índigo, resto normal
+    // (para el PDA arriba de cada rúbrica). Justificado.
+    function parrafoConCodigo(str: string, opts: { italics?: boolean } = {}) {
+      const m = (str || '').match(/^([A-ZÁÉÍÓÚ]{2,6}-?\d*)\s*—\s*([\s\S]*)$/)
+      const children = m
+        ? [
+            texto(`${m[1]} — `, { bold: true, color: COLOR.indigo, italics: opts.italics }),
+            texto(m[2], { italics: opts.italics }),
+          ]
+        : [texto(str, { italics: opts.italics })]
+      return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 100 }, children })
+    }
+
+    // Caja con borde, ancho completo — usada para Aspectos
+    // Curriculares Relevantes (vacía, la llena la educadora) y
+    // Evaluación Formativa (con el texto ya generado).
+    function cajaConBorde(children: Paragraph[]) {
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: TableLayoutType.FIXED,
+        borders: bordeEstandar,
+        rows: [new TableRow({ children: [new TableCell({ margins: RELLENO_CELDA.amplio, children })] })],
+      })
+    }
+
     // ------------------------------------------------------------
-    // Encabezado / pie — factory porque cada SECCIÓN de Word
-    // necesita su PROPIA instancia de Header/Footer (no se
-    // reutiliza el mismo objeto entre secciones).
+    // Encabezado / pie
     // ------------------------------------------------------------
-        function crearHeader() {
+    function crearHeader() {
       return new Header({
         children: [
           new Paragraph({
@@ -136,9 +176,6 @@ export async function POST(request: NextRequest) {
               new TextRun({ text: ' ✦', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
             ],
           }),
-          // Línea en blanco estructural dentro del encabezado — separa el
-          // logo del contenido del cuerpo sin depender de un párrafo en
-          // el body que alguien podría borrar con un retroceso.
           new Paragraph({ text: '' }),
         ],
       })
@@ -154,163 +191,172 @@ export async function POST(request: NextRequest) {
         })],
       })
     }
+
     // ------------------------------------------------------------
     // BLOQUE 1 — Institucional + Pedagógico
     // ------------------------------------------------------------
-        const bloqueInstitucional: Paragraph[] = [
-      parrafo(inst.jardin || 'Jardín de Niños', { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.lg, after: 20 }),
-      parrafo(`CCT ${inst.cct || '—'} Zona ${inst.zona || '—'} Sector ${inst.sector || '—'} Región ${inst.region || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.md, after: 20 }),
-      parrafo(`Ciclo Escolar ${inst.ciclo_escolar || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.base, after: 200 }),
-      parrafo(`Educadora ${inst.educadora || '—'} del Grupo ${inst.grado || '—'} ${inst.grupo_letra || ''}`.trim(), { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.mdl, after: 300 }),
-    ]
+    function tablaDosColumnas(headerIzq: string, headerDer: string, valIzq: string, valDer: string, alinear: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.JUSTIFIED) {
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
+        rows: [
+          new TableRow({ children: [headerIzq, headerDer].map((t) => new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            margins: RELLENO_CELDA.normal, children: [parrafo(t.toUpperCase(), { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          })) }),
+          new TableRow({ children: [valIzq, valDer].map((v) => new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal,
+            children: [parrafo(v, { align: alinear })],
+          })) }),
+        ],
+      })
+    }
 
-    // Rejilla única de 20 columnas iguales (5% cada una) para toda la
-    // tabla pedagógica — cualquier ajuste futuro se describe en "cuántas
-    // columnas de 20 ocupa esta celda", sin fracciones raras. Incluye
-    // Proyecto/Problemática/Propósito/Campos/Ejes, todo en UNA tabla
-    // (Word no reconcilia bien columnas entre filas de distinto número
-    // de celdas si son tablas separadas o sin columnSpan explícito).
-    const GRID20 = Array(20).fill(5)
-    const gw = (cuantas: number) => cuantas * 5
-
-    const tablaProyecto = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      layout: TableLayoutType.FIXED,
-      borders: bordeEstandar,
+    const anchoCampos = [18, 22, 35, 25] // Campo formativo | Contenido | PDA | Indicador (%)
+    const tablaCampos = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
       rows: [
         new TableRow({
-          children: [
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROYECTO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(8), type: WidthType.PERCENTAGE }, columnSpan: 8, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.project_name, { align: AlignmentType.CENTER })] }),
-            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('MODALIDAD', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.metodologia, { align: AlignmentType.CENTER })] }),
-            new TableCell({ width: { size: gw(2), type: WidthType.PERCENTAGE }, columnSpan: 2, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('APLICACIÓN', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(formatearRangoFechas(proyecto.starts_on, proyecto.ends_on), { align: AlignmentType.CENTER })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROBLEMÁTICA', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.situacion_problema, { align: AlignmentType.JUSTIFIED })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.menta }, margins: RELLENO_CELDA.normal, children: [parrafo('PROPÓSITO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(proyecto.finalidad, { align: AlignmentType.JUSTIFIED })] }),
-          ],
-        }),
-        new TableRow({
           tableHeader: true,
-          children: [
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('C. FORMATIVO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(7), type: WidthType.PERCENTAGE }, columnSpan: 7, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('CONTENIDO', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: gw(10), type: WidthType.PERCENTAGE }, columnSpan: 10, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('PROCESO DE DESARROLLO DE APRENDIZAJE', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-          ],
+          children: ['Campo formativo', 'Contenido', 'PDA', 'Indicador'].map((t, i) => new TableCell({
+            width: { size: anchoCampos[i], type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal,
+            children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          })),
         }),
         ...camposFormativos.map((c) => new TableRow({
           children: [
-            new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo })] }),
-            new TableCell({ width: { size: gw(7), type: WidthType.PERCENTAGE }, columnSpan: 7, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido, { align: AlignmentType.CENTER })] }),
-            new TableCell({ width: { size: gw(10), type: WidthType.PERCENTAGE }, columnSpan: 10, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(`${c.pdaCodigo ? c.pdaCodigo + ' — ' : ''}${c.pdaTexto || ''}`, { align: AlignmentType.JUSTIFIED })] }),
+            new TableCell({ width: { size: anchoCampos[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: anchoCampos[1], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: anchoCampos[2], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(`${c.pdaCodigo ? c.pdaCodigo + ' — ' : ''}${c.pdaTexto || ''}`, { align: AlignmentType.JUSTIFIED })] }),
+            // c.indicador: todavía no lo genera el backend (pendiente en generar-planeacion/route.ts) —
+            // en cuanto exista ahí, se muestra aquí automáticamente sin tocar este archivo.
+            new TableCell({ width: { size: anchoCampos[3], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.indicador || '', { align: AlignmentType.JUSTIFIED, italics: !c.indicador, color: c.indicador ? undefined : COLOR.grisSuave })] }),
           ],
         })),
-        ...(ejes.filter((e) => !!e.nombre).length > 0 ? [
-          new TableRow({
-            tableHeader: true,
-            children: [
-              new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('EJE ARTICULADOR', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-              new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo }, margins: RELLENO_CELDA.normal, children: [parrafo('¿CÓMO SE FAVORECE?', { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            ],
-          }),
-          ...ejes.filter((e) => !!e.nombre).map((e) => new TableRow({
-            children: [
-              new TableCell({ width: { size: gw(3), type: WidthType.PERCENTAGE }, columnSpan: 3, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.nombre, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo })] }),
-              new TableCell({ width: { size: gw(17), type: WidthType.PERCENTAGE }, columnSpan: 17, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.descripcion || '—', { align: e.descripcion ? AlignmentType.JUSTIFIED : AlignmentType.CENTER, italics: !e.descripcion, color: e.descripcion ? undefined : COLOR.grisSuave })] }),
-            ],
-          })),
-        ] : []),
       ],
     })
 
+    const ejesConNombre = ejes.filter((e) => !!e.nombre)
+    const tablaEjes = ejesConNombre.length > 0 ? new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
+      rows: [
+        new TableRow({
+          tableHeader: true,
+          children: ['Eje Articulador', '¿Cómo se favorece?'].map((t, i) => new TableCell({
+            width: { size: i === 0 ? 25 : 75, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal,
+            children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          })),
+        }),
+        ...ejesConNombre.map((e) => new TableRow({
+          children: [
+            new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.nombre, { align: AlignmentType.CENTER })] }),
+            new TableCell({ width: { size: 75, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(e.descripcion || '—', { align: e.descripcion ? AlignmentType.JUSTIFIED : AlignmentType.CENTER, italics: !e.descripcion, color: e.descripcion ? undefined : COLOR.grisSuave })] }),
+          ],
+        })),
+      ],
+    }) : null
+
     const bloque1: (Paragraph | Table)[] = [
-      ...bloqueInstitucional,
-      tablaProyecto,
+      parrafo(inst.jardin || 'Jardín de Niños', { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.lg, after: 20 }),
+      parrafo(`CCT ${inst.cct || '—'}  Zona ${inst.zona || '—'}  Sector ${inst.sector || '—'}  Región ${inst.region || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.md, after: 20 }),
+      parrafo(`Ciclo Escolar ${inst.ciclo_escolar || '—'}`, { align: AlignmentType.CENTER, color: COLOR.grisSuave, font: FUENTE.titulo, size: TAMANO.base, after: 200 }),
+      parrafo(`Educadora ${inst.educadora || '—'} del Grupo ${inst.grado || '—'} ${inst.grupo_letra || ''}`.trim(), { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.mdl, after: 200 }),
+      new Paragraph({
+        border: { bottom: { style: BorderStyle.SINGLE, size: BORDE.finaGrosor, color: COLOR.cian, space: 4 } },
+        spacing: { after: 200 },
+        children: [
+          new TextRun({ text: 'NOMBRE DEL PROYECTO: ', bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.md }),
+          new TextRun({ text: (proyecto.project_name || '—').toUpperCase(), bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.md }),
+        ],
+      }),
+
+      tablaDosColumnas('Modalidad', 'Periodo de Aplicación', proyecto.metodologia, formatearRangoFechas(proyecto.starts_on, proyecto.ends_on), AlignmentType.CENTER),
+
+      tituloSeccion('Problemática y Propósito'),
+      tablaDosColumnas('Problemática', 'Propósito', proyecto.situacion_problema, proyecto.finalidad),
+
+      tituloSeccion('Campos formativos, contenidos, PDA e Indicadores'),
+      tablaCampos,
+
+      ...(tablaEjes ? [tituloSeccion('Ejes articuladores'), tablaEjes] : []),
+
+      tituloSeccion('Aspectos Curriculares Relevantes'),
+      parrafo('(Puedes integrar notas y directrices solicitadas por dirección o zona escolar.)', { italics: true, color: COLOR.grisSuave, size: TAMANO.sm, after: 100 }),
+      cajaConBorde([parrafo('', { permitirVacio: true }), parrafo('', { permitirVacio: true }), parrafo('', { permitirVacio: true })]),
+
+      tituloSeccion('Evaluación Formativa'),
+      cajaConBorde([parrafo(evaluacionFormativa, { align: AlignmentType.JUSTIFIED, italics: true, after: 0 })]),
     ]
+
     // ------------------------------------------------------------
     // BLOQUE 2 — Cuerpo por Momento (agrupado dinámicamente)
     // ------------------------------------------------------------
-    const anchoColumnas = [8, 36, 22, 17, 17] // Fecha | Actividades | Ajustes | Act.Compl. | Recursos
+    const ANCHO_ETIQUETA = 18
+    const ANCHO_VALOR = 100 - ANCHO_ETIQUETA
 
-    function bandaMomento(nombre: string) {
+    function bandaMomento(nombre: string, esPrimera: boolean) {
       return new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: sinBorde,
-        rows: [new TableRow({
-          cantSplit: true,
-          children: [new TableCell({
-            columnSpan: 5, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-            margins: RELLENO_CELDA.amplio,
-            children: [parrafo(`MOMENTO · ${nombre.toUpperCase()}`, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.lg })],
-          })],
-        })],
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: sinBorde,
+        rows: [new TableRow({ children: [new TableCell({
+          shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
+          margins: RELLENO_CELDA.amplio,
+          children: [parrafo(`MOMENTO · ${nombre.toUpperCase()}`, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.lg })],
+        })] })],
       })
     }
 
-    function encabezadoColumnas() {
+    // Fila etiqueta | contenido — SIN cantSplit, para que Word corte
+    // la fila sola entre páginas si el texto no cabe, sin dejar el
+    // encabezado (Inicio/Desarrollo/...) huérfano.
+    function filaEtiqueta(etq: string, children: Paragraph[], shading = false) {
       return new TableRow({
-        tableHeader: true, cantSplit: true,
-        children: ['FECHA', 'ACTIVIDADES', 'AJUSTES RAZONABLES', 'ACT. COMPLEMENTARIA', 'RECURSOS'].map((t, i) => new TableCell({
-          width: { size: anchoColumnas[i], type: WidthType.PERCENTAGE },
-          shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
-          margins: RELLENO_CELDA.normal,
-          children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
-        })),
+        children: [
+          new TableCell({
+            width: { size: ANCHO_ETIQUETA, type: WidthType.PERCENTAGE },
+            shading: shading ? { type: ShadingType.CLEAR, fill: COLOR.indigoClaro } : undefined,
+            verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal,
+            children: [parrafo(etq, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          }),
+          new TableCell({
+            width: { size: ANCHO_VALOR, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal,
+            children,
+          }),
+        ],
       })
     }
-    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-    const MESES_NOMBRE = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-    function parrafosFechaTresLineas(dia: any) {
-      if (!dia.fecha_iso) return [parrafo(dia.fecha, { align: AlignmentType.CENTER, bold: true, size: TAMANO.base })]
-      const d = new Date(dia.fecha_iso + 'T12:00:00')
-      return [
-        parrafo(DIAS_SEMANA[d.getDay()], { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
-        parrafo(String(d.getDate()), { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
-        parrafo(MESES_NOMBRE[d.getMonth()], { align: AlignmentType.CENTER, bold: true, size: TAMANO.base }),
-      ]
-    }
-    function filaDia(dia: any) {
-      const ajustesDelDia = ajustesPorDia.filter((a) => a.numero === dia.numero)
-      const actividades = ['Inicio', 'Desarrollo', 'Cierre'].map((et, i) => new Paragraph({
-        spacing: { after: i < 2 ? 120 : 0 },
-        alignment: AlignmentType.JUSTIFIED,
-        children: [
-          texto(`${et}: `, { bold: true }),
-          texto(dia[et.toLowerCase()], {}),
-        ],
-      }))
-      const ajustesParrafos = ajustesDelDia.length > 0
-        // OJO: a.ajuste ya trae el código incluido al inicio del texto
-        // (ej. "R.G.-1.- Antes de pedir..."), generado así por el
-        // agente. NO anteponer a.codigo aquí o se duplica.
-        ? ajustesDelDia.map((a: any, i: number) => new Paragraph({
-          spacing: { after: i < ajustesDelDia.length - 1 ? 100 : 0 },
+    function parrafosAjustesDelDia(numeroDia: number): Paragraph[] {
+      const ajustesDelDia = ajustesPorDia.filter((a) => a.numero === numeroDia)
+      if (ajustesDelDia.length === 0) return [parrafo('—', { color: COLOR.grisSuave, size: TAMANO.sm })]
+      // a.ajuste ya trae el código pegado al inicio del texto (ej. "R.G.-1.- Antes de...");
+      // lo separamos para pintar el código en negrita índigo y el resto normal, cada
+      // alumno en su propio párrafo (antes venían todos corridos en un solo bloque).
+      return ajustesDelDia.map((a: any, i: number) => {
+        const prefijo = new RegExp(`^${escapeRegex(a.codigo)}\\.-\\s*`)
+        const resto = (a.ajuste || '').replace(prefijo, '')
+        return new Paragraph({
           alignment: AlignmentType.JUSTIFIED,
-          children: [texto(a.ajuste, { size: TAMANO.sm })],
-        }))
-        : [parrafo('—', { color: COLOR.grisSuave, size: TAMANO.sm })]
-
-      return new TableRow({
-        cantSplit: true, // TRUE = no se parte entre páginas (ver wordTemplateTokens.REGLAS)
-        children: [
-          new TableCell({ width: { size: anchoColumnas[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosFechaTresLineas(dia) }),
-          new TableCell({ width: { size: anchoColumnas[1], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: actividades }),
-          new TableCell({ width: { size: anchoColumnas[2], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, borders: { left: { style: BorderStyle.SINGLE, size: BORDE.acentoGrosor, color: BORDE.acentoColor } }, children: ajustesParrafos,}),
-          new TableCell({ width: { size: anchoColumnas[3], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.actividad_complementaria || '—', { align: AlignmentType.CENTER, size: TAMANO.sm })] }),
-          new TableCell({ width: { size: anchoColumnas[4], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(dia.materiales || '—', { align: AlignmentType.CENTER, size: TAMANO.sm })] }),
-        ],
+          spacing: { after: i < ajustesDelDia.length - 1 ? 100 : 0 },
+          children: [
+            texto(`${a.codigo}.- `, { bold: true, color: COLOR.indigo, size: TAMANO.sm }),
+            texto(resto, { size: TAMANO.sm }),
+          ],
+        })
       })
+    }
+
+    function tablaDia(dia: any) {
+      const filas = [
+        filaEtiqueta('Inicio', [parrafo(dia.inicio, { align: AlignmentType.JUSTIFIED })], true),
+        filaEtiqueta('Desarrollo', [parrafo(dia.desarrollo, { align: AlignmentType.JUSTIFIED })]),
+        filaEtiqueta('Cierre', [parrafo(dia.cierre, { align: AlignmentType.JUSTIFIED })]),
+        filaEtiqueta('Ajustes Razonables', parrafosAjustesDelDia(dia.numero)),
+        filaEtiqueta('Actividad Complementaria', [parrafo(dia.actividad_complementaria || '—', { align: AlignmentType.JUSTIFIED })]),
+        filaEtiqueta('Recursos', [parrafo((dia.materiales || '—').replace(/\s*\|\s*/g, '. '), { align: AlignmentType.JUSTIFIED })]),
+      ]
+      return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar, rows: filas })
     }
 
     function notaDiaEspecial(item: any) {
@@ -318,9 +364,6 @@ export async function POST(request: NextRequest) {
       return parrafo(`${item.fecha} — ${et}. No se generan actividades pedagógicas este día.`, { italics: true, color: COLOR.grisSuave, size: TAMANO.sm, before: 100, after: 100 })
     }
 
-    // Mezclar días hábiles + especiales, ordenados por fecha, y agrupar
-    // por Momento (una sola Table por Momento, con TODAS sus filas de
-    // día juntas para que el encabezado se comparta de verdad).
     const secuencia = [
       ...dias.map((d) => ({ ...d, _tipo: 'habil' as const })),
       ...diasEspeciales.map((d) => ({ ...d, _tipo: 'especial' as const })),
@@ -337,57 +380,43 @@ export async function POST(request: NextRequest) {
         return
       }
       if (item.momento_modalidad !== momentoActual) {
-        // Cada Momento inicia en página nueva — el primero ya viene
-        // precedido por el salto Bloque1→Bloque2, así que no se duplica.
-        if (!esPrimerMomento) bloque2.push(new Paragraph({ children: [new PageBreak()] }))
+        // Sin salto de página forzado entre Momentos — todo corre seguido;
+        // el único salto fijo de esta zona es el que ya viene antes del
+        // Bloque 2 completo (Bloque1 → Bloque2), no uno por cada Momento.
+        bloque2.push(bandaMomento(item.momento_modalidad, esPrimerMomento))
         esPrimerMomento = false
-        bloque2.push(bandaMomento(item.momento_modalidad))
         momentoActual = item.momento_modalidad
       }
-      // Cada día es su PROPIA tabla, con su propio encabezado incluido —
-      // así, sin importar dónde decida Word cortar la página entre días,
-      // el encabezado (FECHA/ACTIVIDADES/...) siempre aparece de verdad,
-      // en vez de depender de que Word "repita" uno que a veces falla
-      // (confirmado con pruebas en Word real, sep 2026).
-      bloque2.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encabezadoColumnas(), filaDia(item)] }))
+      bloque2.push(parrafo(formatearFechaLarga(item.fecha_iso, item.fecha), { before: 200, after: 100, bold: true, color: COLOR.cian, font: FUENTE.titulo, size: TAMANO.base }))
+      bloque2.push(tablaDia(item))
     })
 
     // ------------------------------------------------------------
-    // BLOQUE 3a — Cierre (HORIZONTAL): evaluación formativa, cajas
-    // en blanco, firmas. Va antes de las rúbricas.
+    // BLOQUE 3 — Rúbricas por PDA (Criterio + 3 niveles + alumnos),
+    // luego Adecuaciones/PMC/Firmas sin salto entre ellas.
     // ------------------------------------------------------------
-    function cajaVacia(titulo: string) {
-      // Adecuaciones/Evaluación del proyecto/PMC/Programas: la
-      // educadora los llena a mano después — no se generan (confirmado
-      // sep 2026). Evaluación Formativa: descripción generada
-      // pendiente (generarDescripcionEvaluacionFormativa()) — por
-      // ahora también en blanco.
-      return [etiqueta(titulo), parrafo('', { after: 300, permitirVacio: true })]
-    }
-
-    function dosColumnas(t1: string, t2: string) {
+    function dosColumnasVacio(t1: string, t2: string) {
       return new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeSuave,
-        rows: [new TableRow({
-          children: [
-            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.amplio, children: [parrafo(t1.toUpperCase(), { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.amplio, children: [parrafo(t2.toUpperCase(), { bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })] }),
-          ],
-        })],
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
+        rows: [
+          new TableRow({ children: [t1, t2].map((t) => new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            margins: RELLENO_CELDA.normal, children: [parrafo(t.toUpperCase(), { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          })) }),
+          new TableRow({ children: [0, 1].map(() => new TableCell({
+            width: { size: 50, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo('', { permitirVacio: true })],
+          })) }),
+        ],
       })
     }
-
-    // Firma: la Directora no se busca por consulta (un CCT puede tener
-    // 0 o varios directivos vinculados) — la línea queda en blanco
-    // para firma física, igual que las cajas de arriba.
     function bloqueFirmas(nombreEducadora: string) {
       return new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE }, borders: sinBorde,
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: sinBorde,
         rows: [
           new TableRow({
             children: [
-              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: { top: 200 }, borders: { top: { style: BorderStyle.SINGLE, size: 4, color: COLOR.negroAzulado } }, children: [parrafo(nombreEducadora || '—', { align: AlignmentType.CENTER, bold: true })] }),
-              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: { top: 200 }, borders: { top: { style: BorderStyle.SINGLE, size: 4, color: COLOR.negroAzulado } }, children: [parrafo(' ', { align: AlignmentType.CENTER })] }),
+              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: { top: 400 }, borders: { top: { style: BorderStyle.SINGLE, size: 4, color: COLOR.negroAzulado } }, children: [parrafo(nombreEducadora || '—', { align: AlignmentType.CENTER, bold: true })] }),
+              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, margins: { top: 400 }, borders: { top: { style: BorderStyle.SINGLE, size: 4, color: COLOR.negroAzulado } }, children: [parrafo(' ', { align: AlignmentType.CENTER })] }),
             ],
           }),
           new TableRow({
@@ -400,102 +429,86 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const bloque3a: (Paragraph | Table)[] = [
-      etiqueta('Evaluación formativa'),
-      parrafo(evaluacionFormativa, { after: 300 }),
-      dosColumnas('Adecuaciones curriculares', 'Evaluación del proyecto'),
-      parrafo('', { before: 160, permitirVacio: true }),
-      dosColumnas('Actividades PMC y P.A.', 'Programas externos'),
-      parrafo('', { before: 300, permitirVacio: true }),
-      bloqueFirmas(inst.educadora),
-    ]
+    const ANCHO_CRITERIO = 25
+    const ANCHO_NIVEL = Math.round((100 - ANCHO_CRITERIO) / 3)
 
-    // ------------------------------------------------------------
-    // BLOQUE 3b — Rúbricas (VERTICAL): sección aparte al final,
-    // una por PDA. cada rúbrica inicia en página propia — pero la
-    // PRIMERA no necesita salto manual porque el cambio de sección
-    // ya fuerza página nueva (evita una hoja en blanco extra).
-    // ------------------------------------------------------------
-    function rubricaCompleta(r: any, esPrimera: boolean) {
-      const encNiveles = new TableRow({
-        tableHeader: true,
-        children: ['NIVEL', 'DESCRIPTOR'].map((t, i) => new TableCell({
-          width: { size: i === 0 ? 22 : 78, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigo },
-          margins: RELLENO_CELDA.normal, children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.blanco, font: FUENTE.titulo, size: TAMANO.sm })],
-        })),
-      })
+    function bloqueRubrica(r: any, esPrimera: boolean): (Paragraph | Table)[] {
       const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
-      const filasNiveles = niveles.map((n) => {
-        const s = SEMAFORO[n.etiqueta] || { fondo: COLOR.indigoClaro, texto: COLOR.indigo }
-        return new TableRow({
-          children: [
-            new TableCell({ width: { size: 22, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, shading: { type: ShadingType.CLEAR, fill: s.fondo }, margins: RELLENO_CELDA.normal, children: [parrafo(n.etiqueta, { align: AlignmentType.CENTER, bold: true, color: s.texto })] }),
-            new TableCell({ width: { size: 78, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.normal, children: [parrafo(n.descriptor, { align: AlignmentType.JUSTIFIED, size: TAMANO.contenido })] }),
-          ],
-        })
-      })
-      const alumnos: string[] = Array.isArray(r.registro_alumnos) ? r.registro_alumnos.map((a: any) => a.codigo) : []
-      const anchoColNumero = 6
-      const anchoColAlumno = 28
-      const anchoColNivel = Math.floor((100 - anchoColNumero - anchoColAlumno) / niveles.length)
-      const encAlumnos = new TableRow({
-        tableHeader: true,
-        children: ['Nº', 'ALUMNO', ...niveles.map((n) => n.etiqueta)].map((t, i) => new TableCell({
-          width: { size: i === 0 ? anchoColNumero : i === 1 ? anchoColAlumno : anchoColNivel, type: WidthType.PERCENTAGE },
-          shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
-          margins: RELLENO_CELDA.compacto,
-          children: [parrafo(t, { align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, size: TAMANO.sm })],
-        })),
-      })
-      const filasAlumnos = alumnos.map((codigo, idx) => new TableRow({
-        children: [
-          new TableCell({ width: { size: anchoColNumero, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(String(idx + 1), { align: AlignmentType.CENTER, bold: true })] }),
-          new TableCell({ width: { size: anchoColAlumno, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { bold: true })] }),
-          ...niveles.map(() => new TableCell({ width: { size: anchoColNivel, type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('', { permitirVacio: true })] })),
+      const porEtiqueta = (etq: string) => niveles.find((n) => n.etiqueta === etq)?.descriptor || '—'
+      const anchosNiveles = [ANCHO_CRITERIO, ANCHO_NIVEL, ANCHO_NIVEL, 100 - ANCHO_CRITERIO - ANCHO_NIVEL * 2]
+      const etiquetasNiveles = ['Criterio', 'Logrado', 'En proceso', 'Requiere apoyo']
+
+      const tablaCriterio = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
+        rows: [
+          new TableRow({ tableHeader: true, children: etiquetasNiveles.map((t, i) => new TableCell({
+            width: { size: anchosNiveles[i], type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal,
+            children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm })],
+          })) }),
+          new TableRow({ children: [
+            new TableCell({ width: { size: anchosNiveles[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(r.criterio || '—', { align: AlignmentType.CENTER })] }),
+            ...['Logrado', 'En proceso', 'Requiere apoyo'].map((etq, i) => {
+              const s = SEMAFORO[etq] || { fondo: COLOR.indigoClaro, texto: COLOR.indigo }
+              return new TableCell({ width: { size: anchosNiveles[i + 1], type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: s.fondo }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(porEtiqueta(etq), { align: AlignmentType.CENTER, size: TAMANO.contenido })] })
+            }),
+          ] }),
         ],
-      }))
+      })
+
+      const alumnos: string[] = Array.isArray(r.registro_alumnos) ? r.registro_alumnos.map((a: any) => a.codigo) : []
+      const tablaAlumnos = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
+        rows: [
+          new TableRow({ tableHeader: true, children: etiquetasNiveles.map((_, i) => i === 0 ? 'Nombre de Alumno' : etiquetasNiveles[i]).map((t, i) => new TableCell({
+            width: { size: anchosNiveles[i], type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, fill: COLOR.indigoClaro },
+            margins: RELLENO_CELDA.compacto, children: [parrafo(t, { after: 0, align: AlignmentType.CENTER, bold: true, color: COLOR.indigo, size: TAMANO.sm })],
+          })) }),
+          ...alumnos.map((codigo) => new TableRow({ children: [
+            new TableCell({ width: { size: anchosNiveles[0], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo(codigo, { align: AlignmentType.LEFT })] }),
+            ...[1, 2, 3].map((i) => new TableCell({ width: { size: anchosNiveles[i], type: WidthType.PERCENTAGE }, margins: RELLENO_CELDA.compacto, children: [parrafo('', { permitirVacio: true })] })),
+          ] })),
+        ],
+      })
 
       const bloques: (Paragraph | Table)[] = []
-      if (!esPrimera) bloques.push(new Paragraph({ children: [new PageBreak()] })) // solo entre rúbricas, no antes de la 1a
+      if (!esPrimera) bloques.push(new Paragraph({ children: [new PageBreak()] }))
       bloques.push(
-        parrafo(`${r.campo} — ${r.pda}`, { after: 100, italics: true }),
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encNiveles, ...filasNiveles] }),
-        parrafo('Escala estimativa de logro', { before: 160, after: 60, bold: true, color: COLOR.indigo, font: FUENTE.titulo, size: TAMANO.sm }),
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encAlumnos, ...filasAlumnos] }),
+        tituloSeccion(`Rúbrica — ${r.campo || ''}`),
+        parrafoConCodigo(r.pda, { italics: true }),
+        tablaCriterio,
+        tablaAlumnos,
       )
       return bloques
     }
 
-    const bloque3b: (Paragraph | Table)[] = [
-      etiqueta('Rúbricas de evaluación'),
-      ...rubricas.flatMap((r, i) => rubricaCompleta(r, i === 0)),
+    const bloque3: (Paragraph | Table)[] = [
+      ...rubricas.flatMap((r, i) => bloqueRubrica(r, i === 0)),
+      new Paragraph({ children: [new PageBreak()] }),
+      tituloSeccion('Adecuaciones y Evaluación del Proyecto'),
+      dosColumnasVacio('Adecuaciones', 'Evaluación del Proyecto'),
+      tituloSeccion('PMC / PA y Programas Externos'),
+      dosColumnasVacio('Aspectos Relevantes del PMC o PA', 'Aspectos Relevantes sobre Programas Externos'),
+      tituloSeccion('Firmas'),
+      bloqueFirmas(inst.educadora),
     ]
 
     // ------------------------------------------------------------
-    // Ensamblar documento — 2 secciones: horizontal (Bloques 1, 2,
-    // 3a) y vertical (Bloque 3b, rúbricas). Cada sección lleva su
-    // propia instancia de Header/Footer.
+    // Ensamblar documento — UNA sola sección, portrait de punta a
+    // punta (antes: 2 secciones, la primera horizontal).
     // ------------------------------------------------------------
     const doc = new Document({
       sections: [
         {
-          properties: { page: { size: { width: PAGINA.ancho, height: PAGINA.alto }, margin: PAGINA.margenes } },
+          properties: { page: { size: { width: PAGINA.alto, height: PAGINA.ancho }, margin: PAGINA.margenes } },
           headers: { default: crearHeader() },
           footers: { default: crearFooter() },
           children: [
             ...bloque1,
             new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque1 → Bloque2
             ...bloque2,
-            new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque2 → Bloque3a
-            ...bloque3a,
-          ],
-        },
-        {
-          properties: { page: { size: { width: PAGINA.alto, height: PAGINA.ancho }, margin: PAGINA.margenes } }, // dimensiones invertidas = vertical
-          headers: { default: crearHeader() },
-          footers: { default: crearFooter() },
-          children: [
-            ...bloque3b,
+            new Paragraph({ children: [new PageBreak()] }), // salto fijo Bloque2 → 1a Rúbrica
+            ...bloque3,
           ],
         },
       ],
