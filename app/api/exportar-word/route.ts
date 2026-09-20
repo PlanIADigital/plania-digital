@@ -445,9 +445,16 @@ export async function POST(request: NextRequest) {
     const codigoPorPda: Record<string, string> = {}
     camposFormativos.forEach((c) => { if (c.pdaTexto) codigoPorPda[c.pdaTexto] = c.pdaCodigo })
 
-    function bloqueRubrica(r: any, esPrimera: boolean): (Paragraph | Table)[] {
+    function bloqueRubrica(r: any, esPrimera: boolean, indice: number): (Paragraph | Table)[] {
       const textoPdaBase = r.pda_evaluado || r.pda || ''
-      const codigo = codigoPorPda[textoPdaBase]
+      // Emparejamiento primario: por POSICIÓN — instrumentos_evaluacion[] y
+      // camposFormativos[] los arma el mismo backend, en el mismo orden
+      // (principal primero, luego transversales), así que la rúbrica i
+      // corresponde siempre al campo formativo i. Más confiable que
+      // comparar texto, que puede diferir en un espacio o en si el código
+      // ya viene pegado al texto. Si el orden no coincidiera (defensivo),
+      // cae al emparejamiento por texto exacto como respaldo.
+      const codigo = camposFormativos[indice]?.pdaCodigo || codigoPorPda[textoPdaBase]
       const pdaConCodigo = codigo ? `${codigo} — ${textoPdaBase}` : textoPdaBase
       const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
       const porEtiqueta = (etq: string) => niveles.find((n) => n.etiqueta === etq)?.descriptor || '—'
@@ -499,7 +506,7 @@ export async function POST(request: NextRequest) {
     }
 
     const bloque3: (Paragraph | Table)[] = [
-      ...rubricas.flatMap((r, i) => bloqueRubrica(r, i === 0)),
+      ...rubricas.flatMap((r, i) => bloqueRubrica(r, i === 0, i)),
       new Paragraph({ children: [new PageBreak()] }),
       tituloSeccion('Adecuaciones y Evaluación del Proyecto'),
       dosColumnasVacio('Adecuaciones', 'Evaluación del Proyecto'),
