@@ -383,6 +383,11 @@ export async function POST(request: NextRequest) {
         // Sin salto de página forzado entre Momentos — todo corre seguido;
         // el único salto fijo de esta zona es el que ya viene antes del
         // Bloque 2 completo (Bloque1 → Bloque2), no uno por cada Momento.
+        // El párrafo vacío ANTES de la banda es obligatorio: sin él, dos
+        // <w:tbl> de Word pegadas (la tabla del día anterior + esta banda)
+        // a veces heredan mal el ancho de columna entre sí y la banda sale
+        // angosta (confirmado en Word real, sep 2026).
+        bloque2.push(new Paragraph({ text: '', spacing: { before: 100 } }))
         bloque2.push(bandaMomento(item.momento_modalidad, esPrimerMomento))
         esPrimerMomento = false
         momentoActual = item.momento_modalidad
@@ -432,7 +437,18 @@ export async function POST(request: NextRequest) {
     const ANCHO_CRITERIO = 25
     const ANCHO_NIVEL = Math.round((100 - ANCHO_CRITERIO) / 3)
 
+    // Empareja cada rúbrica con su código de PDA real, por texto exacto
+    // (no por nombre de campo — puede haber dos "Lenguajes" con PDA
+    // distintos, como en esta misma planeación). `pda_evaluado` lo pone
+    // nuestro propio backend, no el modelo, así que es la clave confiable;
+    // `r.pda` es la versión que la IA reescribió y puede no traer el código.
+    const codigoPorPda: Record<string, string> = {}
+    camposFormativos.forEach((c) => { if (c.pdaTexto) codigoPorPda[c.pdaTexto] = c.pdaCodigo })
+
     function bloqueRubrica(r: any, esPrimera: boolean): (Paragraph | Table)[] {
+      const textoPdaBase = r.pda_evaluado || r.pda || ''
+      const codigo = codigoPorPda[textoPdaBase]
+      const pdaConCodigo = codigo ? `${codigo} — ${textoPdaBase}` : textoPdaBase
       const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
       const porEtiqueta = (etq: string) => niveles.find((n) => n.etiqueta === etq)?.descriptor || '—'
       const anchosNiveles = [ANCHO_CRITERIO, ANCHO_NIVEL, ANCHO_NIVEL, 100 - ANCHO_CRITERIO - ANCHO_NIVEL * 2]
@@ -475,7 +491,7 @@ export async function POST(request: NextRequest) {
       if (!esPrimera) bloques.push(new Paragraph({ children: [new PageBreak()] }))
       bloques.push(
         tituloSeccion(`Rúbrica — ${r.campo || ''}`),
-        parrafoConCodigo(r.pda, { italics: true }),
+        parrafoConCodigo(pdaConCodigo, { italics: true }),
         tablaCriterio,
         tablaAlumnos,
       )
