@@ -211,6 +211,29 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Cuando un campo formativo tiene más de un PDA para el mismo
+    // contenido, vienen concatenados en pdaTexto separados por " | " —
+    // cada uno en su propio párrafo, con su código en negrita índigo si
+    // el texto lo trae; si no lo trae (ej. un PDA secundario sin código
+    // propio en el dato que llega aquí), solo el primero hereda el
+    // c.pdaCodigo de la fila — los demás quedan sin código hasta que esa
+    // parte del dato llegue a este endpoint.
+    function parrafosPda(codigoFila: string, textoCompleto: string) {
+      const partes = (textoCompleto || '').split('|').map((s) => s.trim()).filter(Boolean)
+      if (partes.length === 0) return [parrafo('—', { align: AlignmentType.JUSTIFIED })]
+      return partes.map((parte, i) => {
+        const m = parte.match(/^([A-ZÁÉÍÓÚ]{2,6}-?\d*)\s*—\s*([\s\S]*)$/)
+        const espaciado = { after: i < partes.length - 1 ? 100 : 0 }
+        if (m) {
+          return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(`${m[1]} — `, { bold: true, color: COLOR.indigo }), texto(m[2])] })
+        }
+        if (i === 0 && codigoFila) {
+          return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(`${codigoFila} — `, { bold: true, color: COLOR.indigo }), texto(parte)] })
+        }
+        return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(parte)] })
+      })
+    }
+
     const anchoCampos = [18, 22, 35, 25] // Campo formativo | Contenido | PDA | Indicador (%)
     const tablaCampos = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
@@ -227,7 +250,7 @@ export async function POST(request: NextRequest) {
           children: [
             new TableCell({ width: { size: anchoCampos[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { align: AlignmentType.CENTER })] }),
             new TableCell({ width: { size: anchoCampos[1], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido, { align: AlignmentType.CENTER })] }),
-            new TableCell({ width: { size: anchoCampos[2], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(`${c.pdaCodigo ? c.pdaCodigo + ' — ' : ''}${c.pdaTexto || ''}`, { align: AlignmentType.JUSTIFIED })] }),
+            new TableCell({ width: { size: anchoCampos[2], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosPda(c.pdaCodigo, c.pdaTexto) }),
             // c.indicador: todavía no lo genera el backend (pendiente en generar-planeacion/route.ts) —
             // en cuanto exista ahí, se muestra aquí automáticamente sin tocar este archivo.
             new TableCell({ width: { size: anchoCampos[3], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.indicador || '', { align: AlignmentType.JUSTIFIED, italics: !c.indicador, color: c.indicador ? undefined : COLOR.grisSuave })] }),
