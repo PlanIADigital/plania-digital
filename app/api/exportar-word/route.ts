@@ -328,25 +328,15 @@ export async function POST(request: NextRequest) {
 
     const bloque2: (Paragraph | Table)[] = []
     let momentoActual: string | null = null
-    let filasMomentoActual: TableRow[] = []
     let esPrimerMomento = true
-
-    function cerrarMomentoActual() {
-      if (momentoActual && filasMomentoActual.length > 0) {
-        bloque2.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encabezadoColumnas(), ...filasMomentoActual] }))
-      }
-      filasMomentoActual = []
-    }
 
     secuencia.forEach((item: any) => {
       if (item._tipo === 'especial') {
-        cerrarMomentoActual()
         momentoActual = null
         bloque2.push(notaDiaEspecial(item))
         return
       }
       if (item.momento_modalidad !== momentoActual) {
-        cerrarMomentoActual()
         // Cada Momento inicia en página nueva — el primero ya viene
         // precedido por el salto Bloque1→Bloque2, así que no se duplica.
         if (!esPrimerMomento) bloque2.push(new Paragraph({ children: [new PageBreak()] }))
@@ -354,9 +344,13 @@ export async function POST(request: NextRequest) {
         bloque2.push(bandaMomento(item.momento_modalidad))
         momentoActual = item.momento_modalidad
       }
-      filasMomentoActual.push(filaDia(item))
+      // Cada día es su PROPIA tabla, con su propio encabezado incluido —
+      // así, sin importar dónde decida Word cortar la página entre días,
+      // el encabezado (FECHA/ACTIVIDADES/...) siempre aparece de verdad,
+      // en vez de depender de que Word "repita" uno que a veces falla
+      // (confirmado con pruebas en Word real, sep 2026).
+      bloque2.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: bordeEstandar, rows: [encabezadoColumnas(), filaDia(item)] }))
     })
-    cerrarMomentoActual()
 
     // ------------------------------------------------------------
     // BLOQUE 3a — Cierre (HORIZONTAL): evaluación formativa, cajas
