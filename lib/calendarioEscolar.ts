@@ -9,6 +9,14 @@
 //  EXACTAMENTE el mismo cálculo antes de generar nada con IA — mismo
 //  patrón que ya usamos con lib/cobertura.ts: cualquier lógica que
 //  necesite vivir en más de un lugar se extrae aquí, nunca se duplica.
+//
+//  [sep 2026] Reescrito para leer calDatos.eventos (el formato
+//  consolidado de un solo arreglo con "categoria", adoptado en el
+//  rediseño de julio 2026 del flujo de conversión de calendarios) en
+//  vez de los tres campos viejos (dias_inhabiles/sesiones_cte/
+//  periodos_vacaciones) que ya ningún calendario subido produce desde
+//  entonces — el desajuste hacía que NINGÚN día se excluyera salvo
+//  fines de semana, en los 32 estados, desde julio.
 // ============================================================
 import type { SupabaseClient } from '@supabase/supabase-js'
 export const CICLO_ESCOLAR_ACTIVO = '2026-2027'
@@ -16,6 +24,25 @@ export type DiaHabil = { fecha: string; label: string; esCTE: boolean; motivo?: 
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+
+// Categorías de "eventos" que significan que NO hay clases ese día.
+// Todo lo que NO esté en esta lista (día conmemorativo, jornada de
+// concientización, registro de calificaciones, preinscripción, etc.)
+// cuenta como día hábil normal — son solo informativos, no suspenden
+// labores. Si aparece una categoría nueva que no está aquí, por
+// diseño se trata como HÁBIL (nunca al revés) para que un dato nuevo
+// nunca genere una exclusión silenciosa no revisada.
+const CATEGORIAS_INHABILES = new Set([
+  'receso_clases',
+  'cte_fase_intensiva',
+  'vacaciones',
+  'suspension_labores_docentes',
+  'cte_sesion_ordinaria',
+])
+// Subconjunto de las anteriores que además debe marcarse esCTE: true
+// (para que el generador narre "Consejo Técnico Escolar" en vez de
+// solo "día inhábil" genérico).
+const CATEGORIAS_CTE = new Set(['cte_fase_intensiva', 'cte_sesion_ordinaria'])
 
 export async function obtenerCalendarioEstatal(
   supabaseAdmin: SupabaseClient,
@@ -44,28 +71,24 @@ export function calcularDiasHabiles(calDatos: any, inicio: string, fin: string):
   const finClases: string | null = calDatos.fin_clases || null
   const inicioClases: string | null = calDatos.inicio_clases || null
 
-  const diasInhabilesSet = new Set<string>()
-  if (calDatos.dias_inhabiles) {
-    for (const d of calDatos.dias_inhabiles) {
-      if (d.fecha) diasInhabilesSet.add(d.fecha)
-    }
-  }
-  if (calDatos.sesiones_cte) {
-    for (const s of calDatos.sesiones_cte) {
-      if (s.fecha) diasInhabilesSet.add(s.fecha)
-      if (s.fechas) s.fechas.forEach((f: string) => diasInhabilesSet.add(f))
-    }
-  }
-  if (calDatos.periodos_vacaciones) {
-    for (const v of calDatos.periodos_vacaciones) {
-      if (v.inicio && v.fin) {
-        const cur = new Date(v.inicio + 'T12:00:00')
-        const end = new Date(v.fin + 'T12:00:00')
-        while (cur <= end) {
-          diasInhabilesSet.add(cur.toISOString().split('T')[0])
-          cur.setDate(cur.getDate() + 1)
-        }
+  // Mapa fecha -> { esCTE, motivo } construido a partir de calDatos.eventos.
+  // Los eventos con fecha_fin describen un RANGO (ej. vacaciones,
+  // receso_clases) — se expande día por día dentro del rango.
+  const diasInhabiles = new Map<string, { esCTE: boolean; motivo: string }>()
+  const eventos: any[] = Array.isArray(calDatos.eventos) ? calDatos.eventos : []
+  for (const ev of eventos) {
+    if (!ev.fecha || !CATEGORIAS_INHABILES.has(ev.categoria)) continue
+    const esCTE = CATEGORIAS_CTE.has(ev.categoria)
+    const motivo = ev.motivo || (esCTE ? 'CTE' : 'Inhábil')
+    if (ev.fecha_fin) {
+      const cur = new Date(ev.fecha + 'T12:00:00')
+      const end = new Date(ev.fecha_fin + 'T12:00:00')
+      while (cur <= end) {
+        diasInhabiles.set(cur.toISOString().split('T')[0], { esCTE, motivo })
+        cur.setDate(cur.getDate() + 1)
       }
+    } else {
+      diasInhabiles.set(ev.fecha, { esCTE, motivo })
     }
   }
 
@@ -80,11 +103,9 @@ export function calcularDiasHabiles(calDatos: any, inicio: string, fin: string):
         dias.push({ fecha: fechaStr, label: `${DIAS_SEMANA[dow]} ${cur.getDate()} de ${MESES[cur.getMonth()]}`, esCTE: false, motivo: 'Ciclo escolar concluido' })
       } else if (inicioClases && fechaStr < inicioClases) {
         dias.push({ fecha: fechaStr, label: `${DIAS_SEMANA[dow]} ${cur.getDate()} de ${MESES[cur.getMonth()]}`, esCTE: false, motivo: 'Ciclo escolar aún no inicia' })
-      } else if (diasInhabilesSet.has(fechaStr)) {
-        const esCTE = calDatos.sesiones_cte?.some((s: any) =>
-          s.fecha === fechaStr || s.fechas?.includes(fechaStr)
-        ) || false
-        dias.push({ fecha: fechaStr, label: `${DIAS_SEMANA[dow]} ${cur.getDate()} de ${MESES[cur.getMonth()]}`, esCTE, motivo: esCTE ? 'CTE' : 'Inhábil' })
+      } else if (diasInhabiles.has(fechaStr)) {
+        const info = diasInhabiles.get(fechaStr)!
+        dias.push({ fecha: fechaStr, label: `${DIAS_SEMANA[dow]} ${cur.getDate()} de ${MESES[cur.getMonth()]}`, esCTE: info.esCTE, motivo: info.motivo })
       } else {
         dias.push({ fecha: fechaStr, label: `${DIAS_SEMANA[dow]} ${cur.getDate()} de ${MESES[cur.getMonth()]}`, esCTE: false })
       }
