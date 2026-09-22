@@ -12,9 +12,12 @@
 //  2. Verifica que este ciclo NO se haya cerrado ya (evita doble
 //     ejecución — la restricción UNIQUE en cierres_ciclo es la
 //     protección real; esta verificación solo da un mensaje claro).
-//  3. Limpia a NULL los 5 campos "activos" en users (PMC,
+//  3. Limpia a NULL los 8 campos "activos" en users (PMC,
 //     diagnóstico grupal, diagnóstico individual, PDAs del
-//     jardín, observaciones directivas) para TODAS las cuentas.
+//     jardín, observaciones directivas, y Grado/Grupo/Alumnos
+//     — para que la educadora reconfirme su grupo del ciclo
+//     nuevo, no se quede con el grupo del ciclo pasado) para
+//     TODAS las cuentas.
 //     El historial YA quedó preservado en documentos_historial
 //     con su ciclo_escolar correcto — este paso no borra nada
 //     del archivo, solo limpia lo que se muestra como "actual".
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Paso 3 — limpiar los 5 campos activos en users, para todas las cuentas
-  const { data: usuariosActualizados, error: errorUsers } = await supabaseAdmin
+    const { data: usuariosActualizados, error: errorUsers } = await supabaseAdmin
     .from('users')
     .update({
       diagnostico_escolar: null,
@@ -65,6 +68,9 @@ export async function POST(request: NextRequest) {
       evaluacion_individual: null,
       pdas_jardin: null,
       observaciones_directivo: null,
+      grado: null,
+      grupo_letra: null,
+      total_alumnos: null,
     })
     .not('id', 'is', null) // actualiza todas las filas (condición siempre verdadera, requerida por Supabase para updates masivos)
     .select('id')
