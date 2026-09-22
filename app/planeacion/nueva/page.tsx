@@ -164,6 +164,7 @@ function NuevaPlaneacionInner() {
 
   const [campoInvalido, setCampoInvalido] = useState<CampoInvalidoId>(null)
   const [mensajeErrorFecha, setMensajeErrorFecha] = useState('')
+  const [avisoLimitePda, setAvisoLimitePda] = useState(false)
   const campoInvalidoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const refNombreInput = useRef<HTMLInputElement>(null)
   const refSituacionInput = useRef<HTMLTextAreaElement>(null)
@@ -235,6 +236,7 @@ function NuevaPlaneacionInner() {
   const totalAlumnos = profile?.total_alumnos || profile?.total_students || null
   const todasPdasSeleccionadas = contenidosElegidos.flatMap(c => c.pdasSeleccionados)
   const hayPdasSeleccionados = todasPdasSeleccionadas.length > 0
+  const limitePdaAlcanzado = todasPdasSeleccionadas.length >= 2
 
   const ejePrincipalVieneDeMiAvance = !!ejeSugeridoParam && ejePrincipal === ejeSugeridoParam
 
@@ -399,7 +401,19 @@ function NuevaPlaneacionInner() {
     if (campoInvalido === 'campoFormativo') setCampoInvalido(null)
   }
 
+    // [sep 2026] Tope de 2 PDA para el campo formativo principal — mientras
+  // se decide el rediseño completo (ver pendiente "multi-PDA" en notas de
+  // ingeniería), esto evita que se seleccione un PDA que se quede sin
+  // código propio ni rúbrica generada, como pasaba antes sin límite.
+  const MAX_PDAS_PRINCIPAL = 2
+
   function togglePda(contenido: string, pda: PdaItem) {
+    const yaSeleccionadoGlobal = contenidosElegidos.some(c => c.pdasSeleccionados.some(p => p.pda === pda.pda))
+    if (!yaSeleccionadoGlobal && todasPdasSeleccionadas.length >= MAX_PDAS_PRINCIPAL) {
+      setAvisoLimitePda(true)
+      setTimeout(() => setAvisoLimitePda(false), 3200)
+      return
+    }
     setContenidosElegidos(prev => prev.map(c => {
       if (c.contenido !== contenido) return c
       const yaSeleccionado = c.pdasSeleccionados.some(p => p.pda === pda.pda)
@@ -1176,12 +1190,13 @@ function NuevaPlaneacionInner() {
                                         <div style={{ marginBottom: 8 }}>
                                           <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '8px 0 6px' }}>{gradoGrupo} grado</p>
                                           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-                                            {(pdasPorContenido[contenido] || []).filter(p => !p.esAvanzado).map(pda => {
+                                                                                        {(pdasPorContenido[contenido] || []).filter(p => !p.esAvanzado).map(pda => {
                                               const seleccionado = elegido?.pdasSeleccionados.some(p => p.pda === pda.pda) || false
+                                              const deshabilitado = !seleccionado && limitePdaAlcanzado
                                               return (
-                                                <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#FAFAFA', transition: 'all 0.15s' }}>
-                                                  <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda)}
-                                                    style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
+                                                <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: deshabilitado ? 'not-allowed' : 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : deshabilitado ? '#F3F3F3' : '#FAFAFA', opacity: deshabilitado ? 0.55 : 1, transition: 'all 0.15s' }}>
+                                                  <input type="checkbox" checked={seleccionado} disabled={deshabilitado} onChange={() => togglePda(contenido, pda)}
+                                                    style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: deshabilitado ? 'not-allowed' : 'pointer' }} />
                                                   <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, flex: 1 }}>
                                                     <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
                                                     {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
@@ -1219,12 +1234,13 @@ function NuevaPlaneacionInner() {
                                                 <div key={grado} style={{ marginBottom: 10 }}>
                                                   <p style={{ fontSize: 11, fontWeight: 700, color: '#00A896', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '6px 0' }}>{grado} grado — nivel avanzado</p>
                                                   <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-                                                    {pdasDeGrado.map(pda => {
+                                                  {pdasDeGrado.map(pda => {
                                                       const seleccionado = elegido?.pdasSeleccionados.some(p => p.pda === pda.pda) || false
+                                                      const deshabilitado = !seleccionado && limitePdaAlcanzado
                                                       return (
-                                                        <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : '#F5FFFE', transition: 'all 0.15s' }}>
-                                                          <input type="checkbox" checked={seleccionado} onChange={() => togglePda(contenido, pda)}
-                                                            style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: 'pointer' }} />
+                                                        <label key={pda.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: deshabilitado ? 'not-allowed' : 'pointer', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${seleccionado ? '#00A896' : '#E8E8F0'}`, background: seleccionado ? '#E0F5F3' : deshabilitado ? '#F3F3F3' : '#F5FFFE', opacity: deshabilitado ? 0.55 : 1, transition: 'all 0.15s' }}>
+                                                          <input type="checkbox" checked={seleccionado} disabled={deshabilitado} onChange={() => togglePda(contenido, pda)}
+                                                            style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: deshabilitado ? 'not-allowed' : 'pointer' }} />
                                                           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, flex: 1 }}>
                                                             <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
                                                             {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
@@ -1264,6 +1280,13 @@ function NuevaPlaneacionInner() {
                     </div>
                   )}
 
+                  {avisoLimitePda && (
+                    <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+                      <p style={{ margin: 0, fontSize: 13, color: '#991B1B', fontWeight: 600 }}>
+                        Máximo 2 PDA para el campo formativo principal. Si necesitas trabajar otro, actívalo como campo transversal.
+                      </p>
+                    </div>
+                  )}
                   {hayPdasSeleccionados && (
                     <div style={{ background: '#F0FFF8', border: '1.5px solid #00A896', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
                       <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: '#00A896', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
