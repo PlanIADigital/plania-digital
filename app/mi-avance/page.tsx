@@ -197,6 +197,7 @@ export default function MiAvancePage() {
         .from('plannings')
         .select('id, project_name, pda_campo, eje_principal, eje_secundario, status, starts_on, ends_on, created_at')
         .eq('user_id', user.id)
+        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
         .order('created_at', { ascending: false })
       setPlannings(plans || [])
       const { data: cov } = await supabase
@@ -346,7 +347,7 @@ export default function MiAvancePage() {
             </div>
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '16px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 10px' }}>Progreso del ciclo escolar 2025–2026</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 10px' }}>Progreso del ciclo escolar {CICLO_ESCOLAR_ACTIVO}</p>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
                 {MESES.map((mes, i) => (
                   <span key={mes} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, fontWeight: i === mesActual ? 700 : 400, background: i < mesActual ? '#E0F5F3' : i === mesActual ? '#3D3A8C' : '#F3F3F3', color: i < mesActual ? '#0F6E56' : i === mesActual ? 'white' : '#AAA', border: `1px solid ${i < mesActual ? '#9FE1CB' : i === mesActual ? '#3D3A8C' : '#E5E5E5'}` }}>

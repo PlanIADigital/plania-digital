@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { calcularEjesCubiertos } from '@/lib/cobertura'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
@@ -28,6 +29,7 @@ export default function DashboardPage() {
         .from('plannings')
         .select('id, project_name, situacion_problema, starts_on, ends_on, pda_campo, eje_principal, eje_secundario, status, created_at')
         .eq('user_id', data.id)
+        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
         .order('created_at', { ascending: false })
       setPlaneaciones(plans || [])
 
@@ -43,6 +45,7 @@ export default function DashboardPage() {
         .from('pda_coverage')
         .select('pda_literal')
         .eq('user_id', data.id)
+        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
 
       const campos = new Set((plans || []).map((p: any) => p.pda_campo).filter(Boolean))
       const ejesCubiertos = calcularEjesCubiertos(plans || [])
@@ -91,9 +94,9 @@ export default function DashboardPage() {
             {/* 3 KPIs — orden pedagógico: Campos → PDA → Ejes. */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               {[
-                { label: 'COBERTURA DE\nCAMPOS FORMATIVOS', value: `${cobertura.campos} / ${cobertura.totalCampos}`, sub: 'CAMPOS Cubiertos · Ciclo 2025-2026' },
-                { label: 'COBERTURA DE\nPDA', value: `${cobertura.pdas} / ${cobertura.totalPdas}`, sub: 'PDA Cubiertos · Ciclo 2025-2026' },
-                { label: 'COBERTURA DE\nEJES ARTICULADORES', value: `${cobertura.ejes} / ${cobertura.totalEjes}`, sub: 'EJES Cubiertos · Ciclo 2025-2026' },
+                { label: 'COBERTURA DE\nCAMPOS FORMATIVOS', value: `${cobertura.campos} / ${cobertura.totalCampos}`, sub: `CAMPOS Cubiertos · Ciclo ${CICLO_ESCOLAR_ACTIVO}` },
+                { label: 'COBERTURA DE\nPDA', value: `${cobertura.pdas} / ${cobertura.totalPdas}`, sub: `PDA Cubiertos · Ciclo ${CICLO_ESCOLAR_ACTIVO}` },
+                { label: 'COBERTURA DE\nEJES ARTICULADORES', value: `${cobertura.ejes} / ${cobertura.totalEjes}`, sub: `EJES Cubiertos · Ciclo ${CICLO_ESCOLAR_ACTIVO}` },
               ].map((kpi, i) => (
                 <div key={i} style={{ background: 'var(--plania-superficie)', borderRadius: 12, padding: '18px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
                   <p style={{ color: 'var(--plania-marca)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{kpi.label}</p>
