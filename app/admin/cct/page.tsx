@@ -175,7 +175,7 @@ export default function CatalogoPage() {
             <div>
               <p className="text-sm font-medium text-gray-900">{estado.archivo_nombre}</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {estado.registros_count?.toLocaleString('es-MX')} registros · Supabase tabla schools_catalog
+                {estado.registros_count?.toLocaleString('es-MX')} registros · Supabase tabla cct_catalogo_oficial
               </p>
             </div>
             <span className="text-xs text-gray-400">{formatearFecha(estado.fecha_actualizacion)}</span>
@@ -319,7 +319,7 @@ export default function CatalogoPage() {
             <span className="text-xs font-bold text-indigo-600 w-6 mt-0.5">2</span>
             <div className="flex-1">
               <p className="text-sm text-gray-900 font-medium">Subir a Supabase</p>
-              <p className="text-xs text-gray-500 mt-0.5">Table Editor → schools_catalog → Import data from CSV. Las columnas se mapean automáticamente.</p>
+              <p className="text-xs text-gray-500 mt-0.5">Table Editor → cct_catalogo_oficial → Import data from CSV. Verifica que las columnas coincidan (cv_cct, nombre_jardin, zona_oficial, sector_oficial, region_oficial...) antes de confirmar.</p>
             </div>
             <a href="https://supabase.com/dashboard/project/zdagfyfhuuaywocaahse/editor" target="_blank" className="text-xs text-indigo-600 font-medium whitespace-nowrap">Abrir Supabase →</a>
           </div>
