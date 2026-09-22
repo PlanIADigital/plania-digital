@@ -158,6 +158,7 @@ function NuevaPlaneacionInner() {
   const [avisoDescartado, setAvisoDescartado] = useState(false)
 
   const [diasHabilesReales, setDiasHabilesReales] = useState<number | null>(null)
+  const [diasExcluidosDetalle, setDiasExcluidosDetalle] = useState<{ fecha: string; label: string; motivo: string }[]>([])
   const [cambioModalidadInfo, setCambioModalidadInfo] = useState<{ original: string; nueva: string; diasReales: number; necesariosOriginal: number; necesariosNueva: number } | null>(null)
   const [cambioModalidadConfirmado, setCambioModalidadConfirmado] = useState(true)
 
@@ -296,6 +297,7 @@ function NuevaPlaneacionInner() {
     async function calcular() {
       if (!form.fecha_inicio || !form.fecha_fin || form.fecha_fin < form.fecha_inicio || !profile?.cct_primary) {
         setDiasHabilesReales(null)
+        setDiasExcluidosDetalle([])
         return
       }
       try {
@@ -304,6 +306,7 @@ function NuevaPlaneacionInner() {
         const data = await res.json()
         const dias = typeof data.diasHabilesReales === 'number' ? data.diasHabilesReales : null
         setDiasHabilesReales(dias)
+        setDiasExcluidosDetalle(Array.isArray(data.diasExcluidosDetalle) ? data.diasExcluidosDetalle : [])
         if (dias === null) return
 
         const necesariosActual = NOMBRES_FASES_MODALIDAD[form.metodologia]?.length || 5
@@ -1424,8 +1427,8 @@ function NuevaPlaneacionInner() {
                       <span style={{ fontSize: 16 }}>📅</span>
                       <p style={{ fontSize: 13, color: '#065F46', margin: 0, fontWeight: 500 }}>
                         Tu proyecto tiene <strong>{diasHabilesReales} día(s) hábil(es) reales</strong> dentro del ciclo escolar.
-                        {diasHabilesReales < diasHabilesNaive && (
-                          <> ({diasHabilesNaive - diasHabilesReales} día(s) del rango elegido caen en vacaciones, CTE o fuera del ciclo.)</>
+                          {diasHabilesReales < diasHabilesNaive && diasExcluidosDetalle.length > 0 && (
+                          <> ({diasExcluidosDetalle.map(d => `${d.label} — ${d.motivo}`).join('; ')}.)</>
                         )}
                       </p>
                     </div>
