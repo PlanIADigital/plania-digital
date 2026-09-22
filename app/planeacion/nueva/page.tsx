@@ -253,7 +253,7 @@ function NuevaPlaneacionInner() {
     && (MODO_PRUEBA_FECHAS_PASADAS || form.fecha_inicio >= hoyISO)
 
   const modalidadLista = fechaCompletaYValida && diasHabilesReales !== null && modalidadActualCabe && !modalidadBloqueada
-
+  const datosProyectoCompletos = !!form.nombre_proyecto && !!form.situacion_problema && !!form.finalidad
   const todosCamposCompletos =
     !!form.nombre_proyecto &&
     !!form.situacion_problema &&
@@ -1096,7 +1096,24 @@ function NuevaPlaneacionInner() {
                 </div>
               </div>
 
-              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
+                            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const, position: 'relative' as const }}>
+                {!datosProyectoCompletos && (
+                  <div style={{
+                    position: 'absolute', inset: 0, borderRadius: 12, zIndex: 5,
+                    background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(1.5px)',
+                    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
+                    textAlign: 'center' as const, padding: 32, gap: 10,
+                  }}>
+                    <span style={{ fontSize: 26 }}>🔒</span>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#3D3A8C' }}>
+                      Completa primero los datos del proyecto
+                    </p>
+                    <p style={{ margin: 0, fontSize: 12.5, color: '#666', maxWidth: 260, lineHeight: 1.6 }}>
+                      Nombre, situación problema y propósito, a la izquierda — así el sistema puede sugerirte los campos transversales correctos.
+                    </p>
+                  </div>
+                )}
+                <div style={datosProyectoCompletos ? undefined : { pointerEvents: 'none' as const, opacity: 0.45, filter: 'blur(0.3px)' }}>
                 <div ref={refModalidadSection} style={{ marginBottom: 24, padding: 6, borderRadius: 10, ...(modalidadBloqueada ? { boxShadow: '0 0 0 3px #EF4444', transition: 'box-shadow 0.25s ease' } : estiloResaltado('modalidad')) }}>
                   <p style={s.sectionTitle}>2 · Modalidad de trabajo</p>
                   <label style={s.label}>
@@ -1481,6 +1498,7 @@ function NuevaPlaneacionInner() {
                   style={{ background: generating ? '#D0D0D0' : (todosCamposCompletos ? '#00A896' : '#B9B9B9'), color: 'white', border: 'none', padding: '15px 24px', fontSize: 16, cursor: generating ? 'default' : 'pointer', width: '100%', borderRadius: 8, fontWeight: 600, transition: 'background 0.2s' }}>
                   ✨ Generar planeación con IA
                 </button>
+                </div>
 
               </div>
             </div>
