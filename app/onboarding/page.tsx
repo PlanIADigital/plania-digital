@@ -30,6 +30,15 @@ export default function OnboardingPage() {
   const [cctLookup, setCctLookup] = useState<any>(null)
   const [cctLookupLoading, setCctLookupLoading] = useState(false)
 
+  // sep 2026: detección suave de CCT ya registrado por otra cuenta -- no
+  // revela quién es esa otra cuenta (eso es privado, solo el Directivo lo
+  // ve en su dashboard); solo le pide a la educadora reconfirmar que
+  // escribió su CCT correctamente, para atrapar errores de captura sin
+  // bloquear el caso legítimo de dos educadoras del mismo jardín.
+  const [cctDuplicado, setCctDuplicado] = useState(false)
+  const [confirmoDuplicado, setConfirmoDuplicado] = useState(false)
+  const [verificandoDuplicado, setVerificandoDuplicado] = useState(false)
+
   useEffect(() => {
     async function loadRole() {
       let session = null
@@ -59,9 +68,12 @@ export default function OnboardingPage() {
     update('cct', val)
     setCctInfo(null)
     setCctLookup(null)
+    setCctDuplicado(false)
+    setConfirmoDuplicado(false)
     if (val.length === 10) {
       setCctLoading(true)
       setCctLookupLoading(true)
+      setVerificandoDuplicado(true)
       try {
         const res = await fetch('/api/decodificar-cct', {
           method: 'POST',
@@ -95,6 +107,26 @@ export default function OnboardingPage() {
       } finally {
         setCctLookupLoading(false)
       }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          const resDup = await fetch('/api/verificar-cct-duplicado', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ cct: val }),
+          })
+          const dataDup = await resDup.json()
+          setCctDuplicado(!!dataDup.existe)
+        }
+      } catch {
+        // silencioso -- si falla la verificación, no bloqueamos el registro
+      } finally {
+        setVerificandoDuplicado(false)
+      }
     }
   }
 
@@ -113,6 +145,10 @@ export default function OnboardingPage() {
     }
     if (!form.zona.trim() || !form.sector.trim() || !form.region.trim()) {
       setError('Completa Zona, Sector y Región (escribe "No aplica" si tu jardín no tiene Sector asignado)')
+      return
+    }
+    if (cctDuplicado && !confirmoDuplicado) {
+      setError('Confirma que tu CCT es correcto antes de continuar')
       return
     }
     setLoading(true)
@@ -258,6 +294,28 @@ export default function OnboardingPage() {
               <span style={{ fontSize: 13, color: '#991b1b' }}>
                 {cctInfo.error || 'CCT no válido'}
               </span>
+            </div>
+          )}
+
+          {/* Reconfirmación suave si el CCT ya está registrado por otra
+              cuenta -- nunca dice quién es esa cuenta, solo pide
+              verificar que se escribió bien. */}
+          {!verificandoDuplicado && cctDuplicado && (
+            <div style={{ background: '#FFF8E6', border: '1.5px solid #F5C451', borderRadius: 8, padding: '10px 14px', marginBottom: 18 }}>
+              <p style={{ fontSize: 12.5, color: '#7A5B00', margin: '0 0 8px', lineHeight: 1.5 }}>
+                Ya existe una cuenta registrada con este CCT. Si tu jardín tiene más de una educadora, esto es normal — solo confirma que anotaste correctamente tu Clave de Centro de Trabajo.
+              </p>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={confirmoDuplicado}
+                  onChange={e => setConfirmoDuplicado(e.target.checked)}
+                  style={{ marginTop: 2 }}
+                />
+                <span style={{ fontSize: 12.5, color: '#7A5B00', fontWeight: 600 }}>
+                  Confirmo que este es mi CCT correcto
+                </span>
+              </label>
             </div>
           )}
 
