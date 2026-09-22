@@ -71,17 +71,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
 
+    // sep 2026: antes consultaba schools_catalog (importación manual,
+    // se quedó con 1 sola fila). Ahora consulta cct_catalogo_oficial,
+    // el catálogo real (80,735 filas) — de paso trae zona/sector/región
+    // numéricos, que no existían en ningún lado antes de este cambio.
     const { data: escuela, error: dbError } = await supabaseAdmin
-      .from('schools_catalog')
-      .select('nombre, municipio, localidad, tipo, sostenimiento, turno')
-      .eq('cct', parsed.cct)
+      .from('cct_catalogo_oficial')
+      .select('nombre_jardin, turno, zona_numero, sector_numero, region_numero')
+      .eq('cv_cct', parsed.cct)
       .single()
 
     if (dbError || !escuela) {
       return NextResponse.json({
         ...parsed,
         nombre: null,
-        municipio: null,
+        zona: null,
+        sector: null,
+        region: null,
         encontrado_en_catalogo: false,
         mensaje: 'Centro de trabajo no encontrado en el catálogo. Por favor confirma el nombre de tu jardín.'
       })
@@ -89,10 +95,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...parsed,
-      nombre: escuela.nombre,
-      municipio: escuela.municipio,
-      localidad: escuela.localidad,
+      nombre: escuela.nombre_jardin,
       turno: escuela.turno || null,
+      zona: escuela.zona_numero,
+      sector: escuela.sector_numero,
+      region: escuela.region_numero,
       encontrado_en_catalogo: true
     })
 
