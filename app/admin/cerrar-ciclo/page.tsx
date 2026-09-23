@@ -17,7 +17,7 @@
 //  fuera a rechazar un segundo intento para ese mismo ciclo.
 // ============================================================
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { fetchAdmin } from '@/lib/fetchAdmin'
 
 export default function CerrarCicloPage() {
@@ -25,10 +25,28 @@ export default function CerrarCicloPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [ejecutando, setEjecutando] = useState(false)
   const [resultado, setResultado] = useState<{ ok: boolean; mensaje: string; usuariosAfectados?: number } | null>(null)
-  // Ciclo que ya se cerró exitosamente en esta sesión — si coincide con
-  // lo que hay escrito en el input, el botón se queda en estado "ya
-  // cerrado" en vez de volver a verse como una acción pendiente.
-  const [cicloCerradoOk, setCicloCerradoOk] = useState<string | null>(null)
+  // [sep 2026] Lista de ciclos ya cerrados según la base de datos —
+  // se consulta al cargar la página, así el botón sabe si mostrarse
+  // como "ya cerrado" desde el primer render, sin depender de que el
+  // cierre haya ocurrido en esta misma sesión del navegador.
+  const [ciclosCerrados, setCiclosCerrados] = useState<string[]>([])
+  const [cargandoCiclos, setCargandoCiclos] = useState(true)
+
+  useEffect(() => {
+    async function cargarCiclosCerrados() {
+      try {
+        const res = await fetchAdmin('/api/admin/cierres-ciclo')
+        const data = await res.json()
+        if (data.ok) setCiclosCerrados((data.ciclosCerrados || []).map((c: any) => c.ciclo_cerrado))
+      } catch {
+        // silencioso -- si falla, el botón simplemente se comporta como si
+        // ningún ciclo estuviera cerrado todavía; el backend igual protege
+        // contra un doble cierre real al momento de intentarlo
+      }
+      setCargandoCiclos(false)
+    }
+    cargarCiclosCerrados()
+  }, [])
 
   async function ejecutarCierre() {
     setEjecutando(true)
@@ -40,13 +58,13 @@ export default function CerrarCicloPage() {
         body: JSON.stringify({ ciclo_a_cerrar: cicloACerrar }),
       })
       const data = await res.json()
-      if (data.ok) {
+        if (data.ok) {
         setResultado({
           ok: true,
           mensaje: `Ciclo ${data.ciclo_cerrado} cerrado correctamente.`,
           usuariosAfectados: data.usuarios_afectados,
         })
-        setCicloCerradoOk(data.ciclo_cerrado)
+        setCiclosCerrados(prev => [...prev, data.ciclo_cerrado])
       } else {
         setResultado({ ok: false, mensaje: data.error || 'Error desconocido al cerrar el ciclo.' })
       }
@@ -57,7 +75,7 @@ export default function CerrarCicloPage() {
     setConfirmando(false)
   }
 
-  const yaCerradoAhora = cicloACerrar.trim() && cicloACerrar === cicloCerradoOk
+    const yaCerradoAhora = cicloACerrar.trim() && ciclosCerrados.includes(cicloACerrar.trim())
 
   return (
     <div style={{ maxWidth: 680 }}>
