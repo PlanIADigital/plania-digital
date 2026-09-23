@@ -33,8 +33,25 @@ export default function RegisterPage() {
     if (!fullName || !email || !whatsapp || !password || !role) { setError('Completa todos los campos, incluyendo tu rol'); return }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     if (!aceptaTerminos || !aceptaPrivacidad) { setError('Debes aceptar los Términos y el Aviso de Privacidad para continuar'); return }
-    setLoading(true)
+        setLoading(true)
     setError('')
+
+    try {
+      const resDup = await fetch('/api/verificar-whatsapp-duplicado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsapp }),
+      })
+      const dataDup = await resDup.json()
+      if (dataDup.duplicado) {
+        setError('Este número de WhatsApp ya está registrado en otra cuenta. Verifica que lo hayas escrito correctamente.')
+        setLoading(false)
+        return
+      }
+    } catch {
+      // silencioso -- si falla la verificación, no bloqueamos el registro
+    }
+
     const ahora = new Date().toISOString()
     const { error } = await supabase.auth.signUp({
       email,
