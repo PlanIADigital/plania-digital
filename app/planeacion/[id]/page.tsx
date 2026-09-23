@@ -223,7 +223,7 @@ export default function VerPlaneacionPage() {
           instrumentos_evaluacion: instrumentosEvaluacion,
         }),
       })
-      if (!res.ok) throw new Error('No se pudo generar el documento')
+            if (!res.ok) throw new Error('No se pudo generar el documento')
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -233,6 +233,14 @@ export default function VerPlaneacionPage() {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
+      // [sep 2026] Marca que este Word ya se entregó — una vez descargado,
+      // el valor completo ya salió, así que la planeación deja de poder
+      // descartarse (ver botón "Descartar planeación" más abajo).
+      if (!planeacion.word_descargado_en) {
+        const ahora = new Date().toISOString()
+        const { error: errMarca } = await supabase.from('plannings').update({ word_descargado_en: ahora }).eq('id', params.id)
+        if (!errMarca) setPlaneacion((prev: any) => ({ ...prev, word_descargado_en: ahora }))
+      }
     } catch {
       alert('Hubo un error al generar el documento. Intenta de nuevo.')
     }
@@ -339,8 +347,8 @@ export default function VerPlaneacionPage() {
               {planeacion.metodologia} · {planeacion.starts_on} al {planeacion.ends_on} · {dias.length} días hábiles
             </p>
           </div>
-                    <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            {planeacion.status === 'active' && (
+            <div style={{ display: 'flex', gap: 10, flexShrink: 0, alignItems: 'center' }}>
+            {planeacion.status === 'active' && !planeacion.word_descargado_en && (
               <button
                 onClick={descartarPlaneacion}
                 disabled={descartando}
@@ -348,6 +356,11 @@ export default function VerPlaneacionPage() {
               >
                 {descartando ? 'Descartando…' : '✕ Descartar planeación'}
               </button>
+            )}
+            {planeacion.status === 'active' && planeacion.word_descargado_en && (
+              <span style={{ fontSize: 11, color: '#9CA3AF', maxWidth: 160, lineHeight: 1.4 }}>
+                Ya se descargó — no se puede descartar
+              </span>
             )}
             <button
               onClick={descargarWord}

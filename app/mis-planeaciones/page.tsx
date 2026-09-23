@@ -57,7 +57,7 @@ export default function MisPlaneacionesPage() {
       setProfile(data)
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, finalidad, starts_on, ends_on, pda_campo, eje_principal, status, created_at, ciclo_escolar')
+        .select('id, project_name, finalidad, starts_on, ends_on, pda_campo, eje_principal, status, created_at, ciclo_escolar, word_descargado_en')
         .eq('user_id', data.id)
         .order('created_at', { ascending: false })
       setPlaneaciones(plans || [])
@@ -264,7 +264,7 @@ export default function MisPlaneacionesPage() {
                       </td>
                                             <td style={{ padding: '12px 16px', verticalAlign: 'middle', textAlign: 'right' as const }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {p.status === 'active' && (
+                            {p.status === 'active' && !p.word_descargado_en && (
                             <button onClick={() => descartarPlaneacion(p.id)}
                               style={{ background: 'white', border: '1.5px solid #FCA5A5', color: '#991B1B', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
                               ✕ Descartar
