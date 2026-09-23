@@ -34,7 +34,7 @@ export default function MisPlaneacionesPage() {
   const [profile, setProfile] = useState<any>(null)
   const [planeaciones, setPlaneaciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState<'todas' | 'active' | 'closed'>('todas')
+    const [filtro, setFiltro] = useState<'todas' | 'active' | 'closed' | 'discarded'>('todas')
   // [sep 2026] Selector de ciclo escolar — por defecto muestra solo el
   // ciclo activo; las planeaciones de ciclos anteriores no desaparecen,
   // solo quedan un clic de distancia (misma filosofía: sus planeaciones
@@ -96,10 +96,11 @@ export default function MisPlaneacionesPage() {
 
   const planeacionesDelCiclo = planeaciones.filter(p => (p.ciclo_escolar || 'Sin ciclo') === cicloSeleccionado)
 
-  const filtradas = planeacionesDelCiclo
+    const filtradas = planeacionesDelCiclo
     .filter(p => {
       if (filtro === 'active') return p.status === 'active'
-      if (filtro === 'closed') return p.status !== 'active'
+      if (filtro === 'discarded') return p.status === 'discarded'
+      if (filtro === 'closed') return p.status !== 'active' && p.status !== 'discarded'
       return true
     })
     .filter(p => {
@@ -153,9 +154,12 @@ export default function MisPlaneacionesPage() {
         {/* Filtros + buscador + botón nueva */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12, flexWrap: 'wrap' as const }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-            {(['todas', 'active', 'closed'] as const).map(f => {
-              const labels = { todas: 'Todas', active: 'Activas', closed: 'Cerradas' }
-              const count = f === 'todas' ? planeacionesDelCiclo.length : f === 'active' ? planeacionesDelCiclo.filter(p => p.status === 'active').length : planeacionesDelCiclo.filter(p => p.status !== 'active').length
+                        {(['todas', 'active', 'discarded', 'closed'] as const).map(f => {
+              const labels = { todas: 'Todas', active: 'Activas', discarded: 'Descartadas', closed: 'Cerradas' }
+              const count = f === 'todas' ? planeacionesDelCiclo.length
+                : f === 'active' ? planeacionesDelCiclo.filter(p => p.status === 'active').length
+                : f === 'discarded' ? planeacionesDelCiclo.filter(p => p.status === 'discarded').length
+                : planeacionesDelCiclo.filter(p => p.status !== 'active' && p.status !== 'discarded').length
               return (
                 <button key={f} onClick={() => setFiltro(f)}
                   style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: filtro === f ? 700 : 400, cursor: 'pointer', border: `1.5px solid ${filtro === f ? '#3D3A8C' : '#E0DFF5'}`, background: filtro === f ? '#EEEDF8' : 'white', color: filtro === f ? '#3D3A8C' : '#888' }}>
