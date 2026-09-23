@@ -21,6 +21,7 @@ export default function ConfiguracionPage() {
   const [editandoWhatsapp, setEditandoWhatsapp] = useState(false)
   const [whatsappValor, setWhatsappValor] = useState('')
   const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
+  const [errorWhatsapp, setErrorWhatsapp] = useState('')
 
   // Datos institucionales — Zona/Sector/Región/Turno, sugeridos del
   // catálogo oficial SEP y confirmables aquí (misma fuente única de
@@ -139,9 +140,27 @@ export default function ConfiguracionPage() {
     setConfirmandoInstitucional(false)
   }
 
-  async function guardarWhatsapp() {
+    async function guardarWhatsapp() {
     if (!profile || !whatsappValor.trim()) return
+    setErrorWhatsapp('')
     setGuardandoWhatsapp(true)
+
+    try {
+      const resDup = await fetch('/api/verificar-whatsapp-duplicado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsapp: whatsappValor.trim(), excluir_auth_uid: profile.auth_uid }),
+      })
+      const dataDup = await resDup.json()
+      if (dataDup.duplicado) {
+        setErrorWhatsapp('Este número ya está registrado en otra cuenta. Verifica que lo hayas escrito correctamente.')
+        setGuardandoWhatsapp(false)
+        return
+      }
+    } catch {
+      // silencioso -- si falla la verificación, no bloqueamos el guardado
+    }
+
     const { error } = await supabase
       .from('users')
       .update({ whatsapp: whatsappValor.trim() })
@@ -350,8 +369,8 @@ export default function ConfiguracionPage() {
               {!editandoWhatsapp ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{profile?.whatsapp || '—'}</span>
-                  <button
-                    onClick={() => { setWhatsappValor(profile?.whatsapp || ''); setEditandoWhatsapp(true) }}
+                                    <button
+                    onClick={() => { setWhatsappValor(profile?.whatsapp || ''); setEditandoWhatsapp(true); setErrorWhatsapp('') }}
                     style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}
                   >
                     Editar
@@ -373,7 +392,7 @@ export default function ConfiguracionPage() {
                     {guardandoWhatsapp ? '...' : 'Guardar'}
                   </button>
                   <button
-                    onClick={() => setEditandoWhatsapp(false)}
+                    onClick={() => { setEditandoWhatsapp(false); setErrorWhatsapp('') }}
                     disabled={guardandoWhatsapp}
                     style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer' }}
                   >
@@ -382,6 +401,11 @@ export default function ConfiguracionPage() {
                 </span>
               )}
             </div>
+            {errorWhatsapp && (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#991b1b', background: '#fee2e2', padding: '6px 10px', borderRadius: 6, textAlign: 'right' as const }}>
+                {errorWhatsapp}
+              </p>
+            )}
           </div>
 
         </div>
