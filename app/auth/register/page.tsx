@@ -125,8 +125,11 @@ export default function RegisterPage() {
             onChange={e => setEmail(e.target.value)}
             style={inputStyle}
           />
-          <label style={labelStyle}>WhatsApp</label>
+                    <label style={labelStyle}>WhatsApp</label>
           <input
+            type="tel"
+            name="whatsapp-plania"
+            autoComplete="off"
             placeholder="10 dígitos, ej. 8112345678"
             value={whatsapp}
             onChange={e => setWhatsapp(e.target.value)}
