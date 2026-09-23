@@ -213,6 +213,8 @@ export default function ConfiguracionPage() {
     active: 'Activa',
     cancelled: 'Cancelada',
     expired: 'Expirada',
+    suspended: 'Suspendida',
+    founder: 'Fundadora — Acceso completo',
   }
 
   const iniciales = profile?.full_name
