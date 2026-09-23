@@ -9,6 +9,12 @@
 //      manualmente después — nunca se puede automatizar porque
 //      es una constante de build-time, no un valor en la base
 //      de datos. Esta página deja las instrucciones exactas.
+//
+//  [sep 2026] Tras un cierre exitoso, el botón deja de verse como
+//  advertencia roja (invitando a repetir la acción) y pasa a un
+//  estado neutro "ya cerrado" — antes volvía al mismo rojo de
+//  siempre, como si nada hubiera pasado, aunque el backend ya
+//  fuera a rechazar un segundo intento para ese mismo ciclo.
 // ============================================================
 'use client'
 import { useState } from 'react'
@@ -19,6 +25,10 @@ export default function CerrarCicloPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [ejecutando, setEjecutando] = useState(false)
   const [resultado, setResultado] = useState<{ ok: boolean; mensaje: string; usuariosAfectados?: number } | null>(null)
+  // Ciclo que ya se cerró exitosamente en esta sesión — si coincide con
+  // lo que hay escrito en el input, el botón se queda en estado "ya
+  // cerrado" en vez de volver a verse como una acción pendiente.
+  const [cicloCerradoOk, setCicloCerradoOk] = useState<string | null>(null)
 
   async function ejecutarCierre() {
     setEjecutando(true)
@@ -36,6 +46,7 @@ export default function CerrarCicloPage() {
           mensaje: `Ciclo ${data.ciclo_cerrado} cerrado correctamente.`,
           usuariosAfectados: data.usuarios_afectados,
         })
+        setCicloCerradoOk(data.ciclo_cerrado)
       } else {
         setResultado({ ok: false, mensaje: data.error || 'Error desconocido al cerrar el ciclo.' })
       }
@@ -45,6 +56,8 @@ export default function CerrarCicloPage() {
     setEjecutando(false)
     setConfirmando(false)
   }
+
+  const yaCerradoAhora = cicloACerrar.trim() && cicloACerrar === cicloCerradoOk
 
   return (
     <div style={{ maxWidth: 680 }}>
@@ -77,7 +90,17 @@ export default function CerrarCicloPage() {
           style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #D1D5DB', fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }}
         />
 
-        {!confirmando ? (
+        {yaCerradoAhora ? (
+          <button
+            disabled
+            style={{
+              background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7',
+              padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'default',
+            }}
+          >
+            ✅ Ciclo {cicloACerrar} ya cerrado
+          </button>
+        ) : !confirmando ? (
           <button
             onClick={() => setConfirmando(true)}
             disabled={!cicloACerrar.trim()}
@@ -129,7 +152,7 @@ export default function CerrarCicloPage() {
           </p>
           <p style={{ fontSize: 12, color: resultado.ok ? '#065F46' : '#991B1B', margin: 0 }}>
             {resultado.mensaje}
-            {resultado.ok && resultado.usuariosAfectados !== undefined && ` (${resultado.usuariosAfectados} cuentas afectadas)`}
+            {resultado.ok && resultado.usuariosAfectados !== undefined && ` (${resultado.usuariosAfectados} cuentas actualizadas)`}
           </p>
         </div>
       )}
