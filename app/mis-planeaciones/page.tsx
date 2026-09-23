@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
@@ -34,6 +35,11 @@ export default function MisPlaneacionesPage() {
   const [planeaciones, setPlaneaciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<'todas' | 'active' | 'closed'>('todas')
+  // [sep 2026] Selector de ciclo escolar — por defecto muestra solo el
+  // ciclo activo; las planeaciones de ciclos anteriores no desaparecen,
+  // solo quedan un clic de distancia (misma filosofía: sus planeaciones
+  // siempre son suyas).
+  const [cicloSeleccionado, setCicloSeleccionado] = useState(CICLO_ESCOLAR_ACTIVO)
   // [jul 2026] Orden por defecto: más recientes primero (created_at),
   // no por período — ver comentario junto al type SortKey arriba.
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
@@ -51,7 +57,7 @@ export default function MisPlaneacionesPage() {
       setProfile(data)
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, finalidad, starts_on, ends_on, pda_campo, eje_principal, status, created_at')
+        .select('id, project_name, finalidad, starts_on, ends_on, pda_campo, eje_principal, status, created_at, ciclo_escolar')
         .eq('user_id', data.id)
         .order('created_at', { ascending: false })
       setPlaneaciones(plans || [])
@@ -65,7 +71,17 @@ export default function MisPlaneacionesPage() {
     else { setSortKey(key); setSortDir('asc') }
   }
 
-  const filtradas = planeaciones
+  // Ciclos con al menos una planeación, más recientes primero. Los
+  // registros muy antiguos que no llegaron a guardar ciclo_escolar
+  // (antes de que ese campo existiera) se agrupan como "Sin ciclo",
+  // en vez de desaparecer silenciosamente del selector.
+  const ciclosDisponibles = [...new Set(planeaciones.map(p => p.ciclo_escolar || 'Sin ciclo'))]
+    .sort((a, b) => b.localeCompare(a))
+  if (!ciclosDisponibles.includes(CICLO_ESCOLAR_ACTIVO)) ciclosDisponibles.unshift(CICLO_ESCOLAR_ACTIVO)
+
+  const planeacionesDelCiclo = planeaciones.filter(p => (p.ciclo_escolar || 'Sin ciclo') === cicloSeleccionado)
+
+  const filtradas = planeacionesDelCiclo
     .filter(p => {
       if (filtro === 'active') return p.status === 'active'
       if (filtro === 'closed') return p.status !== 'active'
@@ -105,12 +121,26 @@ export default function MisPlaneacionesPage() {
           <h1 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MIS PLANEACIONES</h1>
         </div>
 
+        {/* Selector de ciclo escolar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Ciclo escolar</label>
+          <select
+            value={cicloSeleccionado}
+            onChange={e => setCicloSeleccionado(e.target.value)}
+            style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1.5px solid #3D3A8C', background: '#EEEDF8', color: '#3D3A8C', cursor: 'pointer' }}
+          >
+            {ciclosDisponibles.map(c => (
+              <option key={c} value={c}>{c}{c === CICLO_ESCOLAR_ACTIVO ? ' (actual)' : ''}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Filtros + buscador + botón nueva */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12, flexWrap: 'wrap' as const }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
             {(['todas', 'active', 'closed'] as const).map(f => {
               const labels = { todas: 'Todas', active: 'Activas', closed: 'Cerradas' }
-              const count = f === 'todas' ? planeaciones.length : f === 'active' ? planeaciones.filter(p => p.status === 'active').length : planeaciones.filter(p => p.status !== 'active').length
+              const count = f === 'todas' ? planeacionesDelCiclo.length : f === 'active' ? planeacionesDelCiclo.filter(p => p.status === 'active').length : planeacionesDelCiclo.filter(p => p.status !== 'active').length
               return (
                 <button key={f} onClick={() => setFiltro(f)}
                   style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: filtro === f ? 700 : 400, cursor: 'pointer', border: `1.5px solid ${filtro === f ? '#3D3A8C' : '#E0DFF5'}`, background: filtro === f ? '#EEEDF8' : 'white', color: filtro === f ? '#3D3A8C' : '#888' }}>
