@@ -50,10 +50,11 @@ export default function VerPlaneacionPage() {
   // en vuelo, evitando doble clic o carrera de peticiones).
   const [guardandoCodigo, setGuardandoCodigo] = useState<string>('')
   const [rubricasDB, setRubricasDB] = useState<any[]>([])
-  // [sep 2026] Ya no hay modal de selección de estilo — solo existe
+    // [sep 2026] Ya no hay modal de selección de estilo — solo existe
   // "Institucional Índigo", así que el botón descarga directo. Este
   // booleano solo controla el estado visual del botón mientras genera.
   const [exportando, setExportando] = useState(false)
+  const [descartando, setDescartando] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -238,6 +239,23 @@ export default function VerPlaneacionPage() {
     setExportando(false)
   }
 
+    // [sep 2026] Descartar la planeación COMPLETA (distinto de
+  // descartarRubrica, que solo descarta un instrumento de evaluación
+  // suelto) — mismo principio: no borra nada, solo status='discarded',
+  // para que deje de contar contra el tope mensual de días hábiles.
+  async function descartarPlaneacion() {
+    const confirmar = window.confirm('¿Descartar esta planeación completa? Ya no contará para tu límite de días hábiles del mes. Seguirá guardada, pero se marcará como descartada.')
+    if (!confirmar) return
+    setDescartando(true)
+    const { error: err } = await supabase.from('plannings').update({ status: 'discarded' }).eq('id', params.id)
+    if (err) {
+      alert('No se pudo descartar la planeación: ' + err.message)
+      setDescartando(false)
+      return
+    }
+    router.push('/mis-planeaciones')
+  }
+
   async function descartarRubrica(rubricaId: string) {
     const confirmar = window.confirm('¿Descartar esta rúbrica? Ya no aparecerá en esta planeación.')
     if (!confirmar) return
@@ -321,13 +339,24 @@ export default function VerPlaneacionPage() {
               {planeacion.metodologia} · {planeacion.starts_on} al {planeacion.ends_on} · {dias.length} días hábiles
             </p>
           </div>
-          <button
-            onClick={descargarWord}
-            disabled={exportando}
-            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: exportando ? 'default' : 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0, opacity: exportando ? 0.7 : 1 }}
-          >
-            {exportando ? 'Generando…' : '⬇️ Descargar Word'}
-          </button>
+                    <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+            {planeacion.status === 'active' && (
+              <button
+                onClick={descartarPlaneacion}
+                disabled={descartando}
+                style={{ background: 'white', color: '#991B1B', border: '1.5px solid #FCA5A5', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: descartando ? 'default' : 'pointer', whiteSpace: 'nowrap' as const, opacity: descartando ? 0.7 : 1 }}
+              >
+                {descartando ? 'Descartando…' : '✕ Descartar planeación'}
+              </button>
+            )}
+            <button
+              onClick={descargarWord}
+              disabled={exportando}
+              style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: exportando ? 'default' : 'pointer', whiteSpace: 'nowrap' as const, opacity: exportando ? 0.7 : 1 }}
+            >
+              {exportando ? 'Generando…' : '⬇️ Descargar Word'}
+            </button>
+          </div>
         </div>
 
         {/* Datos del proyecto */}

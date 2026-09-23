@@ -66,9 +66,24 @@ export default function MisPlaneacionesPage() {
     load()
   }, [])
 
-  function handleSort(key: SortKey) {
+    function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(key); setSortDir('asc') }
+  }
+  // [sep 2026] Descartar planeación completa — no borra nada, solo
+  // marca status='discarded' (mismo principio que descartarRubrica en
+  // la vista individual). Existe para que una planeación que no
+  // convenció y se va a regenerar no siga contando contra el tope
+  // mensual de días hábiles de la educadora.
+  async function descartarPlaneacion(id: string) {
+    const confirmar = window.confirm('¿Descartar esta planeación? Ya no contará para tu límite de días hábiles del mes, pero seguirá disponible en tu historial.')
+    if (!confirmar) return
+    const { error } = await supabase.from('plannings').update({ status: 'discarded' }).eq('id', id)
+    if (error) {
+      alert('No se pudo descartar la planeación: ' + error.message)
+      return
+    }
+    setPlaneaciones(prev => prev.map(p => p.id === id ? { ...p, status: 'discarded' } : p))
   }
 
   // Ciclos con al menos una planeación, más recientes primero. Los
@@ -208,8 +223,8 @@ export default function MisPlaneacionesPage() {
                       <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{p.project_name}</span>
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: p.status === 'active' ? '#3D3A8C' : '#E0F5F3', color: p.status === 'active' ? 'white' : '#0F6E56', fontWeight: 600, flexShrink: 0 }}>
-                            {p.status === 'active' ? 'Activa' : 'Cerrada'}
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: p.status === 'active' ? '#3D3A8C' : p.status === 'discarded' ? '#FEE2E2' : '#E0F5F3', color: p.status === 'active' ? 'white' : p.status === 'discarded' ? '#991B1B' : '#0F6E56', fontWeight: 600, flexShrink: 0 }}>
+                            {p.status === 'active' ? 'Activa' : p.status === 'discarded' ? 'Descartada' : 'Cerrada'}
                           </span>
                         </div>
                       </td>
@@ -243,11 +258,19 @@ export default function MisPlaneacionesPage() {
                           </span>
                         ) : <span style={{ color: '#CCC' }}>—</span>}
                       </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', textAlign: 'right' as const }}>
-                        <button onClick={() => router.push(`/planeacion/${p.id}`)}
-                          style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
-                          Ver →
-                        </button>
+                                            <td style={{ padding: '12px 16px', verticalAlign: 'middle', textAlign: 'right' as const }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          {p.status === 'active' && (
+                            <button onClick={() => descartarPlaneacion(p.id)}
+                              style={{ background: 'white', border: '1.5px solid #FCA5A5', color: '#991B1B', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
+                              ✕ Descartar
+                            </button>
+                          )}
+                          <button onClick={() => router.push(`/planeacion/${p.id}`)}
+                            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
+                            Ver →
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
