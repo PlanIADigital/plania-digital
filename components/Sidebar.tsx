@@ -48,10 +48,13 @@ function ThemeToggle() {
   )
 }
 
-// Abrevia el nombre del jardín para la ficha del sidebar: quita el prefijo
-// "Jardín de Niños", lo pasa a formato título (por si viene en MAYÚSCULAS
-// en la base) y reduce el último apellido a su inicial — así un nombre
-// largo no se corta ni empuja el diseño.
+// [sep 2026] Abrevia el nombre del jardín por PRESUPUESTO DE CARACTERES,
+// no por número de palabras — antes cortaba la última palabra a una sola
+// inicial ("Juan De Dios P.") aunque el nombre completo cupiera bien, lo
+// cual parece afirmar un apellido que en realidad no sabemos ("¿P. de
+// Peza? ¿de Pérez?"). Ahora muestra tantas palabras COMPLETAS quepan
+// dentro del límite, y si hace falta cortar, usa "..." — que se lee
+// claramente como "hay más texto", no como un dato real truncado.
 function nombreJardinCorto(nombreCompleto?: string | null): string {
   if (!nombreCompleto) return 'Jardín de Niños'
   let base = nombreCompleto
@@ -61,10 +64,22 @@ function nombreJardinCorto(nombreCompleto?: string | null): string {
     .trim()
   base = base.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase())
   const palabras = base.split(' ').filter(Boolean)
-  if (palabras.length > 2) {
-    palabras[palabras.length - 1] = palabras[palabras.length - 1].charAt(0).toUpperCase() + '.'
+
+  const MAX_CHARS = 22
+  let resultado = ''
+  for (const palabra of palabras) {
+    const candidato = resultado ? `${resultado} ${palabra}` : palabra
+    if (candidato.length > MAX_CHARS) {
+      if (!resultado) {
+        // ni siquiera la primera palabra cabe completa — caso raro, se
+        // corta esa sola palabra en vez de dejar la ficha vacía
+        resultado = palabra.slice(0, Math.max(1, MAX_CHARS - 3))
+      }
+      return `JN ${resultado}...`
+    }
+    resultado = candidato
   }
-  return `JN ${palabras.join(' ')}`
+  return `JN ${resultado}`
 }
 
 export default function Sidebar({ profile, children }: SidebarProps) {
