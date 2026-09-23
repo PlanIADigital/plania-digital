@@ -54,9 +54,9 @@ export default function AdminDashboard() {
   const nombresEstados = estadosConEstatal.map(c => NOMBRES_ESTADO[c] || c)
   const descripcionCalendario = federalCargado
     ? (nombresEstados.length > 0
-        ? `Ciclo 2025–2026: Federal + ${nombresEstados.length} estado${nombresEstados.length > 1 ? 's' : ''} (${nombresEstados.join(', ')}).`
-        : 'Ciclo 2025–2026: Federal cargado. Ningún estado tiene calendario estatal aún.')
-    : 'Ciclo 2025–2026 sin cargar. Necesario para calcular días hábiles.'
+        ? `Federal + ${nombresEstados.length} estado${nombresEstados.length > 1 ? 's' : ''} actualizado${nombresEstados.length > 1 ? 's' : ''} (${nombresEstados.join(', ')}).`
+        : 'Federal cargado. Ningún estado tiene calendario estatal aún.')
+    : 'Calendario federal sin cargar. Necesario para calcular días hábiles.'
 
   return (
     <div>
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 24, display: 'flex', gap: 10 }}>
           <span>⚠️</span>
           <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
-            <strong>Calendario SEP incompleto</strong> — el generador no puede excluir festivos ni sesiones CTE para los estados sin calendario.{' '}
+          <strong>Calendarios Oficiales incompletos</strong> — el generador no puede excluir festivos ni sesiones CTE para los estados sin calendario.{' '}
             <a href="/admin/calendario" style={{ color: '#92400E', fontWeight: 600 }}>Cargarlo ahora</a>
           </p>
         </div>
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>📅</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Calendario SEP</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Calendarios Oficiales</span>
             </div>
             {calendarioOk === null ? (
               <span style={{ fontSize: 11, color: '#9CA3AF' }}>Verificando...</span>
