@@ -5,6 +5,27 @@ const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
 
+// [sep 2026] Tarifas de Sonnet 4.6, USD por millón de tokens — verificar
+// contra platform.claude.com/docs/en/about-claude/pricing si cambian.
+const PRECIO_INPUT_POR_MILLON = 3.00
+const PRECIO_OUTPUT_POR_MILLON = 15.00
+const PRECIO_CACHE_READ_POR_MILLON = 0.30
+const PRECIO_CACHE_WRITE_POR_MILLON = 3.75
+
+// Acumulador de costo real en USD, creado nuevo en cada POST (nunca a
+// nivel de módulo) para que peticiones concurrentes de distintas
+// educadoras nunca mezclen su costo entre sí.
+type AcumuladorCosto = { total: number }
+
+function sumarCostoLlamada(acumulador: AcumuladorCosto, usage: Anthropic.Messages.Usage) {
+  const costo =
+    (usage.input_tokens / 1_000_000) * PRECIO_INPUT_POR_MILLON +
+    (usage.output_tokens / 1_000_000) * PRECIO_OUTPUT_POR_MILLON +
+    ((usage.cache_read_input_tokens || 0) / 1_000_000) * PRECIO_CACHE_READ_POR_MILLON +
+    ((usage.cache_creation_input_tokens || 0) / 1_000_000) * PRECIO_CACHE_WRITE_POR_MILLON
+  acumulador.total += costo
+}
+
 const MAX_DIAS_POR_LOTE = 2
 
 const MOMENTOS_MODALIDAD: Record<string, { momentos: string[]; desarrollo: number }> = {
@@ -451,8 +472,9 @@ async function generarLoteDeDias(params: {
   retroalimentacionDireccion: string
   estiloNarrativo: string
   esUltimoLote: boolean
+  acumuladorCosto: AcumuladorCosto
 }): Promise<DiaGenerado[]> {
-  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, retroalimentacionDireccion, estiloNarrativo, esUltimoLote } = params
+  const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, retroalimentacionDireccion, estiloNarrativo, esUltimoLote, acumuladorCosto } = params
 
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
   const materialesTexto = materialesUsados.length > 0
@@ -519,6 +541,7 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
   })
   console.error(`⏱️ FIN llamada Claude — tardó ${((Date.now() - inicioLlamada) / 1000).toFixed(1)}s`)
   console.error(`📊 Uso de tokens — cache_creation: ${message.usage.cache_creation_input_tokens || 0}, cache_read: ${message.usage.cache_read_input_tokens || 0}, input normal: ${message.usage.input_tokens}, output: ${message.usage.output_tokens}`)
+  sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
   const dias = parsed.dias as DiaGenerado[]
@@ -528,8 +551,9 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
 async function generarAjustesPorDia(params: {
   profile: any
   todosLosDias: DiaGenerado[]
+  acumuladorCosto: AcumuladorCosto
 }): Promise<AjusteDia[]> {
-  const { profile, todosLosDias } = params
+  const { profile, todosLosDias, acumuladorCosto } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
@@ -551,7 +575,8 @@ Genera los ajustes razonables por día correspondientes — recuerda: todos los 
     system: SYSTEM_PROMPT_CIERRE,
     messages: [{ role: 'user', content: userMessage }],
   })
-  console.error(`⏱️ FIN llamada Claude (ajustes) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+    console.error(`⏱️ FIN llamada Claude (ajustes) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
   const ajustesGenerados: AjusteDia[] = Array.isArray(parsed.ajustes_por_dia) ? parsed.ajustes_por_dia : []
@@ -579,8 +604,9 @@ async function generarDescripcionEje(params: {
   ejeNombre: string
   proyecto: any
   todosLosDias: DiaGenerado[]
+  acumuladorCosto: AcumuladorCosto
 }): Promise<string> {
-  const { ejeNombre, proyecto, todosLosDias } = params
+  const { ejeNombre, proyecto, todosLosDias, acumuladorCosto } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
@@ -598,7 +624,8 @@ Redacta la descripción de cómo este proyecto específico favorece este eje art
     system: SYSTEM_PROMPT_EJE,
     messages: [{ role: 'user', content: userMessage }],
   })
-  console.error(`⏱️ FIN llamada Claude (descripción eje) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+    console.error(`⏱️ FIN llamada Claude (descripción eje) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
   return recortarAlLimite(content, LIMITE_DESCRIPCION_CIERRE)
 }
@@ -606,8 +633,9 @@ Redacta la descripción de cómo este proyecto específico favorece este eje art
 async function generarDescripcionEvaluacionFormativa(params: {
   proyecto: any
   todosLosDias: DiaGenerado[]
+  acumuladorCosto: AcumuladorCosto
 }): Promise<string> {
-  const { proyecto, todosLosDias } = params
+  const { proyecto, todosLosDias, acumuladorCosto } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
@@ -623,7 +651,8 @@ Redacta la descripción de cómo esta planeación aborda la evaluación formativ
     system: SYSTEM_PROMPT_EVALUACION_FORMATIVA,
     messages: [{ role: 'user', content: userMessage }],
   })
-  console.error(`⏱️ FIN llamada Claude (evaluación formativa) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+    console.error(`⏱️ FIN llamada Claude (evaluación formativa) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
   return recortarAlLimite(content, LIMITE_DESCRIPCION_CIERRE)
 }
@@ -632,8 +661,9 @@ async function generarUnaRubrica(params: {
   campoFormativo: string
   contenido: string
   todosLosDias: DiaGenerado[]
+  acumuladorCosto: AcumuladorCosto
 }): Promise<any> {
-  const { pdaTexto, campoFormativo, contenido, todosLosDias } = params
+  const { pdaTexto, campoFormativo, contenido, todosLosDias, acumuladorCosto } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
@@ -651,7 +681,8 @@ Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro
     system: SYSTEM_PROMPT_CIERRE,
     messages: [{ role: 'user', content: userMessage }],
   })
-  console.error(`⏱️ FIN llamada Claude (rúbrica) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+    console.error(`⏱️ FIN llamada Claude (rúbrica) — tardó ${((Date.now() - inicio) / 1000).toFixed(1)}s`)
+  sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
   return parsed.instrumento_evaluacion
@@ -660,6 +691,7 @@ export const maxDuration = 700;
 export async function POST(request: NextRequest) {
   let supabaseAdmin: any = null
   let jobId: string | undefined = undefined
+  const acumuladorCosto: AcumuladorCosto = { total: 0 }
 
   try {
     const { form, profile, job_id } = await request.json()
@@ -782,7 +814,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      const diasGeneradosLote = await generarLoteDeDias({
+            const diasGeneradosLote = await generarLoteDeDias({
         lote,
         form,
         profile,
@@ -795,6 +827,7 @@ export async function POST(request: NextRequest) {
         retroalimentacionDireccion,
         estiloNarrativo,
         esUltimoLote,
+        acumuladorCosto,
       })
 
       todasLasDiasGeneradas.push(...diasGeneradosLote)
@@ -822,9 +855,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const ajustes_por_dia = await generarAjustesPorDia({
+        const ajustes_por_dia = await generarAjustesPorDia({
       profile,
       todosLosDias: todasLasDiasGeneradas,
+      acumuladorCosto,
     })
 
     // Arma la lista de PDAs activos: principal siempre primero (no descartable),
@@ -846,11 +880,12 @@ export async function POST(request: NextRequest) {
 
     const rubricas: any[] = []
     for (const p of pdasActivos) {
-      const instrumento = await generarUnaRubrica({
+            const instrumento = await generarUnaRubrica({
         pdaTexto: p.pdaTexto,
         campoFormativo: p.campoFormativo,
         contenido: p.contenido,
         todosLosDias: todasLasDiasGeneradas,
+        acumuladorCosto,
       })
       rubricas.push({ ...instrumento, pda_evaluado: p.pdaTexto, es_principal: p.esPrincipal })
     }
@@ -863,10 +898,11 @@ export async function POST(request: NextRequest) {
     const ejesTexto = [form.eje_principal, form.eje_secundario].filter(Boolean)
     const ejesFinal: { nombre: string; descripcion: string }[] = []
     for (const ejeNombre of ejesTexto) {
-      const descripcion = await generarDescripcionEje({
+            const descripcion = await generarDescripcionEje({
         ejeNombre,
         proyecto: form,
         todosLosDias: todasLasDiasGeneradas,
+        acumuladorCosto,
       })
       ejesFinal.push({ nombre: ejeNombre, descripcion })
     }
@@ -880,6 +916,7 @@ export async function POST(request: NextRequest) {
     const evaluacionFormativa = await generarDescripcionEvaluacionFormativa({
       proyecto: form,
       todosLosDias: todasLasDiasGeneradas,
+      acumuladorCosto,
     })
     const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
     const codigosInclusion = new Set(
@@ -920,7 +957,9 @@ export async function POST(request: NextRequest) {
       ...diasInhabiles.map(d => ({ fecha: d.label, fecha_iso: d.fecha, tipo: d.motivo || 'Inhábil' }))
     ].sort((a, b) => a.fecha_iso.localeCompare(b.fecha_iso))
 
-    return NextResponse.json({ planeacion })
+        console.error(`💰 Costo total real de esta generación: $${acumuladorCosto.total.toFixed(6)} USD`)
+
+    return NextResponse.json({ planeacion, costo_generacion_usd: acumuladorCosto.total })
 
   } catch (error: unknown) {
     console.error('Error en Agente NEM:', error)
