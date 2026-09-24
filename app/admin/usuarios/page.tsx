@@ -26,7 +26,7 @@ export default function UsuariosPage() {
     setLoading(false)
   }
 
-  async function toggleFundadora(auth_uid: string, valorActual: boolean) {
+    async function toggleFundadora(auth_uid: string, valorActual: boolean) {
     setActualizando(auth_uid)
     try {
       const res = await fetchAdmin('/api/admin/marcar-fundadora', {
@@ -37,6 +37,26 @@ export default function UsuariosPage() {
       const data = await res.json()
       if (data.ok) {
         setUsuarios(prev => prev.map(u => u.auth_uid === auth_uid ? { ...u, es_fundadora: !valorActual } : u))
+      }
+    } catch {}
+    setActualizando(null)
+  }
+
+  // [sep 2026] Activación manual — mientras no hay pasarela de pago,
+  // este botón activa el acceso tras confirmar una transferencia y
+  // renueva fecha_pago a hoy (reinicia el ciclo vigente).
+  async function toggleActivacion(auth_uid: string, statusActual: string) {
+    const estaActiva = statusActual === 'active'
+    setActualizando(auth_uid)
+    try {
+      const res = await fetchAdmin('/api/admin/activar-membresia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth_uid, activar: !estaActiva }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setUsuarios(prev => prev.map(u => u.auth_uid === auth_uid ? { ...u, membership_status: estaActiva ? 'suspended' : 'active' } : u))
       }
     } catch {}
     setActualizando(null)
@@ -97,6 +117,7 @@ export default function UsuariosPage() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Estado</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Registro</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Fundadora</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Activación</th>
               </tr>
             </thead>
             <tbody>
@@ -139,8 +160,22 @@ export default function UsuariosPage() {
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                       style={{ cursor: actualizando === u.auth_uid ? 'default' : 'pointer', opacity: actualizando === u.auth_uid ? 0.6 : 1 }}
-                    >
+                                        >
                       {actualizando === u.auth_uid ? '...' : u.es_fundadora ? '⭐ Sí' : '+ Marcar'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => toggleActivacion(u.auth_uid, u.membership_status)}
+                      disabled={actualizando === u.auth_uid || u.membership_status === 'founder'}
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        u.membership_status === 'active'
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                      }`}
+                      style={{ cursor: (actualizando === u.auth_uid || u.membership_status === 'founder') ? 'default' : 'pointer', opacity: (actualizando === u.auth_uid || u.membership_status === 'founder') ? 0.5 : 1 }}
+                    >
+                      {actualizando === u.auth_uid ? '...' : u.membership_status === 'active' ? '✅ Activa' : '▶ Activar'}
                     </button>
                   </td>
                 </tr>
