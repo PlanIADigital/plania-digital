@@ -21,7 +21,19 @@ export default function ConfiguracionPage() {
   const [editandoWhatsapp, setEditandoWhatsapp] = useState(false)
   const [whatsappValor, setWhatsappValor] = useState('')
   const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
-  const [errorWhatsapp, setErrorWhatsapp] = useState('')
+    const [errorWhatsapp, setErrorWhatsapp] = useState('')
+
+  // [sep 2026] Estado de cuenta — fecha de pago, ciclo vigente y días
+  // hábiles generados dentro de ese ciclo. Viene de la vista
+  // v_estado_cuenta vía /api/estado-cuenta (fuente única de verdad,
+  // reusable por otras pantallas en el futuro).
+  const [estadoCuenta, setEstadoCuenta] = useState<{
+    fecha_pago: string
+    ciclo_inicio: string
+    ciclo_fin: string
+    dias_habiles_generados_ciclo: number
+  } | null>(null)
+  const [cargandoEstadoCuenta, setCargandoEstadoCuenta] = useState(true)
 
   // Datos institucionales — Zona/Sector/Región/Turno, sugeridos del
   // catálogo oficial SEP y confirmables aquí (misma fuente única de
@@ -73,8 +85,17 @@ export default function ConfiguracionPage() {
         }
       }
 
-      if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
+            if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
       setLoading(false)
+
+      try {
+        const resEstado = await fetch(`/api/estado-cuenta?auth_uid=${session.user.id}`)
+        const dataEstado = await resEstado.json()
+        if (dataEstado.ok) setEstadoCuenta(dataEstado)
+      } catch {
+        // silencioso -- si falla, la tarjeta simplemente no se muestra
+      }
+      setCargandoEstadoCuenta(false)
     }
     load()
   }, [])
@@ -410,7 +431,40 @@ export default function ConfiguracionPage() {
 
         </div>
 
-        <div style={{ height: 24 }} />
+                <div style={{ height: 24 }} />
+
+        {/* ESTADO DE CUENTA — ancho completo, muestra el ciclo de pago
+            vigente y cuánto se ha usado dentro de él */}
+        {!cargandoEstadoCuenta && estadoCuenta && (
+          <>
+            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '20px 32px', boxSizing: 'border-box' as const }}>
+              <p style={cardTitleStyle}>ESTADO DE CUENTA</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+                <div style={{ textAlign: 'center' as const }}>
+                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Membresía</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
+                    {membresiaLabel[profile?.membership_status] ?? profile?.membership_status}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' as const }}>
+                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Ciclo actual</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
+                    {new Date(estadoCuenta.ciclo_inicio).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                    {' – '}
+                    {new Date(estadoCuenta.ciclo_fin).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' as const }}>
+                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Días hábiles generados</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#3D3A8C', margin: 0 }}>
+                    {estadoCuenta.dias_habiles_generados_ciclo}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div style={{ height: 24 }} />
+          </>
+        )}
 
         {/* MI ESTILO DE NARRACIÓN — ahora ancho completo, delgada */}
         <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '20px 32px', boxSizing: 'border-box' as const, textAlign: 'center' as const }}>
