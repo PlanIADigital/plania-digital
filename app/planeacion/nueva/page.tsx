@@ -718,6 +718,7 @@ function NuevaPlaneacionInner() {
            school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
           ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
           status: 'active',
+          costo_generacion_usd: typeof data.costo_generacion_usd === 'number' ? data.costo_generacion_usd : null,
         }).select('id').single()
         if (saveError) {
           setSaveStatus('Generada pero no guardada: ' + saveError.message)
