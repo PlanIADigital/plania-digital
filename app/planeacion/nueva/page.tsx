@@ -555,7 +555,7 @@ function NuevaPlaneacionInner() {
     setTransversales(prev => prev.map((t, i) => i === index ? { ...t, activo: true } : t))
   }
 
-  function iniciarSondeoProgreso(jobId: string) {
+    function iniciarSondeoProgreso(jobId: string) {
     if (pollingRef.current) clearInterval(pollingRef.current)
     pollingRef.current = setInterval(async () => {
       try {
@@ -570,7 +570,18 @@ function NuevaPlaneacionInner() {
             errorMensaje: data.errorMensaje,
             fasesLotes: Array.isArray(data.fasesLotes) ? data.fasesLotes : [],
           })
-          if (data.estado === 'completado' || data.estado === 'error') {
+          // [sep 2026, Opción B] El guardado ya ocurrió en el servidor —
+          // este sondeo, no la respuesta del fetch original, es quien
+          // decide cuándo navegar. Así, aunque el navegador se hubiera
+          // desconectado del POST original, en cuanto se reconecte (o si
+          // nunca se desconectó) este intervalo va a encontrar el
+          // planningId ya guardado y navegar de todos modos.
+          if (data.estado === 'completado' && data.planningId) {
+            if (pollingRef.current) clearInterval(pollingRef.current)
+            router.push(`/planeacion/${data.planningId}`)
+            return
+          }
+          if (data.estado === 'error') {
             if (pollingRef.current) clearInterval(pollingRef.current)
           }
         }
@@ -682,82 +693,30 @@ function NuevaPlaneacionInner() {
           profile
         })
       })
-      const data = await res.json()
-      if (pollingRef.current) clearInterval(pollingRef.current)
 
-      if (data.error) { setResult({ error: data.error }); setGenerating(false); generandoRef.current = false; return }
-      if (data.planeacion) {
+      const data = await res.json()
+      // [sep 2026, Opción B] El guardado ya ocurrió en el SERVIDOR, dentro
+      // de /api/generar-planeacion — este bloque ya no hace ningún INSERT.
+      // Si esta respuesta sí llega (conexión estable), navegamos directo
+      // con el planning_id que ya viene incluido; si nunca llega (se
+      // cortó la conexión), el sondeo de progreso (iniciarSondeoProgreso,
+      // que sigue corriendo en paralelo) va a encontrar el mismo
+      // resultado guardado y navegar de todos modos — el usuario nunca se
+      // queda sin su planeación, y nunca se guarda dos veces porque el
+      // servidor solo hace el INSERT una vez, aquí.
+      if (data.error) { if (pollingRef.current) clearInterval(pollingRef.current); setResult({ error: data.error }); setGenerating(false); generandoRef.current = false; return }
+      if (data.planeacion && data.planning_id) {
+        if (pollingRef.current) clearInterval(pollingRef.current)
         setProgreso(prev => ({ ...prev, estado: 'completado', faseActual: '¡Tu planeación está lista!' }))
         await new Promise(r => setTimeout(r, TIEMPO_CONFIRMACION_FINAL))
-        setResult(data.planeacion)
-        
-        const { data: savedData, error: saveError } = await supabase.from('plannings').insert({
-          user_id: profile.id,
-          project_name: form.nombre_proyecto,
-          situacion_problema: form.situacion_problema,
-          finalidad: form.finalidad,
-          metodologia: form.metodologia,
-          pda_campo: principalCampo,
-          pda_contenido: pdaPrincipal1?.contenido || '',
-          pda_literal: pdaPrincipal1?.pda || '',
-          pda_id: pdaPrincipal1?.id || null,
-          pda_2_contenido: pdaPrincipal2?.contenido || null,
-          pda_2_pda: pdaPrincipal2?.pda || null,
-          pda_2_id: pdaPrincipal2?.id || null,
-          pda_2_activo: !!pdaPrincipal2,
-          recursos_materiales: form.recursos_materiales || null,
-          transversal_1_campo: transversalesActivos[0]?.campo || null,
-          transversal_1_contenido: transversalesActivos[0]?.contenido || null,
-          transversal_1_pda: transversalesActivos[0]?.pda || null,
-          transversal_1_id: transversalesActivos[0]?.id || null,
-          transversal_1_activo: !!transversalesActivos[0],
-          transversal_2_campo: transversalesActivos[1]?.campo || null,
-          transversal_2_contenido: transversalesActivos[1]?.contenido || null,
-          transversal_2_pda: transversalesActivos[1]?.pda || null,
-          transversal_2_id: transversalesActivos[1]?.id || null,
-          transversal_2_activo: !!transversalesActivos[1],
-          transversal_3_campo: transversalesActivos[2]?.campo || null,
-          transversal_3_contenido: transversalesActivos[2]?.contenido || null,
-          transversal_3_pda: transversalesActivos[2]?.pda || null,
-          transversal_3_id: transversalesActivos[2]?.id || null,
-          transversal_3_activo: !!transversalesActivos[2],
-          starts_on: form.fecha_inicio || null,
-          ends_on: form.fecha_fin || null,
-          duration_days: diasHabilesNaive,
-          grade: profile.grado || '2°',
-          content_json: data.planeacion,
-          eje_principal: ejePrincipal || null,
-          eje_secundario: ejeElegidoPorEducadora || (ejeSecundarioDescartado ? null : ejeSecundario) || null,
-           school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
-          ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
-          status: 'active',
-          costo_generacion_usd: typeof data.costo_generacion_usd === 'number' ? data.costo_generacion_usd : null,
-        }).select('id').single()
-        if (saveError) {
-          setSaveStatus('Generada pero no guardada: ' + saveError.message)
-        } else if (savedData?.id) {
-          const rubricasParaGuardar = data.planeacion.instrumentos_evaluacion || []
-          if (rubricasParaGuardar.length > 0) {
-            const { error: rubricasError } = await supabase.from('rubrics').insert(
-              rubricasParaGuardar.map((r: any) => ({
-                planning_id: savedData.id,
-                user_id: profile.id,
-                pda_evaluated: r.pda_evaluado,
-                content_json: r,
-                original_json: r,
-                descartada: false,
-              }))
-            )
-            if (rubricasError) {
-              console.error('No se pudieron guardar las rúbricas (no crítico, la planeación sí se guardó):', rubricasError)
-            }
-          }
-          router.push(`/planeacion/${savedData.id}`)
-        }
+        router.push(`/planeacion/${data.planning_id}`)
+        return
       }
     } catch {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-      setResult({ error: 'Error de conexión' })
+      // [sep 2026] Ya NO mostramos "Error de conexión" aquí — si el fetch
+      // falla o se corta, el sondeo de progreso (que sigue corriendo) es
+      // quien va a detectar que el servidor sí terminó y guardó, y va a
+      // navegar solo. No limpiamos el intervalo de sondeo en este catch.
     }
     setGenerating(false); generandoRef.current = false
   }

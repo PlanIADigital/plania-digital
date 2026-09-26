@@ -40,13 +40,14 @@ export async function GET(request: NextRequest) {
     if (error || !data) {
       return NextResponse.json({ error: 'No se encontró ese trabajo de generación' }, { status: 404 })
     }
-    return NextResponse.json({
+        return NextResponse.json({
       totalLotes: data.total_lotes,
       lotesCompletados: data.lotes_completados,
       faseActual: data.fase_actual,
       estado: data.estado,
       errorMensaje: data.error_mensaje,
       fasesLotes: data.fases_lotes || [],
+      planningId: data.planning_id || null,
     })
   } catch {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

@@ -959,14 +959,104 @@ export async function POST(request: NextRequest) {
       evaluacion_formativa: evaluacionFormativa,
     }
 
-    planeacion.dias_especiales = [
+        planeacion.dias_especiales = [
       ...diasCTE.map(d => ({ fecha: d.label, fecha_iso: d.fecha, tipo: 'CTE' })),
       ...diasInhabiles.map(d => ({ fecha: d.label, fecha_iso: d.fecha, tipo: d.motivo || 'Inhábil' }))
     ].sort((a, b) => a.fecha_iso.localeCompare(b.fecha_iso))
 
-        console.error(`💰 Costo total real de esta generación: $${acumuladorCosto.total.toFixed(6)} USD`)
+    console.error(`💰 Costo total real de esta generación: $${acumuladorCosto.total.toFixed(6)} USD`)
 
-    return NextResponse.json({ planeacion, costo_generacion_usd: acumuladorCosto.total })
+    // [sep 2026, Opción B] Guardado en el SERVIDOR, ya no depende de que
+    // el navegador reciba esta respuesta — antes, si la conexión se
+    // cortaba después de generar (educadora cambia de pestaña, WiFi
+    // inestable, teléfono se bloquea), el trabajo ya pagado en tokens de
+    // Anthropic se perdía por completo, sin quedar guardado en ningún
+    // lado. Ahora el INSERT ocurre aquí, incondicionalmente, apenas
+    // termina de generar — y se avisa por generacion_progreso.planning_id,
+    // que el frontend ya está sondeando cada 1.5s para mostrar el avance.
+    const transversalesActivos: any[] = Array.isArray(form.transversales) ? form.transversales : []
+    const todasPdasSeleccionadas: any[] = Array.isArray(form.pdas_seleccionados) ? form.pdas_seleccionados : []
+
+    const { data: savedData, error: saveError } = await supabaseAdmin.from('plannings').insert({
+      user_id: profile.id,
+      project_name: form.nombre_proyecto,
+      situacion_problema: form.situacion_problema,
+      finalidad: form.finalidad,
+      metodologia: form.metodologia,
+      pda_campo: form.campo_formativo,
+      pda_contenido: form.contenido || '',
+      pda_literal: form.pda_principal || '',
+      pda_id: todasPdasSeleccionadas[0]?.id || null,
+      pda_2_contenido: form.pda_principal_2_contenido || null,
+      pda_2_pda: form.pda_principal_2 || null,
+      pda_2_id: todasPdasSeleccionadas[1]?.id || null,
+      pda_2_activo: !!form.pda_principal_2,
+      recursos_materiales: form.recursos_materiales || null,
+      transversal_1_campo: transversalesActivos[0]?.campo || null,
+      transversal_1_contenido: transversalesActivos[0]?.contenido || null,
+      transversal_1_pda: transversalesActivos[0]?.pda || null,
+      transversal_1_id: transversalesActivos[0]?.id || null,
+      transversal_1_activo: !!transversalesActivos[0],
+      transversal_2_campo: transversalesActivos[1]?.campo || null,
+      transversal_2_contenido: transversalesActivos[1]?.contenido || null,
+      transversal_2_pda: transversalesActivos[1]?.pda || null,
+      transversal_2_id: transversalesActivos[1]?.id || null,
+      transversal_2_activo: !!transversalesActivos[1],
+      transversal_3_campo: transversalesActivos[2]?.campo || null,
+      transversal_3_contenido: transversalesActivos[2]?.contenido || null,
+      transversal_3_pda: transversalesActivos[2]?.pda || null,
+      transversal_3_id: transversalesActivos[2]?.id || null,
+      transversal_3_activo: !!transversalesActivos[2],
+      starts_on: form.fecha_inicio || null,
+      ends_on: form.fecha_fin || null,
+      duration_days: diasHabiles.length,
+      grade: profile.grado || '2°',
+      content_json: planeacion,
+      eje_principal: form.eje_principal || null,
+      eje_secundario: form.eje_secundario || null,
+      school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
+      ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
+      status: 'active',
+      costo_generacion_usd: acumuladorCosto.total,
+    }).select('id').single()
+
+    if (saveError) {
+      console.error('❌ Error al guardar la planeación en el servidor:', saveError)
+      if (jobId) {
+        await actualizarProgreso(supabaseAdmin, jobId, {
+          estado: 'error',
+          error_mensaje: 'La planeación se generó pero no se pudo guardar: ' + saveError.message,
+          fase_actual: 'Error al guardar.',
+        })
+      }
+      return NextResponse.json({ error: 'La planeación se generó pero no se pudo guardar: ' + saveError.message }, { status: 500 })
+    }
+
+    if (savedData?.id && rubricasConRegistro.length > 0) {
+      const { error: rubricasError } = await supabaseAdmin.from('rubrics').insert(
+        rubricasConRegistro.map((r: any) => ({
+          planning_id: savedData.id,
+          user_id: profile.id,
+          pda_evaluated: r.pda_evaluado,
+          content_json: r,
+          original_json: r,
+          descartada: false,
+        }))
+      )
+      if (rubricasError) {
+        console.error('No se pudieron guardar las rúbricas (no crítico, la planeación sí se guardó):', rubricasError)
+      }
+    }
+
+    if (jobId && savedData?.id) {
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        estado: 'completado',
+        fase_actual: '¡Tu planeación está lista!',
+        planning_id: savedData.id,
+      } as any)
+    }
+
+    return NextResponse.json({ planeacion, costo_generacion_usd: acumuladorCosto.total, planning_id: savedData?.id })
 
   } catch (error: unknown) {
     console.error('Error en Agente NEM:', error)

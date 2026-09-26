@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
@@ -434,7 +435,8 @@ export default function VerPlaneacionPage() {
                 const pda = planeacion[`transversal_${n}_pda`]
                 if (!activo || !campo) return null
                 return (
-                  <>
+                  <React.Fragment key={`campo-${n}`}>
+                    
                     <tr key={`campo-${n}`}>
                       <td style={s.tdLabel}>CF Transversal</td>
                       <td style={s.tdValue}>{campo}</td>
@@ -453,8 +455,8 @@ export default function VerPlaneacionPage() {
                         )}{pda}
                       </td>
                     </tr>
-                  </>
-                )
+                  </React.Fragment>
+                 )
               })}
 
               {/* Bloque 4 — Ejes */}
