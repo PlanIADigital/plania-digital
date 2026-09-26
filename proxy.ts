@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { actualizarSesion } from '@/lib/supabase-middleware'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { response, user } = await actualizarSesion(request)
 
   const esRutaAdmin = request.nextUrl.pathname.startsWith('/admin')
