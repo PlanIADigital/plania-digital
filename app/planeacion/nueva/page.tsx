@@ -649,21 +649,30 @@ function NuevaPlaneacionInner() {
     iniciarSondeoProgreso(jobId)
 
     const transversalesActivos = transversales.filter(t => t.activo)
+    // [sep 2026] Lista plana de los PDA del campo principal, cada uno con
+    // su propio contenido — reemplaza el viejo truco de concatenar el
+    // texto de varios PDA en una sola cadena (pda_literal). pdaPrincipal1
+    // y pdaPrincipal2 (si existe) se guardan como columnas independientes,
+    // igual que ya se hace con cada transversal.
     const pdasParaAgente = contenidosElegidos.flatMap(c =>
-      c.pdasSeleccionados.map(p => ({ contenido: c.contenido, pda: p.pda }))
+      c.pdasSeleccionados.map(p => ({ contenido: c.contenido, pda: p.pda, id: p.id }))
     )
+    const pdaPrincipal1 = pdasParaAgente[0] || null
+    const pdaPrincipal2 = pdasParaAgente[1] || null
     try {
       const res = await fetch('/api/generar-planeacion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job_id: jobId,
-          form: {
+                    form: {
             ...form,
             metodologia: form.metodologia,
             campo_formativo: principalCampo,
-            contenido: contenidosElegidos[0]?.contenido || '',
-            pda_principal: contenidosElegidos[0]?.pdasSeleccionados[0]?.pda || '',
+            contenido: pdaPrincipal1?.contenido || '',
+            pda_principal: pdaPrincipal1?.pda || '',
+            pda_principal_2: pdaPrincipal2?.pda || '',
+            pda_principal_2_contenido: pdaPrincipal2?.contenido || '',
             pdas_seleccionados: pdasParaAgente,
             grado_grupo: gradoGrupo,
             transversales: transversalesActivos,
@@ -689,9 +698,13 @@ function NuevaPlaneacionInner() {
           finalidad: form.finalidad,
           metodologia: form.metodologia,
           pda_campo: principalCampo,
-          pda_contenido: contenidosElegidos[0]?.contenido || '',
-          pda_literal: todasPdasSeleccionadas.map(p => p.pda).join(' | '),
-          pda_id: contenidosElegidos[0]?.pdasSeleccionados[0]?.id || null,
+          pda_contenido: pdaPrincipal1?.contenido || '',
+          pda_literal: pdaPrincipal1?.pda || '',
+          pda_id: pdaPrincipal1?.id || null,
+          pda_2_contenido: pdaPrincipal2?.contenido || null,
+          pda_2_pda: pdaPrincipal2?.pda || null,
+          pda_2_id: pdaPrincipal2?.id || null,
+          pda_2_activo: !!pdaPrincipal2,
           recursos_materiales: form.recursos_materiales || null,
           transversal_1_campo: transversalesActivos[0]?.campo || null,
           transversal_1_contenido: transversalesActivos[0]?.contenido || null,

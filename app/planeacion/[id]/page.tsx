@@ -143,9 +143,14 @@ export default function VerPlaneacionPage() {
   // código si está disponible), luego cada transversal activo en su
   // propia línea, separados por salto — para que quede claro que el
   // proyecto está vinculado a varios PDAs, no solo al principal.
-  const segmentosPDA: { codigo: string | null; texto: string }[] = []
+    const segmentosPDA: { codigo: string | null; texto: string }[] = []
   if (planeacion.pda_literal) {
     segmentosPDA.push({ codigo: codigoPDA(planeacion.pda_campo, planeacion.pda_id), texto: planeacion.pda_literal })
+  }
+  // [sep 2026] Segundo PDA del campo principal — mismo campo formativo,
+  // su propio código y texto, ya no concatenado dentro de pda_literal.
+  if (planeacion.pda_2_activo && planeacion.pda_2_pda) {
+    segmentosPDA.push({ codigo: codigoPDA(planeacion.pda_campo, planeacion.pda_2_id), texto: planeacion.pda_2_pda })
   }
   ;[1, 2, 3].forEach(n => {
     const activo = planeacion[`transversal_${n}_activo`]
@@ -158,16 +163,24 @@ export default function VerPlaneacionPage() {
     }
   })
 
-  // [sep 2026] Tabla curricular completa para el Word — un renglón por
-  // cada campo formativo trabajado (principal + transversales activos),
-  // cada uno con su propio contenido y PDA. Esto alimenta directamente
-  // a campos_formativos en el body de exportar-word.
+    // [sep 2026] exportar-word ya sabe mostrar varios PDA en una sola celda
+  // (función parrafosPda, separa por "|" y pinta cada uno con su propio
+  // código en negrita) — ese mecanismo se construyó pensando en el viejo
+  // truco de concatenar texto, y es EXACTAMENTE el formato que necesitamos
+  // aquí: en vez de una fila nueva por el segundo PDA (que duplicaría el
+  // campo formativo en la tabla), juntamos ambos PDA —cada uno con su
+  // propio código ya incrustado— en un solo pdaTexto separado por " | ".
+  const pdaTextoPrincipalCompleto = [segmentosPDA[0], planeacion.pda_2_activo ? segmentosPDA[1] : null]
+    .filter((s): s is { codigo: string | null; texto: string } => !!s)
+    .map(s => s.codigo ? `${s.codigo} — ${s.texto}` : s.texto)
+    .join(' | ')
+
   const tablaCurricularParaWord = [
     {
       campo: planeacion.pda_campo || '',
       contenido: planeacion.pda_contenido || '',
       pdaCodigo: segmentosPDA[0]?.codigo || null,
-      pdaTexto: segmentosPDA[0]?.texto || '',
+      pdaTexto: pdaTextoPrincipalCompleto,
     },
     ...[1, 2, 3].map(n => {
       const activo = planeacion[`transversal_${n}_activo`]
@@ -392,12 +405,22 @@ export default function VerPlaneacionPage() {
                 <td style={s.tdValue}>{camposFormativos[0] || '—'}</td>
               </tr>
               {planeacion.pda_contenido && <tr><td style={s.tdLabel}>Contenido</td><td style={s.tdValue}>{planeacion.pda_contenido}</td></tr>}
-              <tr>
+                            <tr>
                 <td style={s.tdLabel}>PDA</td>
                 <td style={s.tdValue}>
+              {/* [sep 2026] El principal puede tener hasta 2 PDA — el segundo
+                  (si existe) va justo después de segmentosPDA[0], antes de
+                      cualquier transversal. Cada uno en su propio párrafo con
+                      su código en negrita, para distinguir de un vistazo que
+                      son PDA distintos dentro de la misma celda. */}
                   {segmentosPDA[0] && (
                     <p style={{ margin: 0 }}>
                       {segmentosPDA[0].codigo && <strong>{segmentosPDA[0].codigo} — </strong>}{segmentosPDA[0].texto}
+                    </p>
+                  )}
+                  {planeacion.pda_2_activo && segmentosPDA[1] && (
+                    <p style={{ margin: '8px 0 0' }}>
+                      {segmentosPDA[1].codigo && <strong>{segmentosPDA[1].codigo} — </strong>}{segmentosPDA[1].texto}
                     </p>
                   )}
                 </td>

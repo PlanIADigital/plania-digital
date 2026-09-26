@@ -861,11 +861,21 @@ export async function POST(request: NextRequest) {
       acumuladorCosto,
     })
 
-    // Arma la lista de PDAs activos: principal siempre primero (no descartable),
+    // [sep 2026] Arma la lista de PDAs activos: PDA 1 del principal siempre
+    // primero (no descartable), luego el PDA 2 del principal si existe
+    // (mismo campo/contenido propio, ya no concatenado en un solo texto),
     // seguido de cada transversal que la educadora haya conservado.
     const pdasActivos: { pdaTexto: string; campoFormativo: string; contenido: string; esPrincipal: boolean }[] = [
       { pdaTexto: form.pda_principal, campoFormativo: form.campo_formativo, contenido: form.contenido, esPrincipal: true },
     ]
+    if (form.pda_principal_2) {
+      pdasActivos.push({
+        pdaTexto: form.pda_principal_2,
+        campoFormativo: form.campo_formativo,
+        contenido: form.pda_principal_2_contenido || form.contenido,
+        esPrincipal: true,
+      })
+    }
     if (form.transversales?.length > 0) {
       for (const t of form.transversales) {
         pdasActivos.push({ pdaTexto: t.pda, campoFormativo: t.campo, contenido: t.contenido, esPrincipal: false })
