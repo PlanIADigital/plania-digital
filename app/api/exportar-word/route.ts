@@ -218,25 +218,27 @@ export async function POST(request: NextRequest) {
     // propio en el dato que llega aquí), solo el primero hereda el
     // c.pdaCodigo de la fila — los demás quedan sin código hasta que esa
     // parte del dato llegue a este endpoint.
-    function parrafosPda(codigoFila: string, textoCompleto: string) {
+        function parrafosPda(codigoFila: string, textoCompleto: string) {
       const partes = (textoCompleto || '').split('|').map((s) => s.trim()).filter(Boolean)
-      if (partes.length === 0) return [parrafo('—', { align: AlignmentType.JUSTIFIED })]
+      if (partes.length === 0) return [parrafo('—', { align: AlignmentType.LEFT })]
       return partes.map((parte, i) => {
         const m = parte.match(/^([A-ZÁÉÍÓÚ]{2,6}-?\d*)\s*—\s*([\s\S]*)$/)
         const espaciado = { after: i < partes.length - 1 ? 100 : 0 }
         if (m) {
-          return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(`${m[1]} — `, { bold: true, color: COLOR.indigo }), texto(m[2])] })
+          return new Paragraph({ alignment: AlignmentType.LEFT, spacing: espaciado, children: [texto(`${m[1]} — `, { bold: true, color: COLOR.indigo }), texto(m[2])] })
         }
         if (i === 0 && codigoFila) {
-          return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(`${codigoFila} — `, { bold: true, color: COLOR.indigo }), texto(parte)] })
+          return new Paragraph({ alignment: AlignmentType.LEFT, spacing: espaciado, children: [texto(`${codigoFila} — `, { bold: true, color: COLOR.indigo }), texto(parte)] })
         }
-        return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(parte)] })
+        return new Paragraph({ alignment: AlignmentType.LEFT, spacing: espaciado, children: [texto(parte)] })
       })
     }
     // [sep 2026] Gemela de parrafosPda para la columna Indicador — un
     // párrafo por PDA (separados por " | "), con "CÓDIGO — Indicador:"
     // en negrita índigo y el texto normal. Planeaciones anteriores al
     // Indicador llegan vacías y muestran "—" en gris, como antes.
+    // PDA e Indicador van alineados a la IZQUIERDA (no justificados):
+    // en columnas angostas, justificar abre huecos grandes entre palabras.
     function parrafosIndicador(textoCompleto: string) {
       const partes = (textoCompleto || '').split('|').map((s) => s.trim()).filter(Boolean)
       if (partes.length === 0) return [parrafo('—', { align: AlignmentType.CENTER, italics: true, color: COLOR.grisSuave })]
@@ -245,7 +247,7 @@ export async function POST(request: NextRequest) {
         const prefijo = m ? `${m[1]} — Indicador: ` : 'Indicador: '
         const cuerpo = m ? m[2] : parte
         return new Paragraph({
-          alignment: AlignmentType.JUSTIFIED,
+          alignment: AlignmentType.LEFT,
           spacing: { after: i < partes.length - 1 ? 100 : 0 },
           children: [texto(prefijo, { bold: true, color: COLOR.indigo }), texto(cuerpo)],
         })
