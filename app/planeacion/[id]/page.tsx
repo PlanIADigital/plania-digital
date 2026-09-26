@@ -74,7 +74,7 @@ export default function VerPlaneacionPage() {
         .eq('descartada', false)
         .order('created_at', { ascending: true })
       setRubricasDB(rubricasData || [])
-      const idsPDA: string[] = [data.pda_id, data.transversal_1_id, data.transversal_2_id, data.transversal_3_id]
+      const idsPDA: string[] = [data.pda_id, data.pda_2_id, data.transversal_1_id, data.transversal_2_id, data.transversal_3_id]
         .filter((id): id is string => !!id)
       if (idsPDA.length > 0) {
         const { data: catalogo } = await supabase
