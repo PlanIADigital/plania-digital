@@ -97,6 +97,9 @@ El instrumento NUNCA se construye desde el PDA abstracto. Debes identificar las 
 REGLA CRÍTICA — EL "CRITERIO" ES UNA ETIQUETA CORTA, NO UNA ORACIÓN:
 El campo "criterio" es un título breve (4-8 palabras) que nombra la habilidad observable evaluada — no una oración completa ni una descripción. Ejemplo correcto: "Identificación de eventos y celebraciones". Ejemplo incorrecto: "El alumno identifica y nombra por sí mismo diversas celebraciones de su comunidad".
 
+REGLA CRÍTICA — EL "INDICADOR" ES LA CONDUCTA OBSERVABLE DEL PDA EN ESTE PROYECTO:
+El campo "indicador" es UNA sola oración (100-180 caracteres) que nombra la conducta concreta y observable que la educadora debe mirar en los niños para saber que este PDA se está logrando en ESTE proyecto. Redáctalo en presente, tercera persona, sin sujeto explícito, iniciando con un verbo de acción observable (ej. 'Nombra...', 'Explica...', 'Separa...'). Debe anclarse a las actividades reales de la narrativa (materiales, situaciones, consignas concretas), nunca copiar ni parafrasear el PDA literal. Es distinto del "criterio" (etiqueta corta que titula la rúbrica) y de los descriptores de nivel (que gradúan el desempeño): el indicador no gradúa, solo nombra qué observar. MAL (paráfrasis del PDA): 'Distingue alimentos y bebidas saludables de los que ponen en riesgo la salud'. BIEN (anclado al proyecto): 'Separa los alimentos del mercadito en los que le dan energía y los que le caen pesado, y explica con sus palabras por qué eligió cada uno'.
+
 REGLA CRÍTICA — LOS 3 NIVELES SON DESCRIPTORES DE DESEMPEÑO OBSERVABLE, EN ORDEN FIJO:
 Siempre exactamente 3 niveles, en este orden y con estas etiquetas exactas: "Logrado", "En proceso", "Requiere apoyo". Cada descriptor debe redactarse en tercera persona ("Identifica y nombra por sí mismo...", "Requiere apoyo constante del docente para...") y basarse en las instancias reales de la narrativa de arriba — nunca en el PDA abstracto ni en una plantilla genérica.
 
@@ -117,6 +120,7 @@ Responde ÚNICAMENTE con JSON válido. Sin markdown. Sin explicaciones.
     "campo": "nombre del campo formativo principal",
     "contenido": "contenido del campo principal",
     "pda": "pda literal",
+    "indicador": "una oración de conducta observable anclada al proyecto, 100-180 caracteres",
     "criterio": "etiqueta corta de 4-8 palabras",
     "niveles": [
       { "etiqueta": "Logrado", "descriptor": "El alumno..." },
@@ -685,7 +689,11 @@ Genera el instrumento de evaluación (rúbrica con su escala estimativa de logro
   sumarCostoLlamada(acumuladorCosto, message.usage)
   const content = message.content[0].type === 'text' ? message.content[0].text : ''
   const parsed = parsearJSONRobusto(content)
-  return parsed.instrumento_evaluacion
+  const instrumento = parsed.instrumento_evaluacion || {}
+  instrumento.indicador = instrumento.indicador
+    ? recortarAlLimite(String(instrumento.indicador).trim(), 200)
+    : ''
+  return instrumento
 }
 export const maxDuration = 700;
 export async function POST(request: NextRequest) {

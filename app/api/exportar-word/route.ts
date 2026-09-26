@@ -233,7 +233,24 @@ export async function POST(request: NextRequest) {
         return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: espaciado, children: [texto(parte)] })
       })
     }
-
+    // [sep 2026] Gemela de parrafosPda para la columna Indicador — un
+    // párrafo por PDA (separados por " | "), con "CÓDIGO — Indicador:"
+    // en negrita índigo y el texto normal. Planeaciones anteriores al
+    // Indicador llegan vacías y muestran "—" en gris, como antes.
+    function parrafosIndicador(textoCompleto: string) {
+      const partes = (textoCompleto || '').split('|').map((s) => s.trim()).filter(Boolean)
+      if (partes.length === 0) return [parrafo('—', { align: AlignmentType.CENTER, italics: true, color: COLOR.grisSuave })]
+      return partes.map((parte, i) => {
+        const m = parte.match(/^([A-ZÁÉÍÓÚ]{2,6}-?\d*)\s*—\s*([\s\S]*)$/)
+        const prefijo = m ? `${m[1]} — Indicador: ` : 'Indicador: '
+        const cuerpo = m ? m[2] : parte
+        return new Paragraph({
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { after: i < partes.length - 1 ? 100 : 0 },
+          children: [texto(prefijo, { bold: true, color: COLOR.indigo }), texto(cuerpo)],
+        })
+      })
+    }
     const anchoCampos = [18, 22, 35, 25] // Campo formativo | Contenido | PDA | Indicador (%)
     const tablaCampos = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, borders: bordeEstandar,
@@ -251,9 +268,9 @@ export async function POST(request: NextRequest) {
             new TableCell({ width: { size: anchoCampos[0], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.campo, { align: AlignmentType.CENTER })] }),
             new TableCell({ width: { size: anchoCampos[1], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.contenido, { align: AlignmentType.CENTER })] }),
             new TableCell({ width: { size: anchoCampos[2], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosPda(c.pdaCodigo, c.pdaTexto) }),
-            // c.indicador: todavía no lo genera el backend (pendiente en generar-planeacion/route.ts) —
-            // en cuanto exista ahí, se muestra aquí automáticamente sin tocar este archivo.
-            new TableCell({ width: { size: anchoCampos[3], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: [parrafo(c.indicador || '', { align: AlignmentType.JUSTIFIED, italics: !c.indicador, color: c.indicador ? undefined : COLOR.grisSuave })] }),
+            // [sep 2026] Indicador — ya lo genera el backend dentro de cada rúbrica;
+            // page.tsx lo envía con el mismo separador " | " que los PDA.
+            new TableCell({ width: { size: anchoCampos[3], type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: RELLENO_CELDA.normal, children: parrafosIndicador(c.indicador) }),
           ],
         })),
       ],

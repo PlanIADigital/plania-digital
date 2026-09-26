@@ -163,7 +163,18 @@ export default function VerPlaneacionPage() {
       })
     }
   })
-
+  // [sep 2026] Indicador por PDA — vive dentro de cada rúbrica generada
+  // (content_json.instrumentos_evaluacion[].indicador), emparejado por el
+  // texto exacto del PDA evaluado. Se lee de content_json y no de la
+  // tabla rubrics, para que descartar una rúbrica no borre su indicador
+  // de los Datos del Proyecto. Planeaciones anteriores a este cambio no
+  // tienen indicador: devuelve '' y la fila simplemente no se muestra.
+  const instrumentosOriginales: any[] = Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : []
+  function indicadorDe(pdaTexto: string | null | undefined): string {
+    if (!pdaTexto) return ''
+    const encontrado = instrumentosOriginales.find((i: any) => i?.pda_evaluado === pdaTexto)
+    return encontrado?.indicador || ''
+  }
     // [sep 2026] exportar-word ya sabe mostrar varios PDA en una sola celda
   // (función parrafosPda, separa por "|" y pinta cada uno con su propio
   // código en negrita) — ese mecanismo se construyó pensando en el viejo
@@ -181,7 +192,11 @@ export default function VerPlaneacionPage() {
       campo: planeacion.pda_campo || '',
       contenido: planeacion.pda_contenido || '',
       pdaCodigo: segmentosPDA[0]?.codigo || null,
-      pdaTexto: pdaTextoPrincipalCompleto,
+            pdaTexto: pdaTextoPrincipalCompleto,
+      indicador: [segmentosPDA[0], planeacion.pda_2_activo ? segmentosPDA[1] : null]
+        .filter((s): s is { codigo: string | null; texto: string } => !!s && !!indicadorDe(s.texto))
+        .map(s => s.codigo ? `${s.codigo} — ${indicadorDe(s.texto)}` : indicadorDe(s.texto))
+        .join(' | '),
     },
     ...[1, 2, 3].map(n => {
       const activo = planeacion[`transversal_${n}_activo`]
@@ -191,7 +206,12 @@ export default function VerPlaneacionPage() {
         campo,
         contenido: planeacion[`transversal_${n}_contenido`] || '',
         pdaCodigo: codigoPDA(campo, planeacion[`transversal_${n}_id`]),
-        pdaTexto: planeacion[`transversal_${n}_pda`] || '',
+                pdaTexto: planeacion[`transversal_${n}_pda`] || '',
+        indicador: (() => {
+          const ind = indicadorDe(planeacion[`transversal_${n}_pda`])
+          const cod = codigoPDA(campo, planeacion[`transversal_${n}_id`])
+          return ind ? (cod ? `${cod} — ${ind}` : ind) : ''
+        })(),
       }
     }).filter((c): c is NonNullable<typeof c> => !!c),
   ]
@@ -426,7 +446,25 @@ export default function VerPlaneacionPage() {
                   )}
                 </td>
               </tr>
-
+              {/* [sep 2026] Indicador del campo principal — uno por cada PDA
+                  (hasta 2), mismo orden y mismo código que la celda del PDA. */}
+              {(indicadorDe(segmentosPDA[0]?.texto) || (planeacion.pda_2_activo && indicadorDe(segmentosPDA[1]?.texto))) && (
+                <tr>
+                  <td style={s.tdLabel}>Indicador</td>
+                  <td style={s.tdValue}>
+                    {indicadorDe(segmentosPDA[0]?.texto) && (
+                      <p style={{ margin: 0 }}>
+                        <strong>{segmentosPDA[0]?.codigo ? `${segmentosPDA[0].codigo} — ` : ''}Indicador:</strong> {indicadorDe(segmentosPDA[0]?.texto)}
+                      </p>
+                    )}
+                    {planeacion.pda_2_activo && indicadorDe(segmentosPDA[1]?.texto) && (
+                      <p style={{ margin: '8px 0 0' }}>
+                        <strong>{segmentosPDA[1]?.codigo ? `${segmentosPDA[1].codigo} — ` : ''}Indicador:</strong> {indicadorDe(segmentosPDA[1]?.texto)}
+                      </p>
+                    )}
+                  </td>
+                </tr>
+              )}
               {/* Bloque 3 — Campo(s) Formativo(s) Transversal(es), cada uno agrupado con su Contenido y su PDA */}
               {[1, 2, 3].map(n => {
                 const activo = planeacion[`transversal_${n}_activo`]
@@ -455,6 +493,14 @@ export default function VerPlaneacionPage() {
                         )}{pda}
                       </td>
                     </tr>
+                      {indicadorDe(pda) && (
+                      <tr key={`indicador-${n}`}>
+                        <td style={s.tdLabel}>Indicador</td>
+                        <td style={s.tdValue}>
+                          <strong>{codigoPDA(campo, planeacion[`transversal_${n}_id`]) ? `${codigoPDA(campo, planeacion[`transversal_${n}_id`])} — ` : ''}Indicador:</strong> {indicadorDe(pda)}
+                        </td>
+                      </tr>
+                    )}
                   </React.Fragment>
                  )
               })}
