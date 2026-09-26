@@ -855,16 +855,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-        const ajustes_por_dia = await generarAjustesPorDia({
-      profile,
-      todosLosDias: todasLasDiasGeneradas,
-      acumuladorCosto,
-    })
-
-    // [sep 2026] Arma la lista de PDAs activos: PDA 1 del principal siempre
-    // primero (no descartable), luego el PDA 2 del principal si existe
-    // (mismo campo/contenido propio, ya no concatenado en un solo texto),
-    // seguido de cada transversal que la educadora haya conservado.
+            // [sep 2026] Arma la lista de PDAs activos ANTES de lanzar las llamadas
+    // en paralelo — la necesita el bloque de rúbricas de abajo.
     const pdasActivos: { pdaTexto: string; campoFormativo: string; contenido: string; esPrincipal: boolean }[] = [
       { pdaTexto: form.pda_principal, campoFormativo: form.campo_formativo, contenido: form.contenido, esPrincipal: true },
     ]
@@ -881,53 +873,58 @@ export async function POST(request: NextRequest) {
         pdasActivos.push({ pdaTexto: t.pda, campoFormativo: t.campo, contenido: t.contenido, esPrincipal: false })
       }
     }
+    const ejesTexto = [form.eje_principal, form.eje_secundario].filter(Boolean)
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
-        fase_actual: `Construyendo ${pdasActivos.length > 1 ? 'tus rúbricas de evaluación' : 'tu rúbrica de evaluación'}...`,
+        fase_actual: pdasActivos.length > 1
+          ? 'Construyendo tus rúbricas y la evaluación formativa...'
+          : 'Construyendo tu rúbrica y la evaluación formativa...',
       })
     }
 
-    const rubricas: any[] = []
-    for (const p of pdasActivos) {
-            const instrumento = await generarUnaRubrica({
-        pdaTexto: p.pdaTexto,
-        campoFormativo: p.campoFormativo,
-        contenido: p.contenido,
+    // [sep 2026, Opción A — paralelización] Ajustes por día, cada rúbrica,
+    // cada descripción de eje, y la evaluación formativa NO dependen unas
+    // de otras — todas solo necesitan la narrativa ya generada
+    // (todasLasDiasGeneradas). Antes corrían una tras otra (for...await),
+    // sumando varios minutos completos en planeaciones con varios PDA o
+    // ejes. Lanzarlas juntas con Promise.all reduce el tiempo total al de
+    // la llamada MÁS LENTA del grupo, no a la suma de todas ellas. Los
+    // lotes de días (arriba, generarLoteDeDias) siguen siendo secuenciales
+    // a propósito — necesitan el contexto del lote anterior para dar
+    // continuidad narrativa; eso no se puede paralelizar sin sacrificar
+    // calidad, así que esa parte del tiempo total sigue siendo irreducible.
+    const [ajustes_por_dia, rubricas, ejesFinal, evaluacionFormativa] = await Promise.all([
+      generarAjustesPorDia({
+        profile,
         todosLosDias: todasLasDiasGeneradas,
         acumuladorCosto,
-      })
-      rubricas.push({ ...instrumento, pda_evaluado: p.pdaTexto, es_principal: p.esPrincipal })
-    }
-    if (jobId) {
-      await actualizarProgreso(supabaseAdmin, jobId, {
-        fase_actual: 'Redactando la vinculación de ejes articuladores...',
-      })
-    }
-
-    const ejesTexto = [form.eje_principal, form.eje_secundario].filter(Boolean)
-    const ejesFinal: { nombre: string; descripcion: string }[] = []
-    for (const ejeNombre of ejesTexto) {
-            const descripcion = await generarDescripcionEje({
-        ejeNombre,
+      }),
+      Promise.all(pdasActivos.map(async (p) => {
+        const instrumento = await generarUnaRubrica({
+          pdaTexto: p.pdaTexto,
+          campoFormativo: p.campoFormativo,
+          contenido: p.contenido,
+          todosLosDias: todasLasDiasGeneradas,
+          acumuladorCosto,
+        })
+        return { ...instrumento, pda_evaluado: p.pdaTexto, es_principal: p.esPrincipal }
+      })),
+      Promise.all(ejesTexto.map(async (ejeNombre) => {
+        const descripcion = await generarDescripcionEje({
+          ejeNombre,
+          proyecto: form,
+          todosLosDias: todasLasDiasGeneradas,
+          acumuladorCosto,
+        })
+        return { nombre: ejeNombre, descripcion }
+      })),
+      generarDescripcionEvaluacionFormativa({
         proyecto: form,
         todosLosDias: todasLasDiasGeneradas,
         acumuladorCosto,
-      })
-      ejesFinal.push({ nombre: ejeNombre, descripcion })
-    }
-
-    if (jobId) {
-      await actualizarProgreso(supabaseAdmin, jobId, {
-        fase_actual: 'Redactando la evaluación formativa...',
-      })
-    }
-
-    const evaluacionFormativa = await generarDescripcionEvaluacionFormativa({
-      proyecto: form,
-      todosLosDias: todasLasDiasGeneradas,
-      acumuladorCosto,
-    })
+      }),
+    ])
     const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
     const codigosInclusion = new Set(
       (Array.isArray(profile.alumnos_inclusion) ? profile.alumnos_inclusion : []).map((a: any) => a.codigo)
