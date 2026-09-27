@@ -177,6 +177,19 @@ pueden diferir.
 **Verificado:** "Percibe cambios corporales…" y "Adapta sus movimientos…" muestran "Necesidad individual
 detectada" (antes no se marcaban).
 
+### Parte 7 — Alerta de cobertura según la etapa del ciclo · 27 sep 2026 · rama `saneamiento/fase1-alerta-cobertura`
+
+**Diagnóstico:** la alerta salía si un campo tenía menos del 20% de sus PDA, en cualquier fecha; en septiembre la
+recibían todas las educadoras (ruido y punitiva).
+
+**Construido (`app/mi-avance/page.tsx`):** `META_CAMPO_FIN_CICLO = 20` como referencia al cierre del ciclo; a la
+fecha se espera la parte proporcional al ciclo transcurrido (inicio/fin de clases del calendario estatal); sin
+alerta en el primer 15% del ciclo. Texto: "va/van por debajo de lo esperado para esta etapa del ciclo". El botón
+"Equilibrar con MÍA" sigue la misma regla. Ejemplo NL 2026-2027: 27 sep sin alerta; 15 nov ≈5%; 15 mar ≈13%; cierre 20%.
+
+**Verificado:** Mi Avance de la cuenta de prueba sin alerta de campos ni botones en septiembre; se conserva el
+aviso de PDA prioritarios pendientes.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -189,7 +202,10 @@ detectada" (antes no se marcaban).
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Alerta "menos del 20% de cobertura": en septiembre la reciben todas; el umbral debe depender del mes del ciclo.
+- PDA recomendado por MÍA (propuesta del fundador): hoy "Equilibrar con MÍA" solo preselecciona el CAMPO
+  (`?campo_sugerido=`) y la alerta de prioritarios no tiene botón. Construir: botón en la alerta de prioritarios y
+  en la cuadrícula de PDA de Mi Avance que abra Nueva Planeación con ese PDA ya elegido y marcado
+  "✦ Recomendado por MÍA" (la educadora decide si lo deja).
 - 5 planeaciones de la cuenta de prueba tienen 2 PDA en el texto pero sin `pda_2_id` (anteriores a esas
   columnas): revisar si alguna educadora real está en ese caso antes de decidir si se recupera el segundo PDA.
 - Confirmar si el directivo en prueba (`trial`) tiene acceso al panel (hoy sí: active/trial/founder).
