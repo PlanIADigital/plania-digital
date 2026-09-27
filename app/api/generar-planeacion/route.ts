@@ -1,3 +1,4 @@
+import { obtenerSchoolYearId } from '@/lib/schoolYear'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
@@ -1109,7 +1110,7 @@ export async function POST(request: NextRequest) {
       content_json: planeacion,
       eje_principal: form.eje_principal || null,
       eje_secundario: form.eje_secundario || null,
-      school_year_id: '96cae520-b0ed-4fcb-9c62-a95212ee357e',
+      school_year_id: await obtenerSchoolYearId(supabaseAdmin, CICLO_ESCOLAR_ACTIVO),
       ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
       status: 'active',
       costo_generacion_usd: acumuladorCosto.total,

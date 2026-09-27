@@ -1,9 +1,12 @@
 // ============================================================
 //  PlanIA Digital — API: Usar calendario federal como estatal
 //  app/api/admin/calendario/usar-federal/route.ts
+//  [Saneado 27 sep 2026 — Fase 2] El ciclo sale de CICLO_ESCOLAR_ACTIVO
+//  (antes estaba escrito '2025-2026' en la búsqueda, el guardado y la nota).
 // ============================================================
 import { NextResponse } from 'next/server'
 import { verificarSuperAdmin } from '@/lib/verificarSuperAdmin'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 export async function POST(request: Request) {
   try {
@@ -18,25 +21,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Falta el estado' }, { status: 400 })
     }
 
-    // 1. Leer el calendario federal ya cargado
+    // 1. Leer el calendario federal ya cargado del ciclo activo
     const { data: federalRow, error: errorLectura } = await supabaseAdmin
       .from('calendarios_sep')
       .select('datos')
       .eq('tipo', 'federal')
       .eq('estado', 'FED')
-      .eq('ciclo', '2025-2026')
+      .eq('ciclo', CICLO_ESCOLAR_ACTIVO)
       .single()
 
     if (errorLectura || !federalRow) {
       return NextResponse.json(
-        { error: 'No se encontró el calendario federal. Cárgalo primero antes de usar esta opción.' },
+        { error: `No se encontró el calendario federal ${CICLO_ESCOLAR_ACTIVO}. Cárgalo primero antes de usar esta opción.` },
         { status: 404 }
       )
     }
 
     // 2. Clonar los datos del federal, marcar el origen y agregar la nota de justificación
     const datosOriginales = federalRow.datos as any
-    const notaDefault = `Este estado no publicó calendario estatal propio para el ciclo 2025-2026; se usa el calendario federal sin modificaciones (Art. 87 de la Ley General de Educación: el ajuste estatal es una facultad opcional, no obligatoria).`
+    const notaDefault = `Este estado no publicó calendario estatal propio para el ciclo ${CICLO_ESCOLAR_ACTIVO}; se usa el calendario federal sin modificaciones (Art. 87 de la Ley General de Educación: el ajuste estatal es una facultad opcional, no obligatoria).`
 
     const datosClonados = {
       ...datosOriginales,
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
       .upsert({
         tipo: 'estatal',
         estado,
-        ciclo: '2025-2026',
+        ciclo: CICLO_ESCOLAR_ACTIVO,
         datos: datosClonados,
         actualizado_en: new Date().toISOString(),
       }, { onConflict: 'tipo,ciclo,estado' })

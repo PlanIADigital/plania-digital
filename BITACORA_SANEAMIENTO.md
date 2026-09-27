@@ -212,6 +212,23 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   **0** planeaciones afectadas. El guardado actual de Nueva Planeación registra bien el segundo PDA.
 - Conclusión: son datos viejos de prueba. No se recuperan ni se modifican.
 
+## Fase 2 — Estructura · desde 27 sep 2026 · 🟡 EN CURSO
+
+### Parte 1 — Ciclo escolar sin valores escritos a mano · 27 sep 2026 · rama `saneamiento/fase2-ciclo`
+- **Hallazgo:** `generar-planeacion` guardaba siempre `school_year_id = 96cae520…` (fila 2025-2026). Las 44
+  planeaciones de 2026-2027 y sus 99 registros de `pda_coverage` quedaron ligados al ciclo anterior. Ninguna
+  pantalla lee esa columna (el avance usa `ciclo_escolar`), pero es obligatoria y la copia el trigger.
+- **Hallazgo:** `usar-federal` buscaba, guardaba y redactaba la nota con `'2025-2026'`. Como el federal
+  2025-2026 ya no existe, hoy respondía "No se encontró el calendario federal"; en julio habría guardado el
+  calendario estatal en el ciclo equivocado.
+- `lib/schoolYear.ts` (nuevo): `obtenerSchoolYearId(supabaseAdmin, ciclo)` busca la fila del ciclo y, si no
+  existe, la crea con `inicio_clases`/`fin_clases` del calendario federal (respaldo: 1 ago – 31 jul, con
+  aviso en el log) e `is_current = false`. Ya no hay que crear la fila a mano cada año.
+- `generar-planeacion`: usa `obtenerSchoolYearId`. `usar-federal`: usa `CICLO_ESCOLAR_ACTIVO` (3 lugares).
+- SQL `database/2026-09-27_saneamiento_fase2_ciclo.sql`: 2026-2027 como ciclo actual y corrección de
+  `school_year_id` en `plannings` y `pda_coverage`. El trigger es solo `AFTER INSERT`: no genera duplicados.
+- Revisado y descartado: `pda_coverage` agrupa por `ciclo_escolar`, así que su cobertura no estaba mezclada.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -230,7 +247,9 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 dashboard), endpoint seguro para que el directivo abra una planeación de su docente, tabla de informes
 (CCT + autor + ciclo + tipo + archivo + foto JSON), tabla de asignaciones de CCT para maestros itinerantes.
 
-**Fase 2 — Estructura:** separar `generar-planeacion` (prompts, JSON, límites), reparador de JSON copiado
+**Fase 2 — Estructura:** flujo de cambio de ciclo en el admin (cerrar ciclo + ciclo activo sin editar código +
+`is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
+por defecto), separar `generar-planeacion` (prompts, JSON, límites), reparador de JSON copiado
 4 veces, ciclo escolar y UUID escritos a mano, doble `estado: 'completado'`. Decidir qué hacer con
 `pda_coverage` y el trigger `registrar_pda_coverage` (ya no los lee ninguna pantalla).
 
@@ -240,6 +259,12 @@ sin uso, respaldos `total_students` en `mi-grupo`, `planeacion/nueva` y `generar
 es `total_alumnos`), columna `users.alumnos_inclusion` sin uso, estados sin uso en Mi Grupo
 (`alumnosCodigo`, `cargandoAlumnos`, `errorAlumnos`), `fecha_baja` se calcula en UTC (puede marcar el día
 siguiente si la baja se registra de noche).
+
+**Revisión ESLint (27 sep 2026, al cerrar Fase 1):** proyecto completo 293 problemas (259 errores, 34 avisos);
+archivos tocados en Fase 1: 91 (60 `no-explicit-any`, 14 `no-unescaped-entities`, 8 `set-state-in-effect`,
+7 `exhaustive-deps`, 2 `no-unused-vars`). Sin riesgo de datos desfasados: los `exhaustive-deps` son `router`
+(estable) y una constante. Variables sin uso en `planeacion/nueva`: `CICLO_ESCOLAR_ACTIVO` (se resuelve con el
+ciclo escrito a mano, Fase 2) y `nombreCorto`. Los `any` y comillas pasan a Fase 3; meta: bajar de 293.
 
 **Fase 4 — Documentación:** actualizar `CLAUDE.md` y `BITACORA_INFRAESTRUCTURA.md`.
 
