@@ -14,7 +14,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarDirectivo, compartenCct } from '@/lib/verificarDirectivo'
-import { cargarContextoAvance, calcularAvanceDocente } from '@/lib/avanceServidor'
+import { cargarContextoAvance, calcularAvanceDocente, obtenerApoyosConfirmados } from '@/lib/avanceServidor'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const FORMATO_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -49,14 +49,7 @@ export async function GET(request: NextRequest) {
     const ctx = await cargarContextoAvance(supabaseAdmin, estado, CICLO_ESCOLAR_ACTIVO)
     const r = await calcularAvanceDocente(supabaseAdmin, d, ctx)
 
-    const alumnos = Array.isArray(d.evaluacion_individual?.alumnos) ? d.evaluacion_individual.alumnos : []
-    const alumnosConNee = alumnos
-      .filter((a: any) => Array.isArray(a?.nee) && a.nee.length > 0)
-      .map((a: any) => ({
-        referencia: a.referencia ?? null,
-        nee: a.nee,
-        observaciones: a.observaciones ?? null,
-      }))
+    const alumnosConApoyos = await obtenerApoyosConfirmados(supabaseAdmin, d.id, CICLO_ESCOLAR_ACTIVO)
 
     return NextResponse.json({
       ciclo: CICLO_ESCOLAR_ACTIVO,
@@ -73,7 +66,7 @@ export async function GET(request: NextRequest) {
       avance: r.avance,
       prioritarios: r.prioritarios,
       planeaciones: r.planeaciones,
-      alumnosConNee,
+      alumnosConApoyos,
     })
   } catch (e: any) {
     console.error('Error en /api/directivo/docentes/[id]:', e?.message)

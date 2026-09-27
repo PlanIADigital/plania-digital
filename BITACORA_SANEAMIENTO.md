@@ -148,6 +148,22 @@ sin ningún término clínico ("Dificultad en la pronunciación de sonidos r y r
 **Lenguaje neutro (mismo día, a propuesta del fundador):** +regla que extiende el lenguaje neutro a `nee`,
 `observaciones`, `alertas` y `resumen_general` (ej. "permanece en silencio" en lugar de "permanece callada").
 
+### Parte 5 — Pantallas muestran apoyos confirmados · 27 sep 2026 · rama `saneamiento/fase1-apoyos-pantallas`
+
+**Diagnóstico:** Mi Avance (Diversidad) y el directivo mostraban lo que DETECTÓ la IA ("Alumno 2", barreras,
+observación), no lo que la educadora confirmó ni lo que llega a las planeaciones.
+
+**Construido:**
+- `lib/avanceServidor.ts`: `obtenerApoyosConfirmados` (alumnos activos del ciclo con apoyos confirmados en
+  `alumnos_codigo`; solo código AL-XX y texto de apoyos).
+- Endpoints del directivo: `alumnosConNee` → `alumnosConApoyos` (lista: conteo; detalle: código + apoyos).
+- Directivo: chip "♿ N con apoyos", tarjeta "Alumnos con apoyos", pestaña "Apoyos".
+- Mi Avance (Diversidad): apoyos confirmados con origen ("Sugerido por MÍA · confirmado por ti" / "Registrado
+  por ti") y aviso de sugerencias de MÍA por revisar que lleva a Mi Grupo.
+
+**Verificado:** Mi Avance, panel y detalle del directivo muestran AL-02 y AL-03 con los mismos apoyos; números
+consistentes entre las tres pantallas (22 planeaciones, 25 PDA, 2/4 prioritarios).
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -160,8 +176,6 @@ sin ningún término clínico ("Dificultad en la pronunciación de sonidos r y r
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Mi Avance (pestaña Diversidad) y panel del directivo muestran las NEE detectadas por la IA; deben mostrar
-  los apoyos CONFIRMADOS por la educadora (`alumnos_codigo`).
 - Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
   punto final: usar `normalizarTextoPda` de `lib/cobertura.ts`.
 - Alerta "menos del 20% de cobertura": en septiembre la reciben todas; el umbral debe depender del mes del ciclo.
