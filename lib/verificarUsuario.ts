@@ -43,7 +43,7 @@ export async function verificarUsuario(request: Request): Promise<ResultadoAuth>
 
   const { data: usuario, error: errorUsuario } = await supabaseAdmin
     .from('users')
-    .select('id, full_name, role, cct_primary')
+    .select('id, auth_uid, full_name, role, cct_primary')
     .eq('auth_uid', user.id)
     .single()
 

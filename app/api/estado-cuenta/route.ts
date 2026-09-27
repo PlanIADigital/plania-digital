@@ -9,21 +9,20 @@
 //  vista directamente, sin duplicar el cálculo.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 export async function GET(request: NextRequest) {
-  const authUid = request.nextUrl.searchParams.get('auth_uid')
-  if (!authUid) return NextResponse.json({ error: 'Falta auth_uid' }, { status: 400 })
+  const auth = await verificarUsuario(request)
+  if (!auth.autorizado) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+  const { supabaseAdmin, usuario } = auth
 
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
+  // v_estado_cuenta se filtra por auth_uid (viene del usuario verificado)
   const { data, error } = await supabaseAdmin
     .from('v_estado_cuenta')
     .select('fecha_pago, ciclo_inicio, ciclo_fin, dias_habiles_generados_ciclo')
-    .eq('auth_uid', authUid)
+    .eq('auth_uid', usuario.auth_uid)
     .single()
 
   if (error || !data) {

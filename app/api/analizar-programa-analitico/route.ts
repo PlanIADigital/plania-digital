@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -112,20 +112,18 @@ function parsearJSONRobusto(rawContent: string): any {
 
 export async function POST(req: NextRequest) {
   try {
-    const { texto, auth_uid, cct, archivo_formato, grado } = await req.json()
-
-    if (!texto || !auth_uid || !cct) {
-      return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
+    const { supabaseAdmin, usuario } = auth
+    // programa_analitico.educadora_id guarda el auth_uid, no users.id
+    const auth_uid = usuario.auth_uid
 
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('auth_uid')
-      .eq('auth_uid', auth_uid)
-      .single()
+    const { texto, cct, archivo_formato, grado } = await req.json()
 
-    if (userError || !userData) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    if (!texto || !cct) {
+      return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
     const { data: versionActual } = await supabaseAdmin
@@ -248,11 +246,18 @@ FORMATO DE SALIDA:
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
+    // programa_analitico.educadora_id guarda el auth_uid, no users.id
+    const auth_uid = usuario.auth_uid
+
     const { searchParams } = new URL(req.url)
-    const auth_uid = searchParams.get('auth_uid')
     const cct = searchParams.get('cct')
 
-    if (!auth_uid || !cct) {
+    if (!cct) {
       return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
     }
 

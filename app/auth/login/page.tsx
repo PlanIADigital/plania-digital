@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import { fetchConSesion } from '@/lib/fetchConSesion'
 import { useRouter } from 'next/navigation'
 
 const supabase = createClient()
@@ -27,11 +28,7 @@ export default function LoginPage() {
     }
 
     // Verificar rol via API server (bypasea RLS)
-    const res = await fetch('/api/auth/me', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auth_uid: data.user.id }),
-    })
+    const res = await fetchConSesion('/api/auth/me', { method: 'POST' })
     const userData = await res.json()
 
     const params = new URLSearchParams(window.location.search)

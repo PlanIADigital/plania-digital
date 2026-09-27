@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { supabase } from '@/lib/supabase'
+import { fetchConSesion } from '@/lib/fetchConSesion'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const CAMPOS = [
@@ -559,7 +560,7 @@ function NuevaPlaneacionInner() {
     if (pollingRef.current) clearInterval(pollingRef.current)
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/generar-planeacion/progreso?job_id=${jobId}`)
+        const res = await fetchConSesion(`/api/generar-planeacion/progreso?job_id=${jobId}`)
         const data = await res.json()
         if (!data.error) {
           setProgreso({
@@ -648,10 +649,10 @@ function NuevaPlaneacionInner() {
     setProgreso({ totalLotes: 0, lotesCompletados: 0, faseActual: 'Iniciando...', estado: 'en_progreso', fasesLotes: [] })
 
     try {
-      await fetch('/api/generar-planeacion/progreso', {
+      await fetchConSesion('/api/generar-planeacion/progreso', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: jobId, user_id: profile?.id }),
+        body: JSON.stringify({ job_id: jobId }),
       })
     } catch {
       // Si falla la creación del registro, igual continuamos.

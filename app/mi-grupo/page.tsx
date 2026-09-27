@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
+import { fetchConSesion } from '@/lib/fetchConSesion'
 
 const MENSAJES_ANALISIS = [
   '🔍 Leyendo las necesidades de tu grupo...',
@@ -233,7 +234,7 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
         setEvaluacionIndividual(Array(total).fill(''))
       }
       if (data.cct_primary) {
-        const res = await fetch(`/api/analizar-programa-analitico?auth_uid=${session.user.id}&cct=${data.cct_primary}`)
+        const res = await fetchConSesion(`/api/analizar-programa-analitico?cct=${data.cct_primary}`)
         const json = await res.json()
         if (json.ok && json.historial?.length > 0) {
           const activo = json.historial.find((v: any) => v.activo)
@@ -243,7 +244,7 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
       }
       // Fechas reales de guardado (desde documentos_historial) para las 5
       // secciones con historial versionado — alimenta el "Guardado hace X"
-      const resFechas = await fetch(`/api/documentos-historial/fechas?auth_uid=${session.user.id}`)
+      const resFechas = await fetchConSesion('/api/documentos-historial/fechas')
       const jsonFechas = await resFechas.json()
       if (jsonFechas.ok) setFechasGuardado(jsonFechas.fechas || {})
     }
@@ -309,7 +310,7 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setCargandoVersiones(false); return }
-      const res = await fetch(`/api/documentos-historial/lista?auth_uid=${session.user.id}&seccion=${seccion}`)
+      const res = await fetchConSesion(`/api/documentos-historial/lista?seccion=${seccion}`)
       const json = await res.json()
       if (json.ok) setVersionesHistorial(json.versiones || [])
     } catch {
@@ -324,7 +325,7 @@ async function abrirModalAlumnos() {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setCargandoAlumnos(false); return }
-    const res = await fetch(`/api/alumnos-codigo?auth_uid=${session.user.id}`)
+    const res = await fetchConSesion('/api/alumnos-codigo')
     const json = await res.json()
     if (json.ok) setAlumnosCodigo(json.alumnos || [])
     else setErrorAlumnos(json.error || 'No se pudo cargar la lista.')
@@ -338,10 +339,10 @@ async function bootstrapAlumnos() {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const res = await fetch('/api/alumnos-codigo', {
+    const res = await fetchConSesion('/api/alumnos-codigo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auth_uid: session.user.id, accion: 'bootstrap', total: profile.total_alumnos || 24 })
+      body: JSON.stringify({ accion: 'bootstrap', total: profile.total_alumnos || 24 })
     })
     const json = await res.json()
     if (json.ok) setAlumnosCodigo(json.alumnos || [])
@@ -355,10 +356,10 @@ async function agregarAlumno() {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const res = await fetch('/api/alumnos-codigo', {
+    const res = await fetchConSesion('/api/alumnos-codigo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auth_uid: session.user.id, accion: 'agregar' })
+      body: JSON.stringify({ accion: 'agregar' })
     })
     const json = await res.json()
     if (json.ok) setAlumnosCodigo(prev => [...prev, json.alumno])
@@ -371,10 +372,10 @@ async function darDeBajaAlumno(id: string) {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const res = await fetch('/api/alumnos-codigo/baja', {
+    const res = await fetchConSesion('/api/alumnos-codigo/baja', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ auth_uid: session.user.id, id })
+      body: JSON.stringify({ id })
     })
     const json = await res.json()
     if (json.ok) setAlumnosCodigo(prev => prev.filter(a => a.id !== id))
@@ -386,7 +387,7 @@ async function darDeBajaAlumno(id: string) {
   async function refrescarFechas() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const res = await fetch(`/api/documentos-historial/fechas?auth_uid=${session.user.id}`)
+    const res = await fetchConSesion('/api/documentos-historial/fechas')
     const json = await res.json()
     if (json.ok) setFechasGuardado(json.fechas || {})
   }
@@ -403,10 +404,10 @@ async function darDeBajaAlumno(id: string) {
       if (!data.texto) { setErrorEscolar('No se pudo extraer el texto del archivo.'); setAnalizandoEscolar(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setAnalizandoEscolar(false); return }
-      const resAnalisis = await fetch('/api/analizar-diagnostico-escolar', {
+      const resAnalisis = await fetchConSesion('/api/analizar-diagnostico-escolar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: data.texto, auth_uid: session.user.id })
+        body: JSON.stringify({ texto: data.texto })
       })
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.ok) {
@@ -431,10 +432,10 @@ async function darDeBajaAlumno(id: string) {
       if (!dataTexto.texto) { setErrorPA('No se pudo leer el archivo.'); setAnalizandoPA(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const res = await fetch('/api/analizar-programa-analitico', {
+      const res = await fetchConSesion('/api/analizar-programa-analitico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: dataTexto.texto, auth_uid: session.user.id, cct: profile.cct_primary, archivo_formato: ext, grado: gradoGrupo })
+        body: JSON.stringify({ texto: dataTexto.texto, cct: profile.cct_primary, archivo_formato: ext, grado: gradoGrupo })
       })
       const data = await res.json()
       if (data.ok) {
@@ -454,7 +455,7 @@ async function darDeBajaAlumno(id: string) {
       setCargandoHistorial(true)
       const { data: { session } } = await supabase.auth.getSession()
       if (session && profile?.cct_primary) {
-        const res = await fetch(`/api/analizar-programa-analitico?auth_uid=${session.user.id}&cct=${profile.cct_primary}`)
+        const res = await fetchConSesion(`/api/analizar-programa-analitico?cct=${profile.cct_primary}`)
         const json = await res.json()
         if (json.ok) setHistorialPA(json.historial || [])
       }
@@ -472,11 +473,10 @@ async function darDeBajaAlumno(id: string) {
       const resTexto = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
       const dataTexto = await resTexto.json()
       if (!dataTexto.texto) { setErrorDiagnostico('No se pudo extraer el texto.'); setAnalizando(false); return }
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch('/api/analizar-diagnostico', {
+      const res = await fetchConSesion('/api/analizar-diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ diagnostico_texto: dataTexto.texto, grado: gradoGrupo, auth_uid: session?.user?.id || profile?.auth_uid })
+        body: JSON.stringify({ diagnostico_texto: dataTexto.texto, grado: gradoGrupo })
       })
       const data = await res.json()
       if (data.pdas_sugeridos) {
@@ -499,11 +499,10 @@ async function darDeBajaAlumno(id: string) {
       const resTexto = await fetch('/api/extraer-texto', { method: 'POST', body: formData })
       const dataTexto = await resTexto.json()
       if (dataTexto.error) { setErrorEval('Error al leer el archivo.'); setGuardandoEval(false); return }
-      const { data: { session } } = await supabase.auth.getSession()
-      const resAnalisis = await fetch('/api/analizar-evaluacion-individual', {
+      const resAnalisis = await fetchConSesion('/api/analizar-evaluacion-individual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto_evaluacion: dataTexto.texto, grado: gradoGrupo, auth_uid: session?.user?.id })
+        body: JSON.stringify({ texto_evaluacion: dataTexto.texto, grado: gradoGrupo })
       })
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.error) { setErrorEval('Error al analizar.'); setGuardandoEval(false); return }
@@ -521,10 +520,10 @@ async function darDeBajaAlumno(id: string) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return false
-      const res = await fetch('/api/analizar-observaciones-directivo', {
+      const res = await fetchConSesion('/api/analizar-observaciones-directivo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, auth_uid: session.user.id })
+        body: JSON.stringify({ texto })
       })
       const data = await res.json()
       if (data.ok) {
@@ -575,10 +574,10 @@ async function darDeBajaAlumno(id: string) {
       if (!data.texto) { setErrorJardin('No se pudo extraer el texto.'); setGuardandoJardin(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setGuardandoJardin(false); return }
-      const resAnalisis = await fetch('/api/analizar-pdas-jardin', {
+      const resAnalisis = await fetchConSesion('/api/analizar-pdas-jardin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto: data.texto, auth_uid: session.user.id })
+        body: JSON.stringify({ texto: data.texto })
       })
       const dataAnalisis = await resAnalisis.json()
       if (dataAnalisis.ok) {

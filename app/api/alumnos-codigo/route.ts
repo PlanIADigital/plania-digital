@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin as supabase } from '@/lib/supabase'
-
-async function resolverUserId(auth_uid: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('auth_uid', auth_uid)
-    .maybeSingle()
-  if (error || !data) return null
-  return data.id
-}
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 function siguienteCodigo(codigosExistentes: string[]): string {
   let max = 0
@@ -24,18 +14,16 @@ function siguienteCodigo(codigosExistentes: string[]): string {
   return `AL-${String(siguiente).padStart(2, '0')}`
 }
 
-// GET /api/alumnos-codigo?auth_uid=...
+// GET /api/alumnos-codigo
 // Regresa los alumnos activos, ordenados por fecha de alta.
+// El usuario se identifica por el token Bearer (verificarUsuario).
 export async function GET(request: NextRequest) {
-  const auth_uid = request.nextUrl.searchParams.get('auth_uid')
-  if (!auth_uid) {
-    return NextResponse.json({ error: 'Falta auth_uid' }, { status: 400 })
+  const auth = await verificarUsuario(request)
+  if (!auth.autorizado) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
-
-  const userId = await resolverUserId(auth_uid)
-  if (!userId) {
-    return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
-  }
+  const { supabaseAdmin: supabase, usuario } = auth
+  const userId = usuario.id
 
   const { data, error } = await supabase
     .from('alumnos_codigo')
@@ -52,18 +40,21 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/alumnos-codigo
-// body: { auth_uid, accion: 'agregar' } -> da de alta el siguiente código consecutivo
-// body: { auth_uid, accion: 'bootstrap', total } -> pre-puebla AL-01..AL-N (solo si no hay ninguno todavía)
+// body: { accion: 'agregar' } -> da de alta el siguiente código consecutivo
+// body: { accion: 'bootstrap', total } -> pre-puebla AL-01..AL-N (solo si no hay ninguno todavía)
+// El usuario se identifica por el token Bearer (verificarUsuario).
 export async function POST(request: NextRequest) {
-  const { auth_uid, accion, total } = await request.json()
-
-  if (!auth_uid || !accion) {
-    return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
+  const auth = await verificarUsuario(request)
+  if (!auth.autorizado) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
+  const { supabaseAdmin: supabase, usuario } = auth
+  const userId = usuario.id
 
-  const userId = await resolverUserId(auth_uid)
-  if (!userId) {
-    return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+  const { accion, total } = await request.json()
+
+  if (!accion) {
+    return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
   }
 
   const { data: existentes, error: errorExistentes } = await supabase

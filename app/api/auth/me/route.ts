@@ -3,17 +3,20 @@
 //  app/api/auth/me/route.ts
 // ============================================================
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 export async function POST(request: Request) {
   try {
-    const { auth_uid } = await request.json()
-    if (!auth_uid) return NextResponse.json({ error: 'Sin auth_uid' }, { status: 400 })
+    const auth = await verificarUsuario(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
 
     const { data } = await supabaseAdmin
       .from('users')
       .select('is_super_admin, role')
-      .eq('auth_uid', auth_uid)
+      .eq('id', usuario.id)
       .single()
 
     return NextResponse.json({

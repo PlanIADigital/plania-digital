@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -82,9 +82,15 @@ function parsearJSONRobusto(rawContent: string): any {
 
 export async function POST(req: NextRequest) {
   try {
-    const { texto, auth_uid } = await req.json()
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
 
-    if (!texto || !auth_uid) {
+    const { texto } = await req.json()
+
+    if (!texto) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
@@ -171,62 +177,52 @@ FORMATO DE SALIDA:
     await supabaseAdmin
       .from('users')
       .update({ pdas_jardin: paraGuardar })
-      .eq('auth_uid', auth_uid)
+      .eq('id', usuario.id)
 
     // Historial versionado — sección 1.3 (PDAs del jardín)
     try {
       // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
-      // hay que resolver primero el id interno del usuario
-      const { data: usuarioRow, error: usuarioError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('auth_uid', auth_uid)
-        .maybeSingle()
+      // el id interno viene ya verificado desde el token (usuario.id)
+      const userIdInterno = usuario.id
 
-      if (usuarioError || !usuarioRow) {
-        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
-      } else {
-        const userIdInterno = usuarioRow.id
+      const { data: versionesPrevias } = await supabaseAdmin
+        .from('documentos_historial')
+        .select('version_numero')
+        .eq('user_id', userIdInterno)
+        .eq('seccion', SECCION_HISTORIAL)
+        .order('version_numero', { ascending: false })
+        .limit(1)
 
-        const { data: versionesPrevias } = await supabaseAdmin
-          .from('documentos_historial')
-          .select('version_numero')
-          .eq('user_id', userIdInterno)
-          .eq('seccion', SECCION_HISTORIAL)
-          .order('version_numero', { ascending: false })
-          .limit(1)
+      const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+        ? versionesPrevias[0].version_numero + 1
+        : 1
 
-        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
-          ? versionesPrevias[0].version_numero + 1
-          : 1
+      await supabaseAdmin
+        .from('documentos_historial')
+        .update({ activo: false })
+        .eq('user_id', userIdInterno)
+        .eq('seccion', SECCION_HISTORIAL)
+        .eq('activo', true)
 
-        await supabaseAdmin
-          .from('documentos_historial')
-          .update({ activo: false })
-          .eq('user_id', userIdInterno)
-          .eq('seccion', SECCION_HISTORIAL)
-          .eq('activo', true)
+      const resumenCorto = paraGuardar.resumen
+        ? paraGuardar.resumen.slice(0, 200)
+        : `${pdasFinal.length} PDAs del jardín vinculados`
 
-        const resumenCorto = paraGuardar.resumen
-          ? paraGuardar.resumen.slice(0, 200)
-          : `${pdasFinal.length} PDAs del jardín vinculados`
+      const { error: historialError } = await supabaseAdmin
+        .from('documentos_historial')
+        .insert({
+          user_id: userIdInterno,
+          seccion: SECCION_HISTORIAL,
+          ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
+          version_numero: nuevaVersion,
+          contenido: JSON.stringify(paraGuardar),
+          resumen: resumenCorto,
+          archivo_formato: 'texto',
+          activo: true,
+        })
 
-        const { error: historialError } = await supabaseAdmin
-          .from('documentos_historial')
-                    .insert({
-            user_id: userIdInterno,
-            seccion: SECCION_HISTORIAL,
-            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
-            version_numero: nuevaVersion,
-            contenido: JSON.stringify(paraGuardar),
-            resumen: resumenCorto,
-            archivo_formato: 'texto',
-            activo: true,
-          })
-
-        if (historialError) {
-          console.error('Error guardando historial de PDAs del jardín:', historialError)
-        }
+      if (historialError) {
+        console.error('Error guardando historial de PDAs del jardín:', historialError)
       }
     } catch (historialCatchError) {
       // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario

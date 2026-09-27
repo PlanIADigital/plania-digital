@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -8,8 +8,14 @@ const SECCION_HISTORIAL = 'observaciones_directivo'
 
 export async function POST(req: NextRequest) {
   try {
-    const { texto, auth_uid } = await req.json()
-    if (!texto || !auth_uid) {
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
+
+    const { texto } = await req.json()
+    if (!texto) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
@@ -45,7 +51,7 @@ Responde ÚNICAMENTE con JSON puro, sin markdown ni backticks:
     const { error } = await supabaseAdmin
       .from('users')
       .update({ observaciones_directivo: resultado })
-      .eq('auth_uid', auth_uid)
+      .eq('id', usuario.id)
 
     if (error) {
       return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })
@@ -54,57 +60,47 @@ Responde ÚNICAMENTE con JSON puro, sin markdown ni backticks:
     // Historial versionado — sección 3.1 (Observaciones de dirección)
     try {
       // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
-      // hay que resolver primero el id interno del usuario
-      const { data: usuarioRow, error: usuarioError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('auth_uid', auth_uid)
-        .maybeSingle()
+      // el id interno viene ya verificado desde el token (usuario.id)
+      const userIdInterno = usuario.id
 
-      if (usuarioError || !usuarioRow) {
-        console.error('No se pudo resolver users.id a partir de auth_uid para historial:', usuarioError)
-      } else {
-        const userIdInterno = usuarioRow.id
+      const { data: versionesPrevias } = await supabaseAdmin
+        .from('documentos_historial')
+        .select('version_numero')
+        .eq('user_id', userIdInterno)
+        .eq('seccion', SECCION_HISTORIAL)
+        .order('version_numero', { ascending: false })
+        .limit(1)
 
-        const { data: versionesPrevias } = await supabaseAdmin
-          .from('documentos_historial')
-          .select('version_numero')
-          .eq('user_id', userIdInterno)
-          .eq('seccion', SECCION_HISTORIAL)
-          .order('version_numero', { ascending: false })
-          .limit(1)
+      const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
+        ? versionesPrevias[0].version_numero + 1
+        : 1
 
-        const nuevaVersion = versionesPrevias && versionesPrevias.length > 0
-          ? versionesPrevias[0].version_numero + 1
-          : 1
+      await supabaseAdmin
+        .from('documentos_historial')
+        .update({ activo: false })
+        .eq('user_id', userIdInterno)
+        .eq('seccion', SECCION_HISTORIAL)
+        .eq('activo', true)
 
-        await supabaseAdmin
-          .from('documentos_historial')
-          .update({ activo: false })
-          .eq('user_id', userIdInterno)
-          .eq('seccion', SECCION_HISTORIAL)
-          .eq('activo', true)
+      const totalAreas = Array.isArray(resultado.areas_mejora) ? resultado.areas_mejora.length : 0
+      const resumenCorto = totalAreas > 0
+        ? `${totalAreas} áreas de mejora: ${resultado.areas_mejora.slice(0, 2).join(', ')}${totalAreas > 2 ? '…' : ''}`
+        : 'Observaciones de dirección procesadas'
 
-        const totalAreas = Array.isArray(resultado.areas_mejora) ? resultado.areas_mejora.length : 0
-        const resumenCorto = totalAreas > 0
-          ? `${totalAreas} áreas de mejora: ${resultado.areas_mejora.slice(0, 2).join(', ')}${totalAreas > 2 ? '…' : ''}`
-          : 'Observaciones de dirección procesadas'
-
-        const { error: historialError } = await supabaseAdmin
-          .from('documentos_historial')
-                    .insert({
-            user_id: userIdInterno,
-            seccion: SECCION_HISTORIAL,
-            ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
-            version_numero: nuevaVersion,
-            contenido: JSON.stringify(resultado),
-            resumen: resumenCorto,
-            archivo_formato: 'texto',
-            activo: true,
-          })
-        if (historialError) {
-          console.error('Error guardando historial de observaciones de dirección:', historialError)
-        }
+      const { error: historialError } = await supabaseAdmin
+        .from('documentos_historial')
+        .insert({
+          user_id: userIdInterno,
+          seccion: SECCION_HISTORIAL,
+          ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
+          version_numero: nuevaVersion,
+          contenido: JSON.stringify(resultado),
+          resumen: resumenCorto,
+          archivo_formato: 'texto',
+          activo: true,
+        })
+      if (historialError) {
+        console.error('Error guardando historial de observaciones de dirección:', historialError)
       }
     } catch (historialCatchError) {
       // El historial es complementario — un fallo aquí nunca debe tumbar la respuesta al usuario

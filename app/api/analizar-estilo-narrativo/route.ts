@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   try {
-    const { texto, auth_uid } = await req.json()
-    if (!texto || !auth_uid) {
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
+
+    const { texto } = await req.json()
+    if (!texto) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
@@ -45,7 +51,7 @@ Responde ÚNICAMENTE con JSON puro, sin markdown ni backticks:
     const { error } = await supabaseAdmin
       .from('users')
       .update({ estilo_narrativo: resultado })
-      .eq('auth_uid', auth_uid)
+      .eq('id', usuario.id)
 
     if (error) {
       return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })

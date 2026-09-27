@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import { fetchConSesion } from '@/lib/fetchConSesion'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 
@@ -89,7 +90,7 @@ export default function ConfiguracionPage() {
       setLoading(false)
 
       try {
-        const resEstado = await fetch(`/api/estado-cuenta?auth_uid=${session.user.id}`)
+        const resEstado = await fetchConSesion('/api/estado-cuenta')
         const dataEstado = await resEstado.json()
         if (dataEstado.ok) setEstadoCuenta(dataEstado)
       } catch {
@@ -201,10 +202,10 @@ export default function ConfiguracionPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return false
-      const res = await fetch('/api/analizar-estilo-narrativo', {
+      const res = await fetchConSesion('/api/analizar-estilo-narrativo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto, auth_uid: session.user.id })
+        body: JSON.stringify({ texto })
       })
       const data = await res.json()
       if (data.ok) { setResultadoEstilo(data.resultado); setEstiloGuardado(true); return true }

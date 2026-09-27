@@ -1,30 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 export async function GET(req: NextRequest) {
   try {
-    const auth_uid = req.nextUrl.searchParams.get('auth_uid')
+    const auth = await verificarUsuario(req)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    const { supabaseAdmin, usuario } = auth
+
     const seccion = req.nextUrl.searchParams.get('seccion')
-    if (!auth_uid || !seccion) {
-      return NextResponse.json({ error: 'Faltan auth_uid o seccion' }, { status: 400 })
+    if (!seccion) {
+      return NextResponse.json({ error: 'Falta seccion' }, { status: 400 })
     }
 
     // documentos_historial.user_id referencia public.users.id (NO auth_uid) —
-    // hay que resolver primero el id interno del usuario
-    const { data: usuarioRow, error: usuarioError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('auth_uid', auth_uid)
-      .maybeSingle()
-
-    if (usuarioError || !usuarioRow) {
-      return NextResponse.json({ ok: true, versiones: [] })
-    }
-
+    // el id interno viene ya verificado desde el token (usuario.id)
     const { data: versiones, error: versionesError } = await supabaseAdmin
       .from('documentos_historial')
       .select('version_numero, resumen, created_at, activo')
-      .eq('user_id', usuarioRow.id)
+      .eq('user_id', usuario.id)
       .eq('seccion', seccion)
       .order('version_numero', { ascending: false })
 
