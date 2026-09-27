@@ -145,6 +145,9 @@ hiperactividad), aunque el documento de la educadora los mencione; se traducen a
 **Verificado:** documento de prueba que decía "diagnóstico de TDAH" y "dislalia" → etiquetas, observación y apoyos
 sin ningún término clínico ("Dificultad en la pronunciación de sonidos r y rr en situaciones orales").
 
+**Lenguaje neutro (mismo día, a propuesta del fundador):** +regla que extiende el lenguaje neutro a `nee`,
+`observaciones`, `alertas` y `resumen_general` (ej. "permanece en silencio" en lugar de "permanece callada").
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -157,8 +160,6 @@ sin ningún término clínico ("Dificultad en la pronunciación de sonidos r y r
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Observaciones de MÍA (contexto, no llegan a la planeación) a veces usan género ("callada"); la regla de
-  lenguaje neutro solo aplica hoy a `apoyos_sugeridos`. Menor.
 - Mi Avance (pestaña Diversidad) y panel del directivo muestran las NEE detectadas por la IA; deben mostrar
   los apoyos CONFIRMADOS por la educadora (`alumnos_codigo`).
 - Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
