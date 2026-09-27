@@ -168,10 +168,10 @@ export default function ConfiguracionPage() {
     setGuardandoWhatsapp(true)
 
     try {
-      const resDup = await fetch('/api/verificar-whatsapp-duplicado', {
+      const resDup = await fetchConSesion('/api/verificar-whatsapp-duplicado', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp: whatsappValor.trim(), excluir_auth_uid: profile.auth_uid }),
+        body: JSON.stringify({ whatsapp: whatsappValor.trim() }),
       })
       const dataDup = await resDup.json()
       if (dataDup.duplicado) {

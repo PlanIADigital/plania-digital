@@ -6,6 +6,7 @@ import SidebarWrapper from '@/components/SidebarWrapper'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
 
 const CAMPOS = [
   'Lenguajes',
@@ -16,9 +17,6 @@ const CAMPOS = [
 
 const TIEMPO_MINIMO_PASO1 = 3500
 const TIEMPO_CONFIRMACION_FINAL = 1800
-
-const MODO_PRUEBA_FECHAS_PASADAS = true
-const FECHA_MINIMA_PRUEBA = '2026-06-01'
 
 const NOMBRES_FASES_MODALIDAD: Record<string, string[]> = {
   'Proyectos': ['Punto de partida', 'Planeación', '¡A trabajar!', 'Comunicamos nuestros logros', 'Reflexionar sobre el aprendizaje'],
@@ -48,14 +46,6 @@ function contarDiasHabiles(inicio: string, fin: string): number {
     cur.setDate(cur.getDate() + 1)
   }
   return count
-}
-
-function hoyLocalISO(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }
 
 // [jul 2026] Auto-crecimiento de textareas — se llama en cada evento
@@ -191,7 +181,14 @@ function NuevaPlaneacionInner() {
     return () => { if (campoInvalidoTimeoutRef.current) clearTimeout(campoInvalidoTimeoutRef.current) }
   }, [])
 
-  const hoyISO = hoyLocalISO()
+  // [sep 2026, saneamiento Fase 0] Fecha mínima = inicio del ciclo de
+  // membresía (v_estado_cuenta.ciclo_inicio). Si no se pudo obtener, hoy.
+  // Ambas fechas se expresan en la zona horaria del CCT de la educadora,
+  // igual que en el servidor (lib/fechaMexico.ts), para comparar idéntico.
+  const zonaHoraria = zonaHorariaPorCCT(profile?.cct_primary)
+  const hoyISO = fechaLocalISO(new Date(), zonaHoraria) || ''
+  const [cicloInicio, setCicloInicio] = useState<string | null>(null)
+  const fechaMinima = cicloInicio || hoyISO
 
   const [form, setForm] = useState({
     nombre_proyecto: '',
@@ -251,7 +248,7 @@ function NuevaPlaneacionInner() {
   const diasHabilesNaive = contarDiasHabiles(form.fecha_inicio, form.fecha_fin)
 
   const fechaCompletaYValida = !!form.fecha_inicio && !!form.fecha_fin && diasHabilesNaive > 0
-    && (MODO_PRUEBA_FECHAS_PASADAS || form.fecha_inicio >= hoyISO)
+    && form.fecha_inicio >= fechaMinima
 
   const modalidadLista = fechaCompletaYValida && diasHabilesReales !== null && modalidadActualCabe && !modalidadBloqueada
   const datosProyectoCompletos = !!form.nombre_proyecto && !!form.situacion_problema && !!form.finalidad
@@ -272,6 +269,17 @@ function NuevaPlaneacionInner() {
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      // Inicio del ciclo de membresía = fecha mínima para planear. Si la
+      // consulta falla o viene vacío, cicloInicio queda null y se usa hoy.
+      try {
+        const resEstado = await fetchConSesion('/api/estado-cuenta')
+        if (resEstado.ok) {
+          const estado = await resEstado.json()
+          setCicloInicio(fechaLocalISO(estado.ciclo_inicio, zonaHorariaPorCCT(data.cct_primary)))
+        }
+      } catch (e) {
+        console.error('No se pudo obtener el inicio del ciclo:', e)
+      }
       const { data: pa } = await supabase
         .from('programa_analitico')
         .select('pda_ponderacion')
@@ -509,7 +517,7 @@ function NuevaPlaneacionInner() {
         .map((p: any) => (typeof p === 'string' ? p : p?.pda))
         .filter(Boolean)
 
-      const res = await fetch('/api/sugerir-campos', {
+      const res = await fetchConSesion('/api/sugerir-campos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -629,8 +637,10 @@ function NuevaPlaneacionInner() {
       marcarInvalido('fecha', refFechaSection)
       return
     }
-    if (!MODO_PRUEBA_FECHAS_PASADAS && form.fecha_inicio < hoyISO) {
-      setMensajeErrorFecha('La fecha de inicio no puede ser anterior a hoy.')
+    if (form.fecha_inicio < fechaMinima) {
+      setMensajeErrorFecha(cicloInicio
+        ? 'Solo puedes planear desde el inicio de tu ciclo de membresía actual.'
+        : 'La fecha de inicio no puede ser anterior a hoy.')
       marcarInvalido('fecha', refFechaSection)
       return
     }
@@ -1435,11 +1445,11 @@ function NuevaPlaneacionInner() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
                     <div>
                       <label style={s.label}>Fecha de inicio *</label>
-                      <input type="date" min={MODO_PRUEBA_FECHAS_PASADAS ? FECHA_MINIMA_PRUEBA : hoyISO} value={form.fecha_inicio} onChange={e => update('fecha_inicio', e.target.value)} style={s.input} />
+                      <input type="date" min={fechaMinima} value={form.fecha_inicio} onChange={e => update('fecha_inicio', e.target.value)} style={s.input} />
                     </div>
                     <div>
                       <label style={s.label}>Fecha de término *</label>
-                      <input type="date" min={form.fecha_inicio || (MODO_PRUEBA_FECHAS_PASADAS ? FECHA_MINIMA_PRUEBA : hoyISO)} value={form.fecha_fin} onChange={e => update('fecha_fin', e.target.value)} style={s.input} />
+                      <input type="date" min={form.fecha_inicio || fechaMinima} value={form.fecha_fin} onChange={e => update('fecha_fin', e.target.value)} style={s.input} />
                     </div>
                   </div>
 

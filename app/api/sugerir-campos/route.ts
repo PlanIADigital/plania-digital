@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as supabase } from '@/lib/supabase'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 
 const client = new Anthropic()
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verificarUsuario(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
     const {
       nombre_proyecto,
       situacion_problema,

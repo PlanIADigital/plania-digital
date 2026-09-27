@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import { verificarUsuario } from '@/lib/verificarUsuario'
+import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
 const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
@@ -734,6 +735,40 @@ export async function POST(request: NextRequest) {
 
     const { form, job_id } = await request.json()
     jobId = job_id
+
+    // [sep 2026, saneamiento Fase 0] Regla de negocio: solo se puede planear
+    // desde el INICIO del ciclo de membresía actual (v_estado_cuenta.ciclo_inicio),
+    // nunca antes. Se revisa ANTES de cualquier llamada a Anthropic. Si la
+    // consulta falla, se bloquea (500); si ciclo_inicio viene vacío, la fecha
+    // mínima es hoy — misma regla de respaldo que la pantalla. Las fechas se
+    // comparan como YYYY-MM-DD en la zona horaria del CCT (lib/fechaMexico.ts).
+    const zonaHoraria = zonaHorariaPorCCT(profile.cct_primary)
+    const { data: estadoCuenta, error: errorEstadoCuenta } = await supabaseAdmin
+      .from('v_estado_cuenta')
+      .select('ciclo_inicio')
+      .eq('auth_uid', profile.auth_uid)
+      .single()
+    if (errorEstadoCuenta || !estadoCuenta) {
+      const msg = 'No se pudo verificar tu ciclo de membresía. Intenta de nuevo en un momento.'
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        estado: 'error',
+        error_mensaje: msg,
+        fase_actual: 'No se pudo verificar tu ciclo de membresía.',
+      })
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
+    const fechaMinimaPlaneacion =
+      fechaLocalISO(estadoCuenta.ciclo_inicio, zonaHoraria) || fechaLocalISO(new Date(), zonaHoraria)
+    const fechaInicioPlaneacion = fechaLocalISO(form?.fecha_inicio, zonaHoraria)
+    if (!fechaInicioPlaneacion || !fechaMinimaPlaneacion || fechaInicioPlaneacion < fechaMinimaPlaneacion) {
+      const msg = 'Solo puedes planear desde el inicio de tu ciclo de membresía actual.'
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        estado: 'error',
+        error_mensaje: msg,
+        fase_actual: msg,
+      })
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {

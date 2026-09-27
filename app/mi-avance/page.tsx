@@ -8,7 +8,7 @@ import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
-const MODO_PRUEBA_CICLO_ACTIVO = true
+const MODO_PRUEBA_CICLO_ACTIVO = false
 
 const CAMPOS_CONFIG = [
   { nombre: 'Lenguajes',                          color: '#3D3A8C', bg: '#EEEDF8', total: 86  },

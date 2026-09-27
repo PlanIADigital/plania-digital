@@ -12,11 +12,12 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get('estado')
-    const ciclo = searchParams.get('ciclo') || '2025-2026'
+    const ciclo = searchParams.get('ciclo') || CICLO_ESCOLAR_ACTIVO
     if (!estado) {
       return NextResponse.json({ error: 'Falta estado' }, { status: 400 })
     }
