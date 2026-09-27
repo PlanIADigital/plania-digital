@@ -190,6 +190,21 @@ alerta en el primer 15% del ciclo. Texto: "va/van por debajo de lo esperado para
 **Verificado:** Mi Avance de la cuenta de prueba sin alerta de campos ni botones en septiembre; se conserva el
 aviso de PDA prioritarios pendientes.
 
+### Parte 8 — PDA recomendado por MÍA · 27 sep 2026 · rama `saneamiento/fase1-pda-recomendado`
+
+**Propuesta del fundador:** cerrar el ciclo "MÍA detecta → avisa → un clic → la planeación nace con ese PDA".
+Antes, "Equilibrar con MÍA" solo preseleccionaba el CAMPO y la alerta de prioritarios no tenía botón.
+
+**Construido:**
+- Mi Avance: enlace "Planear el primero con MÍA →" en la alerta de PDA prioritarios pendientes (lleva al primer
+  pendiente) y botón "✦ Planear este PDA con MÍA →" bajo el recuadro de la cuadrícula al elegir un PDA prioritario.
+- Nueva Planeación: `?pda_sugerido=<id>` → busca el PDA en el catálogo, preselecciona campo, contenido y PDA
+  (una sola vez y solo cuando ya cargó el catálogo, porque al cargar se borra la selección), etiqueta
+  "✦ Recomendado por MÍA" y aviso "MÍA preseleccionó un PDA prioritario de tu grupo". La educadora puede quitarlo.
+
+**Verificado:** ambos caminos (alerta → "Adapta sus movimientos…"; cuadrícula LEN-30 → "Manifiesta oralmente…")
+abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -202,10 +217,6 @@ aviso de PDA prioritarios pendientes.
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- PDA recomendado por MÍA (propuesta del fundador): hoy "Equilibrar con MÍA" solo preselecciona el CAMPO
-  (`?campo_sugerido=`) y la alerta de prioritarios no tiene botón. Construir: botón en la alerta de prioritarios y
-  en la cuadrícula de PDA de Mi Avance que abra Nueva Planeación con ese PDA ya elegido y marcado
-  "✦ Recomendado por MÍA" (la educadora decide si lo deja).
 - 5 planeaciones de la cuenta de prueba tienen 2 PDA en el texto pero sin `pda_2_id` (anteriores a esas
   columnas): revisar si alguna educadora real está en ese caso antes de decidir si se recupera el segundo PDA.
 - Confirmar si el directivo en prueba (`trial`) tiene acceso al panel (hoy sí: active/trial/founder).

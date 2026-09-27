@@ -229,7 +229,7 @@ export default function MiAvancePage() {
   const [catalogoPDA, setCatalogoPDA] = useState<PdaCatalogoConTexto[]>([])
   const [cargando, setCargando] = useState(true)
   const [tabActivo, setTabActivo] = useState<'cobertura' | 'ejes' | 'mapa' | 'nee'>('cobertura')
-  const [pdaSeleccionado, setPdaSeleccionado] = useState<{ codigo: string; veces: number; pda: string; origenes: OrigenPrioritario[] } | null>(null)
+  const [pdaSeleccionado, setPdaSeleccionado] = useState<{ id: string; codigo: string; veces: number; pda: string; origenes: OrigenPrioritario[] } | null>(null)
   const [inicioClasesCiclo, setInicioClasesCiclo] = useState<string | null>(null)
   const [finClasesCiclo, setFinClasesCiclo] = useState<string | null>(null)
   const [apoyosConfirmados, setApoyosConfirmados] = useState<Array<{ codigo: string; apoyos: string; apoyos_origen: string | null }>>([])
@@ -322,6 +322,11 @@ export default function MiAvancePage() {
     if (!catalogoPorCampoYPosicion[p.campo]) catalogoPorCampoYPosicion[p.campo] = {}
     catalogoPorCampoYPosicion[p.campo][p.posicion_campo] = p.pda
   })
+  const idPorCampoYPosicion: Record<string, Record<number, string>> = {}
+  catalogoPDA.forEach(p => {
+    if (!idPorCampoYPosicion[p.campo]) idPorCampoYPosicion[p.campo] = {}
+    idPorCampoYPosicion[p.campo][p.posicion_campo] = p.id
+  })
 
   const vecesPorCampoYPosicion: Record<string, Record<number, number>> = {}
   avance.pdas.forEach(p => {
@@ -350,7 +355,7 @@ export default function MiAvancePage() {
     const camposBajos = umbralCampoHoy === null ? [] : pdaUnicosPorCampo.filter(c => c.porcentaje < umbralCampoHoy)
     if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> {camposBajos.length === 1 ? 'va' : 'van'} por debajo de lo esperado para esta etapa del ciclo.</> })
     if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
-    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.</> })
+    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.{prioritarios.pendientes[0]?.id && <> <span onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${prioritarios.pendientes[0].id}`)} style={{ color: '#3D3A8C', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>Planear el primero con MÍA →</span></>}</> })
     const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
     if (campoDestacado) alertas.push({ tipo: 'success', texto: <><strong>¡Excelente!</strong> Llevas {campoDestacado.porcentaje}% en <em>{campoCorto(campoDestacado.nombre)}</em>.</> })
     if (alertas.length === 0 && totalPlanes > 0) alertas.push({ tipo: 'info', texto: <>Tu avance está equilibrado. MÍA estará aquí cuando la necesites.</> })
@@ -502,6 +507,11 @@ export default function MiAvancePage() {
                     )}
                   </div>
 
+                  {pdaSeleccionado && pdaSeleccionado.id && pdaSeleccionado.origenes.length > 0 && (
+                    <div style={{ marginTop: -8, marginBottom: 16 }}>
+                      <button onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${pdaSeleccionado.id}`)} style={{ fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', border: '1px solid #3D3A8C', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontWeight: 700 }}>✦ Planear este PDA con MÍA →</button>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' as const, marginBottom: 18, fontSize: 11, color: '#888' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', display: 'inline-block' }} />Sin trabajar</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#8884' , display: 'inline-block' }} />1 vez</span>
@@ -536,7 +546,7 @@ export default function MiAvancePage() {
                             return (
                               <div
                                 key={n}
-                                onClick={() => setPdaSeleccionado({ codigo, veces, pda: pdaTexto, origenes })}
+                                onClick={() => setPdaSeleccionado({ id: (idPorCampoYPosicion[cf.nombre] || {})[n] || '', codigo, veces, pda: pdaTexto, origenes })}
                                 style={{
                                   aspectRatio: '1', borderRadius: 4, background: bg,
                                   border: origenes.length > 0 ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',

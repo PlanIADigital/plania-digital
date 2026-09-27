@@ -130,7 +130,10 @@ function NuevaPlaneacionInner() {
   const [tiempoMinimoPaso1Cumplido, setTiempoMinimoPaso1Cumplido] = useState(false)
 
   const [ejeSugeridoParam, setEjeSugeridoParam] = useState('')
-  const [avisoAvance, setAvisoAvance] = useState<{ campo?: string; eje?: string } | null>(null)
+  const [avisoAvance, setAvisoAvance] = useState<{ campo?: string; eje?: string; pda?: string } | null>(null)
+  // [Saneado 27 sep 2026] PDA recomendado por MÍA desde Mi Avance (?pda_sugerido=<id>)
+  const [pdaSugerido, setPdaSugerido] = useState<{ id: string; campo: string; contenido: string; grado: string; pda: string } | null>(null)
+  const pdaSugeridoAplicado = useRef(false)
   const [avisoDescartado, setAvisoDescartado] = useState(false)
 
   const [diasHabilesReales, setDiasHabilesReales] = useState<number | null>(null)
@@ -286,6 +289,16 @@ function NuevaPlaneacionInner() {
     if (campoValido) setPrincipalCampo(campoValido)
     if (ejeSugerido) setEjeSugeridoParam(ejeSugerido)
     if (campoValido || ejeSugerido) setAvisoAvance({ campo: campoValido, eje: ejeSugerido || undefined })
+    const pdaSugeridoId = searchParams.get('pda_sugerido')
+    if (pdaSugeridoId && /^[0-9a-f-]{36}$/i.test(pdaSugeridoId)) {
+      supabase.from('pda_catalog').select('id, campo, contenido, grado, pda').eq('id', pdaSugeridoId).maybeSingle()
+        .then(({ data }: any) => {
+          if (!data || !CAMPOS.includes(data.campo)) return
+          setPdaSugerido(data)
+          setPrincipalCampo(data.campo)
+          setAvisoAvance(prev => ({ ...(prev || {}), campo: data.campo, pda: data.pda }))
+        })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -358,6 +371,18 @@ function NuevaPlaneacionInner() {
     }
     loadContenidos()
   }, [principalCampo])
+
+  // [Saneado 27 sep 2026] Se aplica UNA sola vez y solo cuando ya cargaron los
+  // contenidos del campo sugerido (loadContenidos borra la selección al cargar).
+  useEffect(() => {
+    if (!pdaSugerido || pdaSugeridoAplicado.current) return
+    if (principalCampo !== pdaSugerido.campo || !gradoGrupo) return
+    if (!contenidosDisponibles.includes(pdaSugerido.contenido)) return
+    pdaSugeridoAplicado.current = true
+    setContenidosElegidos([{ contenido: pdaSugerido.contenido, pdasSeleccionados: [{ id: pdaSugerido.id, pda: pdaSugerido.pda, grado: pdaSugerido.grado }] }])
+    cargarPdasDeContenido(pdaSugerido.contenido)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdaSugerido, principalCampo, contenidosDisponibles, gradoGrupo])
 
   async function cargarPdasDeContenido(contenido: string) {
     if (pdasPorContenido[contenido]) return
@@ -1024,6 +1049,7 @@ function NuevaPlaneacionInner() {
                     <strong>Sugerido por Mi Avance:</strong>{' '}
                     {avisoAvance.campo && <>este proyecto ya preseleccionó el campo formativo <strong>{avisoAvance.campo}</strong>{avisoAvance.eje ? ' — ' : '.'}</>}
                     {avisoAvance.eje && <>intenta enfocarlo también en el eje <strong>{avisoAvance.eje}</strong>, si la situación problema lo permite de forma natural.</>}
+                    {avisoAvance.pda && <> MÍA preseleccionó un PDA prioritario de tu grupo: <strong>{avisoAvance.pda.length > 90 ? avisoAvance.pda.slice(0, 90) + '…' : avisoAvance.pda}</strong>.</>}
                     {' '}Puedes cambiar cualquiera de los dos libremente.
                   </p>
                 </div>
@@ -1197,7 +1223,10 @@ function NuevaPlaneacionInner() {
                                                         ⭐ Prioritario para tu grupo
                                                       </span>
                                                     )}
-                                                    {getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
+                                                    {pdaSugerido?.id === pda.id && (
+  <span style={{ display: 'inline-block', alignSelf: 'flex-start', width: 'fit-content', marginTop: 6, marginRight: 6, fontSize: 11, fontWeight: 700, color: '#3D3A8C', background: '#EEEDF8', border: '1px solid #3D3A8C', borderRadius: 20, padding: '2px 10px' }}>✦ Recomendado por MÍA</span>
+)}
+{getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
                                                       <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', border: '1px solid #7C3AED', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                                         🧒 Necesidad individual detectada
                                                       </span>
@@ -1241,7 +1270,10 @@ function NuevaPlaneacionInner() {
                                                                 ⭐ Prioritario para tu grupo
                                                               </span>
                                                             )}
-                                                            {getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
+                                                            {pdaSugerido?.id === pda.id && (
+  <span style={{ display: 'inline-block', alignSelf: 'flex-start', width: 'fit-content', marginTop: 6, marginRight: 6, fontSize: 11, fontWeight: 700, color: '#3D3A8C', background: '#EEEDF8', border: '1px solid #3D3A8C', borderRadius: 20, padding: '2px 10px' }}>✦ Recomendado por MÍA</span>
+)}
+{getBadgesCapa2(profile?.evaluacion_individual, pda.pda) && (
                                                               <span style={{ fontSize: 10, fontWeight: 700, color: '#7C3AED', background: '#EDE9FE', border: '1px solid #7C3AED', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                                                 🧒 Necesidad individual detectada
                                                               </span>
