@@ -115,6 +115,23 @@ ni nombres.
 **Verificado:** planeación de prueba de 2 días con ajuste "AL-02.-" ligado a sus barreras reales, sin
 iniciales, y rúbrica con AL-01..AL-12 y AL-13..AL-17 "(baja)". Costo real: $0.16 USD.
 
+### Parte 3 — Sugerencias de MÍA con acciones · 27 sep 2026 · rama `saneamiento/fase1-apoyos-mia`
+
+**Diagnóstico:** el texto que MÍA proponía como apoyos era la observación del alumno ("Alumna que requiere…"),
+no acciones, y con género.
+
+**Construido (autorizado por el fundador: el prompt solo se AMPLÍA, nada existente se reescribe):**
+- `analizar-evaluacion-individual`: +785 caracteres al prompt — regla de `apoyos_sugeridos` (solo si hay barreras;
+  2-3 acciones concretas en infinitivo; lenguaje neutro sin "alumna/alumno/niña/niño/él/ella"; sin diagnósticos
+  ni nombres; apoyarse en fortalezas; máx. 400 caracteres) y el campo en el JSON. Presupuesto de tokens sin cambio
+  (peor caso ~26,000 de 48,000). La protección de nombres de la Fase 0 cubre el campo nuevo automáticamente.
+- `GrupoAlumnosApoyos`: el texto editable usa `apoyos_sugeridos` (evaluaciones anteriores siguen usando la
+  observación) y muestra la observación de MÍA en gris como contexto. Si el código propuesto ya tiene apoyos,
+  no se sobrescribe solo: la educadora elige.
+
+**Verificado:** evaluación de prueba con 3 alumnos ficticios → 2 sugerencias con acciones neutras ancladas en
+fortalezas, sin nombres; confirmadas a AL-02 (reemplazó el texto anterior) y AL-03.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -127,9 +144,8 @@ iniciales, y rúbrica con AL-01..AL-12 y AL-13..AL-17 "(baja)". Costo real: $0.1
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Sugerencias de MÍA: hoy el texto propuesto es la observación del alumno ("Alumna que…"), no acciones.
-  Pedir al análisis de la evaluación individual apoyos concretos y en lenguaje neutro (toca un prompt:
-  sesión dedicada).
+- Etiquetas de barreras (`nee`) de la evaluación individual: a veces traen términos clínicos (ej. "Dislalia"),
+  contrario al enfoque BAP. Vienen de la parte original del prompt (zona protegida): decidir con el fundador.
 - Mi Avance (pestaña Diversidad) y panel del directivo muestran las NEE detectadas por la IA; deben mostrar
   los apoyos CONFIRMADOS por la educadora (`alumnos_codigo`).
 - Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
