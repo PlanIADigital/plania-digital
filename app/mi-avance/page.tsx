@@ -443,7 +443,7 @@ export default function MiAvancePage() {
                       return <div key={eje} style={{ padding: '10px 12px', borderRadius: 10, background: sinUsar ? '#FFF7ED' : '#F8F8FE', border: `1px solid ${sinUsar ? '#FDE68A' : '#EEEDF8'}` }}>
                         <p style={{ fontSize: 11, color: sinUsar ? '#92400E' : '#888', margin: '0 0 6px', lineHeight: 1.4 }}>{eje.length > 42 ? eje.substring(0, 42) + '…' : eje}</p>
                         <div style={{ background: sinUsar ? '#FDE68A' : '#E8E8F8', borderRadius: 99, height: 4 }}><div style={{ background: sinUsar ? '#F59E0B' : '#3D3A8C', height: '100%', borderRadius: 99, width: `${Math.round((count / maxEje) * 100)}%` }} /></div>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? '#92400E' : '#3D3A8C', margin: '4px 0 0' }}>{count === 0 ? '⚠️ Sin abordar' : `${count} planeación${count > 1 ? 'es' : ''}`}</p>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? '#92400E' : '#3D3A8C', margin: '4px 0 0' }}>{count === 0 ? '⚠️ Sin abordar' : `${count} ${count > 1 ? 'planeaciones' : 'planeación'}`}</p>
                       </div>
                     })}
                   </div>
