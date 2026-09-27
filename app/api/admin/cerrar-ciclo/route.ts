@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
     .update({
       diagnostico_escolar: null,
       pdas_prioritarios: null,
+      diagnostico_texto: null,
+      diagnostico_fecha: null,
       evaluacion_individual: null,
       pdas_jardin: null,
       observaciones_directivo: null,

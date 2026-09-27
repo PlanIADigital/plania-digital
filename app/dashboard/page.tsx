@@ -1,9 +1,30 @@
 'use client'
+// ============================================================
+//  PlanIA Digital — app/dashboard/page.tsx
+//
+//  [Saneado 26 sep 2026 — Fase 1, Mi Avance]
+//  Contrato de datos:
+//    - Planeaciones: plannings del ciclo activo, filtradas con
+//      clasificarPlaneaciones() (sin descartadas, starts_on dentro de
+//      inicio_clases/fin_clases del calendario estatal). La lista y su
+//      contador muestran las MISMAS planeaciones que cuentan en Mi
+//      Avance; el historial completo vive en Mis Planeaciones.
+//    - KPIs: calcularAvance() de lib/cobertura.ts — PDA distintos por
+//      pda_id (principal, pda_2, transversales); campos a partir de
+//      esos PDA (incluye transversales); ejes de las planeaciones
+//      contadas. Ya NO se lee pda_coverage (contaba textos, no PDA).
+// ============================================================
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
-import { calcularEjesCubiertos } from '@/lib/cobertura'
+import {
+  SELECT_PLANNINGS_AVANCE,
+  calcularAvance,
+  clasificarPlaneaciones,
+  type PdaCatalogoAvance,
+  type PeriodoAvance,
+} from '@/lib/cobertura'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
@@ -27,44 +48,48 @@ export default function DashboardPage() {
 
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, situacion_problema, starts_on, ends_on, pda_campo, eje_principal, eje_secundario, status, created_at')
+        .select(`${SELECT_PLANNINGS_AVANCE}, project_name, situacion_problema, ends_on, pda_campo, created_at`)
         .eq('user_id', data.id)
         .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
         .order('created_at', { ascending: false })
-      setPlaneaciones(plans || [])
 
-      // ============================================================
-      // [jul 2026, DIAGNÓSTICO CORREGIDO — COBERTURA DE PDA]
-      // Ver lib/cobertura.ts para el historial completo de por qué el
-      // conteo de PDAs y ahora el de ejes se movieron a funciones
-      // compartidas — la causa raíz en ambos casos fue código
-      // duplicado con criterios ligeramente distintos entre esta
-      // pantalla y app/mi-avance/page.tsx.
-      // ============================================================
-      const { data: cov } = await supabase
-        .from('pda_coverage')
-        .select('pda_literal')
-        .eq('user_id', data.id)
-        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
+      const { data: catalogo } = await supabase
+        .from('pda_catalog')
+        .select('id, campo, posicion_campo')
 
-      const campos = new Set((plans || []).map((p: any) => p.pda_campo).filter(Boolean))
-      const ejesCubiertos = calcularEjesCubiertos(plans || [])
-      const pdasUnicos = new Set((cov || []).map((c: any) => c.pda_literal).filter(Boolean))
+      let inicio: string | null = null
+      let fin: string | null = null
+      try {
+        const estadoCodigo = (data.cct_primary || '').slice(0, 2)
+        const res = await fetch(`/api/calendario/fin-ciclo?estado=${estadoCodigo}`)
+        const fechas = await res.json()
+        inicio = fechas.inicioClases || null
+        fin = fechas.finClases || null
+      } catch {
+        inicio = null
+        fin = null
+      }
 
-      setCobertura({ campos: campos.size, ejes: ejesCubiertos.size, pdas: pdasUnicos.size, totalCampos: 4, totalEjes: 7, totalPdas: 371 })
+      const periodo: PeriodoAvance = { ciclo: CICLO_ESCOLAR_ACTIVO, inicio, fin }
+      const todas: any[] = plans || []
+      const contadas = clasificarPlaneaciones(todas, periodo).contadas
+      const avance = calcularAvance(todas, (catalogo as PdaCatalogoAvance[]) || [], periodo)
+      const camposConPda = Object.keys(avance.porCampo).length
+
+      setPlaneaciones(contadas)
+      setCobertura({
+        campos: camposConPda,
+        ejes: avance.ejes.cubiertos.length,
+        pdas: avance.pdaDistintos,
+        totalCampos: 4,
+        totalEjes: 7,
+        totalPdas: 371,
+      })
 
       setLoading(false)
     }
     loadUser()
   }, [])
-
-  const turnoLabel: Record<string, string> = { matutino: 'Matutino', vespertino: 'Vespertino', discontinuo: 'Discontinuo' }
-  const rolLabel: Record<string, string> = { educadora: 'Educadora', educador: 'Educador', maestra_musica: 'Maestra de música', maestro_musica: 'Maestro de música', directivo: 'Directivo' }
-
-  function nombreCorto(nombre: string | null): string {
-    if (!nombre) return ''
-    return nombre.replace(/^Jardín de Niños Indígena\s*/i, '').replace(/^Jardín de Niños\s*/i, '').replace(/^Jardin de Niños\s*/i, '').replace(/^Centro de Educación Preescolar\s*/i, '').trim()
-  }
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
