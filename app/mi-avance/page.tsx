@@ -100,6 +100,22 @@ const MESES = ['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul'
 
 const UMBRAL_EJE_BAJO = 0.2
 
+// [Saneado 27 sep 2026] Alerta de cobertura por campo según la ETAPA del ciclo.
+// META_CAMPO_FIN_CICLO es la referencia al cierre del ciclo (% de PDA de cada
+// campo); a la fecha se espera la parte proporcional al ciclo transcurrido.
+// Sin alerta mientras haya transcurrido menos de AVANCE_CICLO_MINIMO_PARA_ALERTA.
+const META_CAMPO_FIN_CICLO = 20
+const AVANCE_CICLO_MINIMO_PARA_ALERTA = 0.15
+
+function fraccionCicloTranscurrida(inicio: string | null, fin: string | null, hoy: string): number | null {
+  if (!inicio || !fin) return null
+  const a = Date.parse(inicio + 'T12:00:00')
+  const b = Date.parse(fin + 'T12:00:00')
+  const h = Date.parse(hoy + 'T12:00:00')
+  if (!(b > a)) return null
+  return Math.min(1, Math.max(0, (h - a) / (b - a)))
+}
+
 function hoyLocalISO(): string {
   const d = new Date()
   const y = d.getFullYear()
@@ -323,12 +339,16 @@ export default function MiAvancePage() {
   const mesActual = mesActualCiclo()
 
   const hoyISO = hoyLocalISO()
+  const fraccionCiclo = fraccionCicloTranscurrida(inicioClasesCiclo, finClasesCiclo, hoyISO)
+  const umbralCampoHoy = fraccionCiclo === null || fraccionCiclo < AVANCE_CICLO_MINIMO_PARA_ALERTA
+    ? null
+    : Math.max(1, Math.round(META_CAMPO_FIN_CICLO * fraccionCiclo))
   const cicloEscolarConcluido = !MODO_PRUEBA_CICLO_ACTIVO && !!finClasesCiclo && hoyISO > finClasesCiclo
 
   const alertas: Array<{ tipo: 'warn' | 'info' | 'success'; texto: React.ReactNode }> = []
   if (!cicloEscolarConcluido) {
-    const camposBajos = pdaUnicosPorCampo.filter(c => c.porcentaje < 20)
-    if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> tienen menos del 20% de cobertura.</> })
+    const camposBajos = umbralCampoHoy === null ? [] : pdaUnicosPorCampo.filter(c => c.porcentaje < umbralCampoHoy)
+    if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> {camposBajos.length === 1 ? 'va' : 'van'} por debajo de lo esperado para esta etapa del ciclo.</> })
     if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
     if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.</> })
     const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
@@ -438,7 +458,7 @@ export default function MiAvancePage() {
                     <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: colorTab, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                       <span style={{ fontSize: 11, color: '#888' }}>{cf.porcentaje}% del ciclo</span>
-                      {cf.porcentaje < 20 && <button onClick={() => router.push(`/planeacion/nueva?campo_sugerido=${encodeURIComponent(cf.nombre)}`)} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
+                      {umbralCampoHoy !== null && cf.porcentaje < umbralCampoHoy && <button onClick={() => router.push(`/planeacion/nueva?campo_sugerido=${encodeURIComponent(cf.nombre)}`)} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
                     </div>
                   </div>
                   )
