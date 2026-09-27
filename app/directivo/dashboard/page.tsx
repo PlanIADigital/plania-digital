@@ -67,7 +67,7 @@ interface DocenteResumen {
     planeacionesActivas: number
     ejesCubiertos: number
     prioritarios: { hayDiagnostico: boolean; total: number; atendidos: number }
-    alumnosConNee: number
+    alumnosConApoyos: number
   }
 }
 
@@ -208,9 +208,9 @@ export default function DirectivoDashboardPage() {
                                   ⭐ {r.prioritarios.atendidos}/{r.prioritarios.total} prioritarios
                                 </span>
                               )}
-                              {r.alumnosConNee > 0 && (
+                              {r.alumnosConApoyos > 0 && (
                                 <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#FEF3C7', color: '#92400E', fontWeight: 600 }}>
-                                  ♿ {r.alumnosConNee} NEE
+                                  ♿ {r.alumnosConApoyos} con apoyos
                                 </span>
                               )}
                             </div>

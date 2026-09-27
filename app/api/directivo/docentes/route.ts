@@ -15,7 +15,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarDirectivo } from '@/lib/verificarDirectivo'
-import { cargarContextoAvance, calcularAvanceDocente, type ContextoAvance } from '@/lib/avanceServidor'
+import { cargarContextoAvance, calcularAvanceDocente, obtenerApoyosConfirmados, type ContextoAvance } from '@/lib/avanceServidor'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const FORMATO_CCT = /^[0-9A-Z]{10}$/
@@ -59,8 +59,7 @@ export async function GET(request: NextRequest) {
       }
       const r = await calcularAvanceDocente(supabaseAdmin, d, contextos[estado])
 
-      const alumnos = Array.isArray(d.evaluacion_individual?.alumnos) ? d.evaluacion_individual.alumnos : []
-      const alumnosConNee = alumnos.filter((a: any) => Array.isArray(a?.nee) && a.nee.length > 0).length
+      const alumnosConApoyos = (await obtenerApoyosConfirmados(supabaseAdmin, d.id, CICLO_ESCOLAR_ACTIVO)).length
 
       resultado.push({
         id: d.id,
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest) {
             total: r.prioritarios.total,
             atendidos: r.prioritarios.atendidos,
           },
-          alumnosConNee,
+          alumnosConApoyos,
         },
       })
     }

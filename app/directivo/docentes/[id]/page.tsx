@@ -75,7 +75,7 @@ type DetalleDocente = {
   avance: ResultadoAvance
   prioritarios: ResultadoPrioritarios
   planeaciones: PlaneacionResumen[]
-  alumnosConNee: Array<{ referencia: string | null; nee: string[]; observaciones: string | null }>
+  alumnosConApoyos: Array<{ codigo: string; apoyos: string; origen: 'mia' | 'educadora' | null }>
 }
 
 export default function DocenteDetallePage() {
@@ -137,7 +137,7 @@ export default function DocenteDetallePage() {
     </SidebarDirectivo>
   )
 
-  const { docente, avance, prioritarios, planeaciones, alumnosConNee, ciclo } = detalle
+  const { docente, avance, prioritarios, planeaciones, alumnosConApoyos, ciclo } = detalle
 
   const pdaUnicosPorCampo = CAMPOS_CONFIG.map(cf => {
     const trabajados = avance.porCampo[cf.nombre]?.distintos || 0
@@ -201,8 +201,8 @@ export default function DocenteDetallePage() {
               <p style={{ fontSize: 22, fontWeight: 700, color: '#3D3A8C', margin: 0 }}>{planeaciones.length}</p>
             </div>
             <div style={{ background: '#F8F8FE', borderRadius: 8, padding: '12px 14px' }}>
-              <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px' }}>Alumnos con NEE</p>
-              <p style={{ fontSize: 22, fontWeight: 700, color: alumnosConNee.length > 0 ? '#92400E' : '#3D3A8C', margin: 0 }}>{alumnosConNee.length}</p>
+              <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px' }}>Alumnos con apoyos</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: alumnosConApoyos.length > 0 ? '#0F6E56' : '#3D3A8C', margin: 0 }}>{alumnosConApoyos.length}</p>
             </div>
           </div>
         </div>
@@ -211,7 +211,7 @@ export default function DocenteDetallePage() {
         <div style={{ background: 'white', borderRadius: 14, boxShadow: '0 2px 10px rgba(0,0,0,0.07)', overflow: 'hidden', marginBottom: 20 }}>
           <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
             {(['campos','ejes','nee'] as const).map((key, idx) => {
-              const labels = ['📊 Campos','🔗 Ejes','♿ NEE']
+              const labels = ['📊 Campos','🔗 Ejes','♿ Apoyos']
               return <button key={key} onClick={() => setTabActivo(key)}
                 style={{ flex: 1, padding: '12px 6px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tabActivo === key ? 700 : 400, background: tabActivo === key ? '#EEEDF8' : 'white', color: tabActivo === key ? '#3D3A8C' : '#888', borderBottom: tabActivo === key ? '2px solid #3D3A8C' : '2px solid transparent' }}>
                 {labels[idx]}
@@ -255,21 +255,12 @@ export default function DocenteDetallePage() {
             )}
             {tabActivo === 'nee' && (
               <div>
-                {alumnosConNee.length === 0 ? (
-                  <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>Sin NEE registradas en el diagnóstico individual.</p>
-                ) : alumnosConNee.map((alumno, i) => (
+                {alumnosConApoyos.length === 0 ? (
+                  <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '20px 0' }}>La docente aún no ha confirmado apoyos para alumnos de su grupo este ciclo.</p>
+                ) : alumnosConApoyos.map((a, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>
-                      {String(alumno.referencia || i+1).replace('Alumno ','')}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                        {alumno.nee?.map((n: string, j: number) => (
-                          <span key={j} style={{ fontSize: 10, background: '#FEF3C7', color: '#92400E', padding: '1px 7px', borderRadius: 10, fontWeight: 600 }}>{n}</span>
-                        ))}
-                      </div>
-                      <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.5 }}>{alumno.observaciones}</p>
-                    </div>
+                    <div style={{ minWidth: 48, height: 28, borderRadius: 14, background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>{a.codigo}</div>
+                    <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.5 }}>{a.apoyos}</p>
                   </div>
                 ))}
               </div>

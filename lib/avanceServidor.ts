@@ -124,3 +124,28 @@ export async function calcularAvanceDocente(
     })),
   }
 }
+
+// [Saneado 27 sep 2026 — Fase 1, NEE] Apoyos CONFIRMADOS por la educadora
+// (alumnos activos del ciclo en alumnos_codigo). Es lo mismo que llega a las
+// planeaciones como ajustes razonables. Solo código AL-XX y texto de apoyos
+// (lenguaje neutro, sin nombres ni diagnósticos).
+export type ApoyoConfirmado = { codigo: string; apoyos: string; origen: 'mia' | 'educadora' | null }
+
+export async function obtenerApoyosConfirmados(
+  supabaseAdmin: SupabaseClient,
+  userId: string,
+  ciclo: string
+): Promise<ApoyoConfirmado[]> {
+  const { data } = await supabaseAdmin
+    .from('alumnos_codigo')
+    .select('codigo, apoyos, apoyos_origen')
+    .eq('user_id', userId)
+    .eq('ciclo_escolar', ciclo)
+    .eq('activo', true)
+    .eq('requiere_apoyos', true)
+  const numero = (c: string) => { const m = String(c || '').match(/^AL-(\d+)$/); return m ? parseInt(m[1], 10) : 0 }
+  return (data || [])
+    .filter((a: any) => typeof a.apoyos === 'string' && a.apoyos.trim())
+    .sort((a: any, b: any) => numero(a.codigo) - numero(b.codigo))
+    .map((a: any) => ({ codigo: a.codigo, apoyos: a.apoyos.trim(), origen: a.apoyos_origen ?? null }))
+}

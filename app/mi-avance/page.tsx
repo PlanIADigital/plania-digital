@@ -34,6 +34,8 @@ import {
   type PeriodoAvance,
 } from '@/lib/cobertura'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { fetchConSesion } from '@/lib/fetchConSesion'
+import { sugerenciasPendientes } from '@/components/GrupoAlumnosApoyos'
 
 const supabase = createClient()
 
@@ -214,6 +216,7 @@ export default function MiAvancePage() {
   const [pdaSeleccionado, setPdaSeleccionado] = useState<{ codigo: string; veces: number; pda: string; origenes: OrigenPrioritario[] } | null>(null)
   const [inicioClasesCiclo, setInicioClasesCiclo] = useState<string | null>(null)
   const [finClasesCiclo, setFinClasesCiclo] = useState<string | null>(null)
+  const [apoyosConfirmados, setApoyosConfirmados] = useState<Array<{ codigo: string; apoyos: string; apoyos_origen: string | null }>>([])
 
   useEffect(() => {
     if (tabActivo !== 'mapa') setPdaSeleccionado(null)
@@ -249,6 +252,15 @@ export default function MiAvancePage() {
       } catch {
         setInicioClasesCiclo(null)
         setFinClasesCiclo(null)
+      }
+
+      // [Saneado 27 sep 2026] Apoyos CONFIRMADOS (alumnos_codigo), no la detección de la IA.
+      try {
+        const resGrupo = await fetchConSesion('/api/alumnos-codigo')
+        const grupo = await resGrupo.json()
+        if (grupo?.ok) setApoyosConfirmados((grupo.alumnos || []).filter((a: any) => a.requiere_apoyos && a.apoyos))
+      } catch {
+        setApoyosConfirmados([])
       }
 
       setCargando(false)
@@ -307,11 +319,7 @@ export default function MiAvancePage() {
     prioritarioPorCampoYPosicion[p.campo][p.posicion] = p.origenes
   })
 
-  const evaluacionIndividual = profile?.evaluacion_individual || {}
-  const alumnosRaw: any[] = Array.isArray(evaluacionIndividual?.alumnos)
-    ? evaluacionIndividual.alumnos
-    : Object.entries(evaluacionIndividual).map(([ref, v]: any) => ({ referencia: ref, ...v }))
-  const alumnosConNEE = alumnosRaw.filter((a: any) => a?.nee && a.nee.length > 0).slice(0, 6)
+  const sugerenciasPorRevisar = sugerenciasPendientes(profile?.evaluacion_individual)
   const mesActual = mesActualCiclo()
 
   const hoyISO = hoyLocalISO()
@@ -527,21 +535,25 @@ export default function MiAvancePage() {
                   })}
                 </div>}
                 {tabActivo === 'nee' && <div>
-                  {alumnosConNEE.length === 0 ? <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <p style={{ fontSize: 12, color: '#666', margin: '0 0 12px', lineHeight: 1.6 }}>
+                    Apoyos que confirmaste en Mi Grupo. Son los que llegan a tus planeaciones como ajustes razonables.
+                  </p>
+                  {sugerenciasPorRevisar > 0 && (
+                    <div onClick={() => router.push('/mi-grupo')} style={{ background: '#EEEDF8', borderLeft: '3px solid #3D3A8C', borderRadius: 8, padding: '8px 10px', marginBottom: 12, fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, cursor: 'pointer' }}>
+                      ✦ MÍA tiene <strong>{sugerenciasPorRevisar}</strong> sugerencia{sugerenciasPorRevisar !== 1 ? 's' : ''} de apoyos por revisar en Mi Grupo →
+                    </div>
+                  )}
+                  {apoyosConfirmados.length === 0 ? <div style={{ textAlign: 'center', padding: '24px 0' }}>
                     <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
-                    <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>No has registrado observaciones de diversidad en Mi Grupo todavía.</p>
+                    <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>Aún no has confirmado apoyos para alumnos de tu grupo este ciclo.</p>
                     <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
-                  </div> : <div>{alumnosConNEE.map((alumno: any, i: number) => (
+                  </div> : <div>{apoyosConfirmados.map((a, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent:'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>
-                        {String(alumno.referencia || i + 1).replace('Alumno ', '')}
-                      </div>
+                      <div style={{ minWidth: 48, height: 28, borderRadius: 14, background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>{a.codigo}</div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E', margin: '0 0 4px' }}>{alumno.nee?.join(' · ')}</p>
-                        <p style={{ fontSize: 11, color: '#888', margin: '0 0 2px' }}>{alumno.observaciones || ''}</p>
-                        <p style={{ fontSize: 11, color: '#888', margin: 0 }}>{alumno.pdas_sugeridos?.length || 0} PDAs adaptados</p>
+                        <p style={{ fontSize: 12, color: '#1A1A2E', margin: '0 0 4px', lineHeight: 1.5 }}>{a.apoyos}</p>
+                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>{a.apoyos_origen === 'mia' ? 'Sugerido por MÍA · confirmado por ti' : 'Registrado por ti'}</span>
                       </div>
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>Activo</span>
                     </div>
                   ))}</div>}
                 </div>}
