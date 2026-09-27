@@ -5,6 +5,7 @@ import SidebarWrapper from '@/components/SidebarWrapper'
 import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
+import GrupoAlumnosApoyos, { sugerenciasPendientes } from '@/components/GrupoAlumnosApoyos'
 
 const MENSAJES_ANALISIS = [
   '🔍 Leyendo las necesidades de tu grupo...',
@@ -319,68 +320,9 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
     setCargandoVersiones(false)
   }
 async function abrirModalAlumnos() {
+  // [Saneado 27 sep 2026] La carga del grupo, altas, bajas y apoyos viven
+  // en components/GrupoAlumnosApoyos.tsx (flujo MÍA sugiere, educadora confirma).
   setModalAlumnos(true)
-  setCargandoAlumnos(true)
-  setErrorAlumnos('')
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setCargandoAlumnos(false); return }
-    const res = await fetchConSesion('/api/alumnos-codigo')
-    const json = await res.json()
-    if (json.ok) setAlumnosCodigo(json.alumnos || [])
-    else setErrorAlumnos(json.error || 'No se pudo cargar la lista.')
-  } catch { setErrorAlumnos('Error de conexión.') }
-  setCargandoAlumnos(false)
-}
-
-async function bootstrapAlumnos() {
-  setCargandoAlumnos(true)
-  setErrorAlumnos('')
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const res = await fetchConSesion('/api/alumnos-codigo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'bootstrap', total: profile.total_alumnos || 24 })
-    })
-    const json = await res.json()
-    if (json.ok) setAlumnosCodigo(json.alumnos || [])
-    else setErrorAlumnos(json.error || 'No se pudo generar la lista inicial.')
-  } catch { setErrorAlumnos('Error de conexión.') }
-  setCargandoAlumnos(false)
-}
-
-async function agregarAlumno() {
-  setErrorAlumnos('')
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const res = await fetchConSesion('/api/alumnos-codigo', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'agregar' })
-    })
-    const json = await res.json()
-    if (json.ok) setAlumnosCodigo(prev => [...prev, json.alumno])
-    else setErrorAlumnos(json.error || 'No se pudo agregar el alumno.')
-  } catch { setErrorAlumnos('Error de conexión.') }
-}
-
-async function darDeBajaAlumno(id: string) {
-  setErrorAlumnos('')
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const res = await fetchConSesion('/api/alumnos-codigo/baja', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    })
-    const json = await res.json()
-    if (json.ok) setAlumnosCodigo(prev => prev.filter(a => a.id !== id))
-    else setErrorAlumnos(json.error || 'No se pudo dar de baja.')
-  } catch { setErrorAlumnos('Error de conexión.') }
 }
   // Vuelve a consultar las fechas/versiones activas después de guardar algo
   // nuevo, en vez de intentar adivinar la versión desde el frontend
@@ -1050,8 +992,16 @@ async function darDeBajaAlumno(id: string) {
                           onClick={abrirModalAlumnos}
                           style={{ fontSize: 11, color: '#444', margin: '3px 0 0', cursor: 'pointer' }}
                         >
-                          👥 Alumnos {(evaluacionIndividual as any).total_alumnos_detectados || 0} · {(evaluacionIndividual as any).alumnos_con_nee > 0 ? `⚠ ${(evaluacionIndividual as any).alumnos_con_nee} con NEE` : 'sin NEE detectadas'}
+                          👥 Alumnos {(evaluacionIndividual as any).total_alumnos_detectados || 0} · <span style={{ textDecoration: 'underline' }}>ver grupo y apoyos</span>
                         </p>
+                        {sugerenciasPendientes(evaluacionIndividual) > 0 && (
+                          <div
+                            onClick={abrirModalAlumnos}
+                            style={{ background: '#EEEDF8', borderLeft: '3px solid #3D3A8C', borderRadius: 8, padding: '8px 10px', margin: '8px 0 0', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, cursor: 'pointer' }}
+                          >
+                            ✦ MÍA detectó <strong>{sugerenciasPendientes(evaluacionIndividual)}</strong> niño{sugerenciasPendientes(evaluacionIndividual) !== 1 ? 's' : ''} que {sugerenciasPendientes(evaluacionIndividual) !== 1 ? 'podrían' : 'podría'} necesitar apoyos. Revisa y confirma para que lleguen a tus planeaciones →
+                          </div>
+                        )}
                         <div style={s.accionesFila}>
                           <button
                             onClick={() => setModalDetalle({
@@ -1132,49 +1082,14 @@ async function darDeBajaAlumno(id: string) {
             </DetalleModal>
           )}
           {modalAlumnos && (
-  <DetalleModal titulo="Alumnos de tu grupo (códigos)" onClose={() => setModalAlumnos(false)}>
-    {cargandoAlumnos ? (
-      <p style={{ fontSize: 12, color: '#888', margin: 0 }}>Cargando...</p>
-    ) : alumnosCodigo.length === 0 ? (
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 13, color: '#444', marginBottom: 12 }}>
-          Aún no tienes alumnos registrados. Genera la lista inicial con tu total actual ({profile.total_alumnos || 24} alumnos).
-        </p>
-        <button type="button" onClick={bootstrapAlumnos} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-  Generar códigos iniciales
-</button>
-      </div>
-    ) : (
-      <div>
-        {alumnosCodigo.map((a) => (
-          <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F0EFF8' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{a.codigo}</span>
-            <button type="button" onClick={() => darDeBajaAlumno(a.id)} style={{ background: 'none', border: 'none', color: '#991b1b', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-              Dar de baja
-            </button>
-          </div>
-        ))}
-
-        {Array.isArray(profile?.alumnos_inclusion) && profile.alumnos_inclusion.length > 0 && (
-          <>
-            {profile.alumnos_inclusion.map((a: any, i: number) => (
-              <div key={`inclusion-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F0EFF8' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{a.codigo}</span>
-                <span style={{ fontSize: 10, color: '#7C3AED', background: '#EDE9FE', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>Inclusión</span>
-              </div>
-            ))}
-            <p style={{ fontSize: 11, color: '#888', margin: '10px 0 0', lineHeight: 1.5 }}>
-              Los alumnos de inclusión se gestionan desde <strong>Diagnóstico Individual</strong> (Sección 3.2), no aquí.
-            </p>
-          </>
-        )}
-
-        
-      </div>
-    )}
-    {errorAlumnos && <div style={s.err}>{errorAlumnos}</div>}
-  </DetalleModal>
-)}
+            <DetalleModal titulo="Alumnos de tu grupo y apoyos" onClose={() => setModalAlumnos(false)}>
+              <GrupoAlumnosApoyos
+                evaluacionIndividual={evaluacionIndividual}
+                totalAlumnos={profile?.total_alumnos || 24}
+                onEvaluacionActualizada={setEvaluacionIndividual}
+              />
+            </DetalleModal>
+          )}
           {/* Modal de Historial del PA — reutiliza los datos que ya se cargan
               desde /api/analizar-programa-analitico (no usa documentos_historial) */}
           {historialVisible && (

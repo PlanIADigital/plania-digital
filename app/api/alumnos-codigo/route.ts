@@ -38,6 +38,39 @@ function siguienteCodigo(codigosExistentes: string[]): string {
   return `AL-${String(max + 1).padStart(2, '0')}`
 }
 
+// Registra la decisión de la educadora sobre una sugerencia de MÍA
+// DENTRO de la evaluación individual (alumnos[].revision), para que el
+// aviso de pendientes funcione en cualquier dispositivo. Al subir una
+// evaluación nueva, esta reemplaza a la anterior y las sugerencias
+// nuevas vuelven a quedar pendientes (recordatorio natural).
+async function marcarRevisionSugerencia(
+  supabase: any,
+  userId: string,
+  referencia: string,
+  revision: { estado: 'confirmada' | 'descartada'; codigo?: string; fecha: string }
+): Promise<any | null> {
+  const { data: u } = await supabase.from('users').select('evaluacion_individual').eq('id', userId).maybeSingle()
+  const ev = u?.evaluacion_individual
+  if (!ev || !Array.isArray(ev.alumnos)) return null
+  let encontrado = false
+  const alumnos = ev.alumnos.map((a: any) => {
+    if (a?.referencia === referencia) { encontrado = true; return { ...a, revision } }
+    return a
+  })
+  if (!encontrado) return null
+  const nueva = { ...ev, alumnos }
+  const { error } = await supabase.from('users').update({ evaluacion_individual: nueva }).eq('id', userId)
+  if (error) {
+    console.error('No se pudo registrar la revisión de la sugerencia:', error.message)
+    return null
+  }
+  return nueva
+}
+
+function referenciaValida(r: unknown): r is string {
+  return typeof r === 'string' && r.trim().length > 0 && r.length <= 40
+}
+
 // GET /api/alumnos-codigo
 // Regresa el grupo del ciclo activo:
 //   alumnos → activos (mismo significado que antes), en orden de código
@@ -82,8 +115,10 @@ export async function GET(request: NextRequest) {
 // POST /api/alumnos-codigo
 // body: { accion: 'bootstrap', total }  → AL-01..AL-N (solo si el grupo del ciclo está vacío)
 // body: { accion: 'agregar' }           → siguiente código (alta posterior)
-// body: { accion: 'confirmar_apoyos', id, apoyos, origen } → guarda apoyos confirmados
+// body: { accion: 'confirmar_apoyos', id, apoyos, origen, referencia? } → guarda apoyos confirmados
+//        (referencia = "Alumno N" de la evaluación, si viene de una sugerencia de MÍA)
 // body: { accion: 'quitar_apoyos', id } → retira los apoyos de ese alumno
+// body: { accion: 'descartar_sugerencia', referencia } → la educadora decide que ese niño no requiere apoyos
 export async function POST(request: NextRequest) {
   const auth = await verificarUsuario(request)
   if (!auth.autorizado) {
@@ -188,7 +223,33 @@ export async function POST(request: NextRequest) {
     if (!data) {
       return NextResponse.json({ error: 'Alumno no encontrado, dado de baja o de otro ciclo.' }, { status: 404 })
     }
-    return NextResponse.json({ ok: true, alumno: data })
+
+    // Si la confirmación viene de una sugerencia de MÍA ("Alumno N"),
+    // se registra en la evaluación qué código eligió la educadora.
+    let evaluacion_individual = null
+    if (accion === 'confirmar_apoyos' && referenciaValida(body?.referencia)) {
+      evaluacion_individual = await marcarRevisionSugerencia(supabase, userId, body.referencia, {
+        estado: 'confirmada',
+        codigo: data.codigo,
+        fecha: new Date().toISOString(),
+      })
+    }
+    return NextResponse.json({ ok: true, alumno: data, evaluacion_individual })
+  }
+
+  // ── Descartar una sugerencia de MÍA (sin apoyos para ese niño) ─
+  if (accion === 'descartar_sugerencia') {
+    if (!referenciaValida(body?.referencia)) {
+      return NextResponse.json({ error: 'Falta la referencia de la sugerencia.' }, { status: 400 })
+    }
+    const evaluacion_individual = await marcarRevisionSugerencia(supabase, userId, body.referencia, {
+      estado: 'descartada',
+      fecha: new Date().toISOString(),
+    })
+    if (!evaluacion_individual) {
+      return NextResponse.json({ error: 'No se encontró esa sugerencia en tu evaluación actual.' }, { status: 404 })
+    }
+    return NextResponse.json({ ok: true, evaluacion_individual })
   }
 
   return NextResponse.json({ error: 'Acción no reconocida' }, { status: 400 })
