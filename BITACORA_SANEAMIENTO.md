@@ -39,7 +39,7 @@ está en `.gitignore`).
 **Alcance del sello:** estos archivos quedaron saneados en **seguridad**. Su saneamiento completo
 (contrato, estructura, duplicados) corresponde a fases siguientes.
 
-## Fase 1 — Honestidad de datos · 26-27 sep 2026 · 🟡 EN CURSO
+## Fase 1 — Honestidad de datos · 26-27 sep 2026 · ✅ CERRADA
 
 **Principio:** la educadora ve su avance REAL del grupo actual en el ciclo actual; lo anterior se conserva
 como historial sin mezclarse. El avance cuenta PDA distintos; las repeticiones se muestran aparte.
@@ -205,6 +205,13 @@ Antes, "Equilibrar con MÍA" solo preseleccionaba el CAMPO y la alerta de priori
 **Verificado:** ambos caminos (alerta → "Adapta sus movimientos…"; cuadrícula LEN-30 → "Manifiesta oralmente…")
 abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 
+### Revisión — Planeaciones con 2 PDA sin su segundo código · 27 sep 2026 · ✅ sin acción
+- Consulta de solo lectura: `pda_literal` con "|" y `pda_2_id` vacío. Solo aparece la cuenta de prueba
+  (Mariana PRUEBAS): 18 en 2026-2027 y 40 en 2025-2026. **Ninguna educadora real.**
+- La primera planeación con `pda_2_id` se guardó el 2026-09-26 19:00 UTC; después de esa fecha hay
+  **0** planeaciones afectadas. El guardado actual de Nueva Planeación registra bien el segundo PDA.
+- Conclusión: son datos viejos de prueba. No se recuperan ni se modifican.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -213,13 +220,11 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - Maestros de música (futuro): el federal (19DJN) rota entre muchos jardines; el estatal (19EJN) atiende uno
   o dos. Tabla anual de asignaciones (CCT, día, turno, horas) y planeación general ligada a varios CCT.
 - Códigos de alumnos y apoyos: ver Fase 1, Parte 2.
+- Directivo en periodo de prueba (`trial`): SÍ ve el panel completo de sus docentes (planeaciones, PDA,
+  campos formativos, ejes articuladores). Motivo: la prueba debe mostrar el beneficio real de la membresía
+  (y a mediano plazo, la ficha de avances por grupo y por jardín). Se mantiene active/trial/founder.
 
 ## Pendientes
-
-**Fase 1 — Honestidad de datos (continúa):**
-- 5 planeaciones de la cuenta de prueba tienen 2 PDA en el texto pero sin `pda_2_id` (anteriores a esas
-  columnas): revisar si alguna educadora real está en ese caso antes de decidir si se recupera el segundo PDA.
-- Confirmar si el directivo en prueba (`trial`) tiene acceso al panel (hoy sí: active/trial/founder).
 
 **Directivo (post-lanzamiento, infraestructura ya lista):** pantalla "Mis docentes" (hoy regresa al
 dashboard), endpoint seguro para que el directivo abra una planeación de su docente, tabla de informes
@@ -239,5 +244,5 @@ siguiente si la baja se registra de noche).
 **Fase 4 — Documentación:** actualizar `CLAUDE.md` y `BITACORA_INFRAESTRUCTURA.md`.
 
 **Legal (para el abogado):** Aviso de Privacidad debe mencionar el procesamiento con proveedor de IA y que la
-educadora declara poder compartir sus documentos; Términos deben indicar que el directivo de su CCT verá
-sus planeaciones y estadísticas (y, a futuro, que los informes del directivo pertenecen al jardín).
+educadora declara poder compartir sus documentos; Términos deben indicar que el directivo de su CCT, también en
+periodo de prueba, verá sus planeaciones y estadísticas (y, a futuro, que los informes del directivo pertenecen al jardín).
