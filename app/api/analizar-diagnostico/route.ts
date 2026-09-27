@@ -81,11 +81,12 @@ Analiza el diagnóstico, extrae las necesidades pedagógicas reales ignorando da
     const clean = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const resultado = JSON.parse(clean)
 
-    // 4. Guardar diagnóstico y PDAs prioritarios en Supabase (comportamiento actual, sin cambios)
+    // 4. Guardar fecha y PDAs prioritarios en Supabase.
+    // [sep 2026] Ya NO se guarda el texto crudo del diagnóstico (users.diagnostico_texto):
+    // nadie lo leía y podía contener nombres de alumnos.
     const { error: saveError } = await supabase
       .from('users')
       .update({
-        diagnostico_texto,
         diagnostico_fecha: new Date().toISOString(),
         pdas_prioritarios: resultado.pdas_sugeridos,
       })

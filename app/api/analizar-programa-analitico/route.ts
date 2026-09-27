@@ -213,7 +213,8 @@ FORMATO DE SALIDA:
         cct,
         version_numero: siguienteVersion,
         archivo_formato: archivo_formato || 'desconocido',
-        contenido_extraido: texto.substring(0, 5000),
+        // [sep 2026] Ya NO se guarda el texto crudo (contenido_extraido): nadie lo
+        // leía y podía contener nombres. Solo se conserva el análisis en pda_ponderacion.
         pda_ponderacion,
         activo: true,
       })
