@@ -405,6 +405,8 @@ REGLAS CRÍTICAS DE PRIVACIDAD:
 
 REGLA CRÍTICA PARA pdas_prioritarios_grupo: cada PDA que incluyas aquí debe venir acompañado de su "campo" y "contenido" exactamente como aparecen en el CATÁLOGO PDAs que se te proporciona. El texto del PDA debe ser LITERAL y EXACTO del catálogo — nunca parafrasear ni modificar el texto. Nunca inventes un campo o contenido que no corresponda al PDA seleccionado.
 
+REGLA CRÍTICA PARA apoyos_sugeridos: llénalo SOLO para alumnos cuyo "nee" no esté vacío; si "nee" está vacío, deja apoyos_sugeridos como "". Redacta de 2 a 3 acciones CONCRETAS que la educadora hará en el aula para reducir las barreras observadas (qué hacer, en qué momento y con qué material o estrategia), en infinitivo y separadas por punto y coma (ejemplo: "Anticipar cada consigna con apoyo visual; ofrecer primero trabajo individual antes de compartir en grupo; nombrar juntos la emoción cuando aparezca la frustración"). Usa lenguaje neutro: NUNCA escribas "alumna", "alumno", "niña", "niño", "él" ni "ella". Nunca menciones diagnósticos clínicos, etiquetas médicas ni nombres. Apóyate en sus fortalezas cuando sea posible. Máximo 400 caracteres.
+
 Responde SOLO con JSON válido, sin texto adicional:
 {
   "total_alumnos_detectados": 0,
@@ -414,6 +416,7 @@ Responde SOLO con JSON válido, sin texto adicional:
       "referencia": "Alumno 1",
       "observaciones": "necesidades pedagógicas",
       "nee": [],
+      "apoyos_sugeridos": "",
       "fortalezas": [],
       "areas_oportunidad": [],
       "pdas_sugeridos": []

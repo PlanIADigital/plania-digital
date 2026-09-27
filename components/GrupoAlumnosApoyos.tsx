@@ -150,7 +150,10 @@ export default function GrupoAlumnosApoyos({
   }
 
   function borradorDe(s: any) {
-    return borradores[s.referencia] || { texto: String(s.observaciones || ''), alumnoId: codigoPropuesto(s.referencia) }
+    // [27 sep 2026] Evaluaciones nuevas traen apoyos_sugeridos (acciones en
+    // lenguaje neutro); las anteriores solo traen la observación.
+    const textoInicial = String(s.apoyos_sugeridos || s.observaciones || '')
+    return borradores[s.referencia] || { texto: textoInicial, alumnoId: codigoPropuesto(s.referencia) }
   }
 
   function actualizarBorrador(referencia: string, cambios: Partial<{ texto: string; alumnoId: string }>, base: { texto: string; alumnoId: string }) {
@@ -238,6 +241,11 @@ export default function GrupoAlumnosApoyos({
                   <span style={{ fontSize: 13, fontWeight: 700, color: c.texto }}>{s.referencia}</span>
                   {s.nee.map((n: string, i: number) => <span key={i} style={estilos.chip}>{n}</span>)}
                 </div>
+                {s.apoyos_sugeridos && s.observaciones && (
+                  <p style={{ ...estilos.ayuda, margin: '0 0 8px' }}>
+                    <strong>Observación de MÍA:</strong> {s.observaciones}
+                  </p>
+                )}
                 <textarea
                   value={b.texto}
                   maxLength={MAX_LARGO_APOYOS}
