@@ -164,6 +164,19 @@ observación), no lo que la educadora confirmó ni lo que llega a las planeacion
 **Verificado:** Mi Avance, panel y detalle del directivo muestran AL-02 y AL-03 con los mismos apoyos; números
 consistentes entre las tres pantallas (22 planeaciones, 25 PDA, 2/4 prioritarios).
 
+### Parte 6 — Marcas de PDA prioritario en Nueva Planeación · 27 sep 2026 · rama `saneamiento/fase1-marcas-prioritario`
+
+**Diagnóstico:** las tres marcas comparaban el texto de forma distinta — Grupo (texto idéntico), Individual / NEE
+(sin mayúsculas ni espacios, pero fallaba por el punto final) y Jardín (primeros 40 caracteres, podía marcar un
+PDA distinto que empezara igual).
+
+**Construido:** `esPdaPrioritario` en `lib/cobertura.ts` (misma comparación normalizada que la canasta de Mi
+Avance); las tres marcas de `app/planeacion/nueva/page.tsx` la usan. La marca y el conteo de Mi Avance ya no
+pueden diferir.
+
+**Verificado:** "Percibe cambios corporales…" y "Adapta sus movimientos…" muestran "Necesidad individual
+detectada" (antes no se marcaban).
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -176,8 +189,6 @@ consistentes entre las tres pantallas (22 planeaciones, 25 PDA, 2/4 prioritarios
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
-  punto final: usar `normalizarTextoPda` de `lib/cobertura.ts`.
 - Alerta "menos del 20% de cobertura": en septiembre la reciben todas; el umbral debe depender del mes del ciclo.
 - 5 planeaciones de la cuenta de prueba tienen 2 PDA en el texto pero sin `pda_2_id` (anteriores a esas
   columnas): revisar si alguna educadora real está en ese caso antes de decidir si se recupera el segundo PDA.
