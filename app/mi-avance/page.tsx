@@ -1,9 +1,38 @@
 'use client'
+// ============================================================
+//  PlanIA Digital — app/mi-avance/page.tsx
+//
+//  [Saneado 26 sep 2026 — Fase 1, Mi Avance]
+//  Contrato de datos:
+//    - Planeaciones: plannings (SELECT_PLANNINGS_AVANCE) del ciclo
+//      activo. Cuentan solo las no descartadas y con starts_on dentro
+//      de inicio_clases/fin_clases del calendario estatal.
+//    - Cobertura: calcularAvance() de lib/cobertura.ts — cuenta PDA
+//      DISTINTOS por pda_id (principal, pda_2 y transversales). Ya NO
+//      se lee la tabla pda_coverage (agrupaba por texto, mezclaba
+//      fechas fuera del ciclo y descartadas: 99 "PDAs" eran 33 reales).
+//    - Prioritarios: canasta de lib/cobertura.ts con tres etiquetas
+//      (Individual / NEE, Grupo, Jardín). Antes contaba is_primary
+//      (= PDA del campo principal) y siempre decía "diagnóstico
+//      atendido ✓" aunque no hubiera diagnóstico.
+//  Principio: la educadora ve su avance REAL del grupo actual en el
+//  ciclo actual; lo anterior se conserva como historial sin mezclarse.
+// ============================================================
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { createClient } from '@/lib/supabase-browser'
-import { calcularEjesCubiertos } from '@/lib/cobertura'
+import {
+  SELECT_PLANNINGS_AVANCE,
+  ORIGENES_PRIORITARIO,
+  calcularAvance,
+  clasificarPlaneaciones,
+  construirCanastaPrioritarios,
+  calcularPrioritarios,
+  type OrigenPrioritario,
+  type PdaCatalogoConTexto,
+  type PeriodoAvance,
+} from '@/lib/cobertura'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
@@ -47,6 +76,14 @@ const PREFIJO_POR_CAMPO: Record<string, string> = {
   'De lo Humano y lo Comunitario': 'DHC',
 }
 
+// Abreviaturas para el desglose de la tarjeta de prioritarios
+// (mismo orden de gradualidad que ORIGENES_PRIORITARIO).
+const ABREVIATURA_ORIGEN: Record<OrigenPrioritario, string> = {
+  individual: 'Ind./NEE',
+  grupo: 'Grupo',
+  jardin: 'Jardín',
+}
+
 const EJES = [
   'Interculturalidad crítica',
   'Igualdad de género',
@@ -69,16 +106,6 @@ function hoyLocalISO(): string {
   return `${y}-${m}-${day}`
 }
 
-function nombreCorto(nombre: string | null): string {
-  if (!nombre) return ''
-  return nombre
-    .replace(/^Jardín de Niños Indígena\s*/i, '')
-    .replace(/^Jardín de Niños\s*/i, '')
-    .replace(/^Jardin de Niños\s*/i, '')
-    .replace(/^Centro de Educación Preescolar\s*/i, '')
-    .trim()
-}
-
 function campoCorto(nombre: string): string {
   const mapa: Record<string, string> = {
     'Saberes y Pensamiento Científico': 'Saberes y P. Científico',
@@ -91,6 +118,12 @@ function campoCorto(nombre: string): string {
 function campoCompletoConCodigo(nombre: string): string {
   const codigo = PREFIJO_POR_CAMPO[nombre] || ''
   return `${nombre.toUpperCase()} (${codigo})`
+}
+
+function etiquetasDeOrigen(origenes: OrigenPrioritario[]): string {
+  return origenes
+    .map(o => ORIGENES_PRIORITARIO.find(x => x.clave === o)?.etiqueta || o)
+    .join(' · ')
 }
 
 function mesActualCiclo(): number {
@@ -174,12 +207,12 @@ function AlertaMia({ tipo, texto }: { tipo: 'warn' | 'info' | 'success'; texto: 
 export default function MiAvancePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
-  const [coverage, setCoverage] = useState<any[]>([])
   const [plannings, setPlannings] = useState<any[]>([])
-  const [catalogoPDA, setCatalogoPDA] = useState<{ id: string; campo: string; posicion_campo: number; pda: string }[]>([])
+  const [catalogoPDA, setCatalogoPDA] = useState<PdaCatalogoConTexto[]>([])
   const [cargando, setCargando] = useState(true)
   const [tabActivo, setTabActivo] = useState<'cobertura' | 'ejes' | 'mapa' | 'nee'>('cobertura')
-  const [pdaSeleccionado, setPdaSeleccionado] = useState<{ codigo: string; veces: number; pda: string } | null>(null)
+  const [pdaSeleccionado, setPdaSeleccionado] = useState<{ codigo: string; veces: number; pda: string; origenes: OrigenPrioritario[] } | null>(null)
+  const [inicioClasesCiclo, setInicioClasesCiclo] = useState<string | null>(null)
   const [finClasesCiclo, setFinClasesCiclo] = useState<string | null>(null)
 
   useEffect(() => {
@@ -193,31 +226,28 @@ export default function MiAvancePage() {
       const { data: user } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!user?.profile_completed) { router.push('/onboarding'); return }
       setProfile(user)
+
       const { data: plans } = await supabase
         .from('plannings')
-        .select('id, project_name, pda_campo, eje_principal, eje_secundario, status, starts_on, ends_on, created_at')
+        .select(SELECT_PLANNINGS_AVANCE)
         .eq('user_id', user.id)
         .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
         .order('created_at', { ascending: false })
       setPlannings(plans || [])
-      const { data: cov } = await supabase
-        .from('pda_coverage')
-        .select('campo, pda_literal, pda_id, is_primary, covered_on, times_used')
-        .eq('user_id', user.id)
-        .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
-      setCoverage(cov || [])
 
       const { data: catalogo } = await supabase
         .from('pda_catalog')
         .select('id, campo, posicion_campo, pda')
-      setCatalogoPDA(catalogo || [])
+      setCatalogoPDA((catalogo as PdaCatalogoConTexto[]) || [])
 
       const estadoCodigo = (user.cct_primary || '').slice(0, 2)
       try {
         const res = await fetch(`/api/calendario/fin-ciclo?estado=${estadoCodigo}`)
         const data = await res.json()
+        setInicioClasesCiclo(data.inicioClases || null)
         setFinClasesCiclo(data.finClases || null)
       } catch {
+        setInicioClasesCiclo(null)
         setFinClasesCiclo(null)
       }
 
@@ -226,22 +256,29 @@ export default function MiAvancePage() {
     load()
   }, [])
 
-  const pdaUnicosPorCampo = CAMPOS_CONFIG.map(cf => {
-    const unicos = [...new Set(coverage.filter(c => c.campo === cf.nombre).map(c => c.pda_literal))]
-    return { ...cf, trabajados: unicos.length, porcentaje: Math.round((unicos.length / cf.total) * 100) }
-  })
-  const totalPDAs = [...new Set(coverage.map(c => c.pda_literal))].length
-  const totalPlanesAct = plannings.filter(p => p.status === 'active').length
-  const totalPlanes = plannings.length
-  const pdasPrioritarios = [...new Set(coverage.filter(c => c.is_primary).map(c => c.pda_literal))].length
-  const pdasPrioritariosPendientes = coverage.filter(c => c.is_primary && !c.covered_on).length
+  // ── Cálculo único (lib/cobertura.ts) ────────────────────────
+  const periodo: PeriodoAvance = { ciclo: CICLO_ESCOLAR_ACTIVO, inicio: inicioClasesCiclo, fin: finClasesCiclo }
+  const avance = calcularAvance(plannings, catalogoPDA, periodo)
+  const planesContadas = clasificarPlaneaciones(plannings, periodo).contadas
+  const canasta = construirCanastaPrioritarios(profile, catalogoPDA)
+  const prioritarios = calcularPrioritarios(canasta, avance)
 
-  const ejesConteo: Record<string, number> = {}
-  plannings.forEach(p => {
-    if (p.eje_principal) ejesConteo[p.eje_principal] = (ejesConteo[p.eje_principal] || 0) + 1
-    if (p.eje_secundario) ejesConteo[p.eje_secundario] = (ejesConteo[p.eje_secundario] || 0) + 1
+  const pdaUnicosPorCampo = CAMPOS_CONFIG.map(cf => {
+    const trabajados = avance.porCampo[cf.nombre]?.distintos || 0
+    return { ...cf, trabajados, porcentaje: Math.round((trabajados / cf.total) * 100) }
   })
-  const ejesCubiertosSet = calcularEjesCubiertos(plannings)
+  const totalPDAs = avance.pdaDistintos
+  const totalPlanes = planesContadas.length
+  const totalPlanesAct = planesContadas.filter((p: any) => p.status === 'active').length
+
+  const desglosePrioritarios = ORIGENES_PRIORITARIO
+    .filter(o => prioritarios.porOrigen[o.clave].total > 0)
+    .map(o => `${ABREVIATURA_ORIGEN[o.clave]} ${prioritarios.porOrigen[o.clave].atendidos}/${prioritarios.porOrigen[o.clave].total}`)
+    .join(' · ')
+  const pdasPrioritariosPendientes = prioritarios.pendientes.length
+
+  const ejesConteo: Record<string, number> = avance.ejes.conteo
+  const ejesCubiertos = avance.ejes.cubiertos.length
   const maxEje = Math.max(1, ...Object.values(ejesConteo))
   const ejesSinUsar = EJES.filter(e => !ejesConteo[e])
 
@@ -252,25 +289,22 @@ export default function MiAvancePage() {
     ? ejesOrdenAscendente.filter(e => (ejesConteo[e] || 0) < promedioEsperadoPorEje * UMBRAL_EJE_BAJO)
     : [...EJES]
 
-  const catalogoPorId: Record<string, { posicion: number; pda: string; campo: string }> = {}
-  catalogoPDA.forEach(p => { catalogoPorId[p.id] = { posicion: p.posicion_campo, pda: p.pda, campo: p.campo } })
-
   const catalogoPorCampoYPosicion: Record<string, Record<number, string>> = {}
   catalogoPDA.forEach(p => {
     if (!catalogoPorCampoYPosicion[p.campo]) catalogoPorCampoYPosicion[p.campo] = {}
     catalogoPorCampoYPosicion[p.campo][p.posicion_campo] = p.pda
   })
 
-  const coberturaPorCampoYPosicion: Record<string, Record<number, { veces: number; esPrioritario: boolean }>> = {}
-  coverage.forEach(c => {
-    if (!c.pda_id) return
-    const info = catalogoPorId[c.pda_id]
-    if (!info) return
-    if (!coberturaPorCampoYPosicion[info.campo]) coberturaPorCampoYPosicion[info.campo] = {}
-    const existente = coberturaPorCampoYPosicion[info.campo][info.posicion]
-    const veces = (existente?.veces || 0) + (c.times_used || 1)
-    const esPrioritario = (existente?.esPrioritario || false) || !!c.is_primary
-    coberturaPorCampoYPosicion[info.campo][info.posicion] = { veces, esPrioritario }
+  const vecesPorCampoYPosicion: Record<string, Record<number, number>> = {}
+  avance.pdas.forEach(p => {
+    if (!vecesPorCampoYPosicion[p.campo]) vecesPorCampoYPosicion[p.campo] = {}
+    vecesPorCampoYPosicion[p.campo][p.posicion] = p.veces
+  })
+
+  const prioritarioPorCampoYPosicion: Record<string, Record<number, OrigenPrioritario[]>> = {}
+  canasta.pdas.forEach(p => {
+    if (!prioritarioPorCampoYPosicion[p.campo]) prioritarioPorCampoYPosicion[p.campo] = {}
+    prioritarioPorCampoYPosicion[p.campo][p.posicion] = p.origenes
   })
 
   const evaluacionIndividual = profile?.evaluacion_individual || {}
@@ -288,7 +322,7 @@ export default function MiAvancePage() {
     const camposBajos = pdaUnicosPorCampo.filter(c => c.porcentaje < 20)
     if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> tienen menos del 20% de cobertura.</> })
     if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
-    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDAs prioritarios</strong> del diagnóstico grupal aún no abordados.</> })
+    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.</> })
     const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
     if (campoDestacado) alertas.push({ tipo: 'success', texto: <><strong>¡Excelente!</strong> Llevas {campoDestacado.porcentaje}% en <em>{campoCorto(campoDestacado.nombre)}</em>.</> })
     if (alertas.length === 0 && totalPlanes > 0) alertas.push({ tipo: 'info', texto: <>Tu avance está equilibrado. MÍA estará aquí cuando la necesites.</> })
@@ -342,8 +376,14 @@ export default function MiAvancePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <KpiCard label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'todas cerradas'} icon="📋" />
               <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
-              <KpiCard label="PDAs prioritarios" value={pdasPrioritarios} delta={pdasPrioritariosPendientes > 0 ? `${pdasPrioritariosPendientes} del diagnóstico pendientes` : 'diagnóstico atendido ✓'} deltaColor={pdasPrioritariosPendientes > 0 ? '#D97706' : '#0F6E56'} icon="⭐" />
-              <KpiCard label="Ejes articuladores" value={`${ejesCubiertosSet.size}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
+              <KpiCard
+                label="PDAs prioritarios"
+                value={prioritarios.hayDiagnostico ? `${prioritarios.atendidos}/${prioritarios.total}` : '—'}
+                delta={prioritarios.hayDiagnostico ? desglosePrioritarios : 'Sin diagnóstico este ciclo'}
+                deltaColor={prioritarios.hayDiagnostico ? '#0F6E56' : '#888'}
+                icon="⭐"
+              />
+              <KpiCard label="Ejes articuladores" value={`${ejesCubiertos}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
             </div>
 
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '16px 20px' }}>
@@ -423,6 +463,7 @@ export default function MiAvancePage() {
                       <>
                         <p style={{ margin: '0 0 4px', fontWeight: 700, color: 'white', fontSize: 13, lineHeight: 1.3 }}>
                           {pdaSeleccionado.codigo} {pdaSeleccionado.veces > 0 ? `— trabajado ${pdaSeleccionado.veces}x` : '— aún no trabajado'}
+                          {pdaSeleccionado.origenes.length > 0 && <span style={{ fontWeight: 600, color: '#FDE68A' }}> · Prioritario: {etiquetasDeOrigen(pdaSeleccionado.origenes)}</span>}
                         </p>
                         <p style={{ margin: 0, color: 'white', fontWeight: 400, fontSize: 13, lineHeight: 1.3 }}>
                           {pdaSeleccionado.pda}
@@ -441,8 +482,9 @@ export default function MiAvancePage() {
                   </div>
                   {CAMPOS_CONFIG.map(cf => {
                     const catalogoCampo = catalogoPorCampoYPosicion[cf.nombre] || {}
-                    const coberturaCampo = coberturaPorCampoYPosicion[cf.nombre] || {}
-                    const cubiertos = Object.keys(coberturaCampo).length
+                    const vecesCampo = vecesPorCampoYPosicion[cf.nombre] || {}
+                    const prioritarioCampo = prioritarioPorCampoYPosicion[cf.nombre] || {}
+                    const cubiertos = Object.keys(vecesCampo).length
                     const prefijo = PREFIJO_POR_CAMPO[cf.nombre]
                     return (
                       <div key={cf.nombre} style={{ marginBottom: 24 }}>
@@ -455,10 +497,10 @@ export default function MiAvancePage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(26px, 1fr))', gap: 3 }}>
                           {Array.from({ length: cf.total }, (_, idx) => idx + 1).map(n => {
-                            const cubierto = coberturaCampo[n]
+                            const veces = vecesCampo[n] || 0
+                            const origenes = prioritarioCampo[n] || []
                             const pdaTexto = catalogoCampo[n] || ''
                             const codigo = `${prefijo}-${n}`
-                            const veces = cubierto?.veces || 0
                             let bg = '#F0EFF8'
                             if (veces >= 3) bg = cf.color
                             else if (veces === 2) bg = `${cf.color}CC`
@@ -466,10 +508,10 @@ export default function MiAvancePage() {
                             return (
                               <div
                                 key={n}
-                                onClick={() => setPdaSeleccionado({ codigo, veces, pda: pdaTexto })}
+                                onClick={() => setPdaSeleccionado({ codigo, veces, pda: pdaTexto, origenes })}
                                 style={{
                                   aspectRatio: '1', borderRadius: 4, background: bg,
-                                  border: cubierto?.esPrioritario ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',
+                                  border: origenes.length > 0 ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   fontSize: 8, fontWeight: 700, color: veces > 0 ? 'white' : '#B8B6D6',
                                   cursor: 'pointer', userSelect: 'none' as const,
