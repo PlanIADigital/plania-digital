@@ -14,6 +14,8 @@ Registro de qué se ha saneado, cuándo y qué falta. Se actualiza al cerrar cad
 se pueden mover, nunca reescribir durante el saneamiento) · seguridad de la infraestructura ·
 protección de datos personales (ningún nombre de alumno se guarda ni se filtra).
 
+**Práctica de publicación:** cada rama se une a `main` con "Squash and merge" (un solo commit limpio).
+
 Referencia: `MAPA_PLATAFORMA.md` (local, NO versionado: describe debilidades de la plataforma;
 está en `.gitignore`).
 
@@ -39,11 +41,12 @@ está en `.gitignore`).
 
 ## Fase 1 — Honestidad de datos · 26-27 sep 2026 · 🟡 EN CURSO
 
-Rama `saneamiento/fase1-mi-avance` (commits `93fb75c`, `8d0c3d5`, `6b5e8de` y el de cierre de esta entrada).
-Base de datos: `database/2026-09-26_saneamiento_fase1.sql`.
-
 **Principio:** la educadora ve su avance REAL del grupo actual en el ciclo actual; lo anterior se conserva
 como historial sin mezclarse. El avance cuenta PDA distintos; las repeticiones se muestran aparte.
+
+### Parte 1 — Mi Avance, Dashboard y directivo · ✅ publicada (26-27 sep, commit `cbefb01` en `main`)
+
+Base de datos: `database/2026-09-26_saneamiento_fase1.sql`.
 
 **Diagnóstico (cuenta Mariana PRUEBAS):** Mi Avance decía 99 PDA trabajados; eran 33 PDA reales en toda la
 tabla y 24 en el ciclo real. Causa raíz: el trigger `registrar_pda_coverage` agrupa por TEXTO del PDA (no por
@@ -52,7 +55,7 @@ fecha la cobertura con `starts_on`. Había 12 planeaciones de prueba con fechas 
 2026-2027. "PDAs prioritarios 93 · diagnóstico atendido ✓" contaba `is_primary` (= PDA del campo principal),
 no el diagnóstico, y el ✓ salía siempre.
 
-**Cerrado — Mi Avance y Dashboard de la educadora:**
+**Mi Avance y Dashboard de la educadora:**
 - `lib/cobertura.ts`: fuente única. `calcularAvance` lee `plannings` (no `pda_coverage`): ciclo activo,
   sin descartadas, `starts_on` entre `inicio_clases` y `fin_clases` del calendario estatal, `pda_id` distintos
   (principal, `pda_2`, transversales). Resultado serializable con `version` (sirve para informes).
@@ -61,12 +64,11 @@ no el diagnóstico, y el ✓ salía siempre.
   Se ubican en el catálogo por texto normalizado (las fuentes guardan el texto sin el punto final).
 - Mi Avance, Dashboard y detalle del directivo muestran los mismos números (verificado contra la base:
   21 planeaciones, 24 PDA, 2/5 prioritarios). MÍA ya avisa de prioritarios pendientes.
-- Endpoint `/api/calendario/fin-ciclo` devuelve también `inicioClases`.
+- `/api/calendario/fin-ciclo` devuelve también `inicioClases`.
 - Calendario Nuevo León 2026-2027: `inicio_clases` corregido de 2026-08-01 a 2026-08-31 (error de captura).
 - Cierre de ciclo ahora limpia también `diagnostico_texto` y `diagnostico_fecha`.
-- Plural "planeaciónes" corregido.
 
-**Cerrado — Infraestructura segura del directivo (lista para activarse después del lanzamiento):**
+**Infraestructura segura del directivo (lista para activarse después del lanzamiento):**
 - Causa del "0 docentes": `users` solo permite leer el propio registro (RLS) y la consulta pedía
   `total_students`, columna que no existe (es `total_alumnos`).
 - `lib/verificarDirectivo.ts`: guardia con dos niveles: `panel` (membresía active/trial/founder) e
@@ -78,6 +80,41 @@ no el diagnóstico, y el ✓ salía siempre.
 - Panel y detalle del directivo conectados a esos endpoints; el ciclo ya no está escrito a mano.
 - Regla RLS "plannings: directivo ve las de su CCT": ya no oculta a fundadoras; incluye directivo `founder`.
 
+### Parte 2 — NEE y ajustes razonables · 27 sep 2026 · rama `saneamiento/fase1-nee`
+
+Base de datos: `database/2026-09-27_saneamiento_fase1_nee.sql`.
+
+**Diagnóstico:** convivían tres identificadores sin puente entre sí: "Alumno N" (evaluación individual),
+`AL-XX` (`alumnos_codigo`, rúbricas) e iniciales "R.G.-1" (`users.alumnos_inclusion`, ajustes razonables).
+Ningún archivo escribía `alumnos_inclusion`, y el generador salía sin ajustes si estaba vacía: **8 de 9
+cuentas nunca recibían ajustes razonables** (solo la cuenta de prueba, con datos cargados a mano). Además, el
+alta de alumnos estaba rota para cuentas nuevas (`ciclo_escolar` obligatoria que el endpoint no enviaba) y la
+unicidad `(user_id, codigo)` habría impedido crear AL-01 en el siguiente ciclo.
+
+**Decisiones (criterio del fundador):** un solo código AL-XX por niño, en el orden de la lista de la educadora;
+el código nunca se recorre ni se reutiliza; una baja conserva su número y aparece "(baja)" en listas de
+cotejo/rúbricas; un niño que llega después recibe el siguiente número con "(alta fecha)". MÍA sugiere, la
+educadora confirma eligiendo a qué código corresponde (recordatorio visible); enfoque BAP, sin diagnósticos
+ni nombres.
+
+**Construido:**
+- `alumnos_codigo`: columnas `requiere_apoyos`, `apoyos`, `apoyos_origen` ('mia' | 'educadora'),
+  `apoyos_confirmado_en`; unicidad `(user_id, ciclo_escolar, codigo)`.
+- `/api/alumnos-codigo`: envía `ciclo_escolar` (alta reparada), filtra por ciclo, devuelve activos + bajas +
+  `alta_posterior`; acciones `confirmar_apoyos`, `quitar_apoyos` y `descartar_sugerencia`. La decisión sobre cada
+  sugerencia se guarda en `evaluacion_individual.alumnos[].revision`: al subir una evaluación nueva, las
+  sugerencias nuevas vuelven a quedar pendientes.
+- `components/GrupoAlumnosApoyos.tsx`: sugerencias de MÍA (barreras, texto editable, selector de código
+  propuesto por posición, Confirmar/Descartar) y lista del grupo (altas, bajas, agregar/editar/quitar apoyos).
+- Mi Grupo: aviso "MÍA detectó N niños que podrían necesitar apoyos" mientras haya sugerencias sin revisar.
+- `generar-planeacion`: `obtenerGrupoAlumnos` lee el grupo del ciclo desde `alumnos_codigo`; los ajustes
+  razonables usan solo apoyos CONFIRMADOS de alumnos activos; las rúbricas llevan el roster con "(baja)" y
+  "(alta …)". Los prompts no se tocaron (reciben la misma forma `{ codigo, acciones }`).
+- `users.alumnos_inclusion` ya no se lee ni se escribe en ningún archivo (la columna se conserva).
+
+**Verificado:** planeación de prueba de 2 días con ajuste "AL-02.-" ligado a sus barreras reales, sin
+iniciales, y rúbrica con AL-01..AL-12 y AL-13..AL-17 "(baja)". Costo real: $0.16 USD.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -85,19 +122,22 @@ no el diagnóstico, y el ✓ salía siempre.
   Un directivo dado de baja conserva consulta y descarga de informes, sin estadísticas en vivo.
 - Maestros de música (futuro): el federal (19DJN) rota entre muchos jardines; el estatal (19EJN) atiende uno
   o dos. Tabla anual de asignaciones (CCT, día, turno, horas) y planeación general ligada a varios CCT.
+- Códigos de alumnos y apoyos: ver Fase 1, Parte 2.
 
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- NEE y ajustes razonables: hoy la IA decide sola quién tiene NEE y `alumnos_inclusion` no la escribe ningún
-  archivo. Rediseño: MÍA sugiere, la educadora confirma y describe apoyos (enfoque BAP, sin diagnósticos).
+- Sugerencias de MÍA: hoy el texto propuesto es la observación del alumno ("Alumna que…"), no acciones.
+  Pedir al análisis de la evaluación individual apoyos concretos y en lenguaje neutro (toca un prompt:
+  sesión dedicada).
+- Mi Avance (pestaña Diversidad) y panel del directivo muestran las NEE detectadas por la IA; deben mostrar
+  los apoyos CONFIRMADOS por la educadora (`alumnos_codigo`).
 - Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
   punto final: usar `normalizarTextoPda` de `lib/cobertura.ts`.
 - Alerta "menos del 20% de cobertura": en septiembre la reciben todas; el umbral debe depender del mes del ciclo.
 - 5 planeaciones de la cuenta de prueba tienen 2 PDA en el texto pero sin `pda_2_id` (anteriores a esas
   columnas): revisar si alguna educadora real está en ese caso antes de decidir si se recupera el segundo PDA.
 - Confirmar si el directivo en prueba (`trial`) tiene acceso al panel (hoy sí: active/trial/founder).
-- Al unir la rama a `main`: usar "Squash and merge" (el commit `93fb75c` incluyó `MAPA_PLATAFORMA.md`).
 
 **Directivo (post-lanzamiento, infraestructura ya lista):** pantalla "Mis docentes" (hoy regresa al
 dashboard), endpoint seguro para que el directivo abra una planeación de su docente, tabla de informes
@@ -110,7 +150,9 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
 sin uso, respaldos `total_students` en `mi-grupo`, `planeacion/nueva` y `generar-planeacion` (la columna real
-es `total_alumnos`).
+es `total_alumnos`), columna `users.alumnos_inclusion` sin uso, estados sin uso en Mi Grupo
+(`alumnosCodigo`, `cargandoAlumnos`, `errorAlumnos`), `fecha_baja` se calcula en UTC (puede marcar el día
+siguiente si la baja se registra de noche).
 
 **Fase 4 — Documentación:** actualizar `CLAUDE.md` y `BITACORA_INFRAESTRUCTURA.md`.
 

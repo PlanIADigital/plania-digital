@@ -375,21 +375,51 @@ async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promis
   }
 }
 
-async function obtenerRosterAlumnos(supabaseAdmin: any, userId: string): Promise<string[]> {
-  if (!userId) return []
+// [Saneado 27 sep 2026 — Fase 1, NEE] Grupo del ciclo activo desde
+// alumnos_codigo (un solo código AL-XX por niño; se retiran las
+// iniciales de users.alumnos_inclusion).
+//   roster    → lista para rúbricas, en orden de código, con las marcas
+//               "(baja)" y "(alta 15 oct)" (criterio del fundador).
+//   conApoyos → alumnos ACTIVOS con apoyos CONFIRMADOS por la educadora
+//               (misma forma { codigo, acciones } que espera el prompt).
+type GrupoAlumnos = { roster: string[]; conApoyos: { codigo: string; acciones: string }[] }
+
+function numeroCodigoAlumno(codigo: string): number {
+  const m = String(codigo || '').match(/^AL-(\d+)$/)
+  return m ? parseInt(m[1], 10) : 0
+}
+
+async function obtenerGrupoAlumnos(supabaseAdmin: any, userId: string): Promise<GrupoAlumnos> {
+  const vacio: GrupoAlumnos = { roster: [], conApoyos: [] }
+  if (!userId) return vacio
   try {
     const { data, error } = await supabaseAdmin
       .from('alumnos_codigo')
-      .select('codigo')
+      .select('codigo, activo, fecha_alta, requiere_apoyos, apoyos')
       .eq('user_id', userId)
-      .eq('activo', true)
-      .order('fecha_alta', { ascending: true })
+      .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
 
-    if (error || !data) return []
-    return data.map((r: any) => r.codigo)
+    if (error || !data) return vacio
+    const todos = [...data].sort((a: any, b: any) => numeroCodigoAlumno(a.codigo) - numeroCodigoAlumno(b.codigo))
+    const inicioGrupo: string | null = todos.reduce(
+      (min: string | null, a: any) => (!min || a.fecha_alta < min ? a.fecha_alta : min),
+      null
+    )
+    const roster = todos.map((a: any) => {
+      if (!a.activo) return `${a.codigo} (baja)`
+      if (inicioGrupo && a.fecha_alta > inicioGrupo) {
+        const fecha = new Date(a.fecha_alta + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+        return `${a.codigo} (alta ${fecha})`
+      }
+      return a.codigo
+    })
+    const conApoyos = todos
+      .filter((a: any) => a.activo && a.requiere_apoyos && typeof a.apoyos === 'string' && a.apoyos.trim())
+      .map((a: any) => ({ codigo: a.codigo, acciones: a.apoyos.trim() }))
+    return { roster, conApoyos }
   } catch (e) {
-    console.error('No se pudo obtener el roster de alumnos (no crítico):', e)
-    return []
+    console.error('No se pudo obtener el grupo de alumnos (no crítico):', e)
+    return vacio
   }
 }
 
@@ -555,17 +585,15 @@ INSTRUCCIÓN CRÍTICA: Genera EXACTAMENTE ${lote.length} objeto(s) en el array "
 }
 
 async function generarAjustesPorDia(params: {
-  profile: any
+  alumnosConApoyos: { codigo: string; acciones?: string }[]
   todosLosDias: DiaGenerado[]
   acumuladorCosto: AcumuladorCosto
 }): Promise<AjusteDia[]> {
-  const { profile, todosLosDias, acumuladorCosto } = params
+  const { alumnosConApoyos, todosLosDias, acumuladorCosto } = params
   const resumenDias = todosLosDias.map(d =>
     `Día ${d.numero} (${d.momento_modalidad}): Inicio: ${d.inicio} Desarrollo: ${d.desarrollo} Cierre: ${d.cierre}`
   ).join('\n\n')
-  const alumnosInclusionLista: { codigo: string; acciones?: string }[] = Array.isArray(profile.alumnos_inclusion)
-    ? profile.alumnos_inclusion
-    : []
+  const alumnosInclusionLista: { codigo: string; acciones?: string }[] = alumnosConApoyos
   if (alumnosInclusionLista.length === 0) return []
   const alumnosInclusionTexto = JSON.stringify(alumnosInclusionLista)
   const userMessage = `ALUMNOS CON NECESIDADES DE INCLUSIÓN:
@@ -964,9 +992,10 @@ export async function POST(request: NextRequest) {
     // a propósito — necesitan el contexto del lote anterior para dar
     // continuidad narrativa; eso no se puede paralelizar sin sacrificar
     // calidad, así que esa parte del tiempo total sigue siendo irreducible.
+    const grupoAlumnos = await obtenerGrupoAlumnos(supabaseAdmin, profile.id)
     const [ajustes_por_dia, rubricas, ejesFinal, evaluacionFormativa] = await Promise.all([
       generarAjustesPorDia({
-        profile,
+        alumnosConApoyos: grupoAlumnos.conApoyos,
         todosLosDias: todasLasDiasGeneradas,
         acumuladorCosto,
       }),
@@ -995,11 +1024,7 @@ export async function POST(request: NextRequest) {
         acumuladorCosto,
       }),
     ])
-    const rosterRegulares = await obtenerRosterAlumnos(supabaseAdmin, profile.id)
-    const codigosInclusion = new Set(
-      (Array.isArray(profile.alumnos_inclusion) ? profile.alumnos_inclusion : []).map((a: any) => a.codigo)
-    )
-    const rosterCompleto = [...rosterRegulares, ...Array.from(codigosInclusion)]
+    const rosterCompleto = grupoAlumnos.roster
 
     const rubricasConRegistro = rubricas.map(r => ({
       ...r,
