@@ -671,9 +671,16 @@ function NuevaPlaneacionInner() {
     const pdaPrincipal1 = pdasParaAgente[0] || null
     const pdaPrincipal2 = pdasParaAgente[1] || null
     try {
+      // [sep 2026, saneamiento Fase 0] El servidor ya no confía en el
+      // `profile` del navegador: exige el token de sesión para verificar
+      // en la base de datos quién está generando.
+      const { data: { session: sesionActual } } = await supabase.auth.getSession()
       const res = await fetch('/api/generar-planeacion', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sesionActual?.access_token || ''}`,
+        },
         body: JSON.stringify({
           job_id: jobId,
                     form: {

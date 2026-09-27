@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { verificarUsuario } from '@/lib/verificarUsuario'
 const client = new Anthropic()
 
 const MODEL = process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-6'
@@ -702,11 +703,37 @@ export async function POST(request: NextRequest) {
   const acumuladorCosto: AcumuladorCosto = { total: 0 }
 
   try {
-    const { form, profile, job_id } = await request.json()
-    jobId = job_id
+        // [sep 2026, saneamiento Fase 0] Identidad verificada en el SERVIDOR.
+    // Antes el navegador mandaba el `profile` completo y se le creía todo
+    // (incluido profile.id, usado como user_id al guardar). Ahora el
+    // navegador solo manda el formulario + su token de sesión; el perfil
+    // se lee de la base de datos con el id VERIFICADO, y se revisa la
+    // membresía ANTES de gastar un solo token de Anthropic.
+    const auth = await verificarUsuario(request)
+    if (!auth.autorizado) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+    supabaseAdmin = auth.supabaseAdmin
 
-    const { supabaseAdmin: clienteAdmin } = await import('@/lib/supabase')
-    supabaseAdmin = clienteAdmin
+    const { data: profile, error: errorPerfil } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', auth.usuario.id)
+      .single()
+    if (errorPerfil || !profile) {
+      return NextResponse.json({ error: 'No se encontró tu perfil.' }, { status: 403 })
+    }
+
+    const MEMBRESIAS_CON_ACCESO = ['trial', 'active', 'founder']
+    if (!MEMBRESIAS_CON_ACCESO.includes(profile.membership_status)) {
+      return NextResponse.json(
+        { error: 'Tu membresía no está activa. Puedes seguir consultando y descargando tus planeaciones anteriores; para generar nuevas, renueva tu membresía.' },
+        { status: 403 }
+      )
+    }
+
+    const { form, job_id } = await request.json()
+    jobId = job_id
 
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
