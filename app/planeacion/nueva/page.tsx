@@ -1,5 +1,6 @@
 // app/planeacion/nueva/page.tsx
 'use client'
+import { esPdaPrioritario } from '@/lib/cobertura'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
@@ -108,27 +109,11 @@ function nombreCorto(nombre: string | null): string {
 
 function getBadgesCapa2(evaluacion: any, pdaTexto: string): boolean {
   if (!evaluacion || Array.isArray(evaluacion)) return false
-  const lista = evaluacion?.pdas_prioritarios_grupo || []
-  return lista.some((p: any) =>
-    (typeof p === 'string' ? p : p?.pda || '')
-      .toLowerCase().trim() === pdaTexto.toLowerCase().trim()
-  )
+  return esPdaPrioritario(evaluacion?.pdas_prioritarios_grupo, pdaTexto)
 }
 
 function getBadgesCapa3(pdasJardin: any, pdaTexto: string): boolean {
-  if (!pdasJardin) return false
-  if (typeof pdasJardin === 'string') {
-    return pdasJardin.toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
-  }
-  if (Array.isArray(pdasJardin)) {
-    return pdasJardin.some((p: any) =>
-      (typeof p === 'string' ? p : p?.pda || '').toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
-    )
-  }
-  if (typeof pdasJardin === 'object') {
-    return JSON.stringify(pdasJardin).toLowerCase().includes(pdaTexto.toLowerCase().trim().slice(0, 40))
-  }
-  return false
+  return esPdaPrioritario(pdasJardin, pdaTexto)
 }
 
 function NuevaPlaneacionInner() {
@@ -1207,7 +1192,7 @@ function NuevaPlaneacionInner() {
                                                     style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: deshabilitado ? 'not-allowed' : 'pointer' }} />
                                                   <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, flex: 1 }}>
                                                     <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
-                                                    {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
+                                                    {esPdaPrioritario(profile?.pdas_prioritarios, pda.pda) && (
                                                       <span style={{ fontSize: 10, fontWeight: 700, color: '#00A896', background: '#E0F5F3', border: '1px solid #00A896', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                                         ⭐ Prioritario para tu grupo
                                                       </span>
@@ -1251,7 +1236,7 @@ function NuevaPlaneacionInner() {
                                                             style={{ marginTop: 2, width: 15, height: 15, accentColor: '#00A896', flexShrink: 0, cursor: deshabilitado ? 'not-allowed' : 'pointer' }} />
                                                           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, flex: 1 }}>
                                                             <span style={{ fontSize: 13, lineHeight: 1.6, color: '#1A1A2E' }}>{pda.pda}</span>
-                                                            {(profile?.pdas_prioritarios || []).some((p: any) => p.pda === pda.pda) && (
+                                                            {esPdaPrioritario(profile?.pdas_prioritarios, pda.pda) && (
                                                               <span style={{ fontSize: 10, fontWeight: 700, color: '#00A896', background: '#E0F5F3', border: '1px solid #00A896', borderRadius: 20, padding: '1px 8px', alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                                                 ⭐ Prioritario para tu grupo
                                                               </span>

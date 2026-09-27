@@ -353,3 +353,17 @@ export function calcularPrioritarios(
     pendientes,
   }
 }
+
+// [Saneado 27 sep 2026 — Fase 1] ¿El PDA está en esta fuente de prioritarios?
+// Misma comparación que la canasta (texto normalizado, sin el punto final),
+// para que la marca en Nueva Planeación y el conteo de Mi Avance coincidan.
+// Acepta las mismas formas que textosDeFuente (lista de textos, lista de
+// objetos con "pda" u objeto { pdas: [...] }) y, por compatibilidad, un texto.
+export function esPdaPrioritario(fuente: unknown, pdaTexto: string): boolean {
+  if (!pdaTexto) return false
+  const buscado = normalizarTextoPda(pdaTexto)
+  if (typeof fuente === 'string') {
+    return normalizarTextoPda(fuente).includes(buscado)
+  }
+  return textosDeFuente(fuente).some(t => normalizarTextoPda(t) === buscado)
+}
