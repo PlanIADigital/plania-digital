@@ -132,6 +132,22 @@ no acciones, y con género.
 **Verificado:** evaluación de prueba con 3 alumnos ficticios → 2 sugerencias con acciones neutras ancladas en
 fortalezas, sin nombres; confirmadas a AL-02 (reemplazó el texto anterior) y AL-03.
 
+### Parte 4 — Barreras con enfoque BAP · 27 sep 2026 · rama `saneamiento/fase1-barreras-bap`
+
+**Diagnóstico:** las etiquetas de barreras (`nee`) a veces traían términos clínicos ("Dislalia"), contrario al
+enfoque BAP de la NEM. **Decisión del fundador:** cumplir BAP y la normativa NEM, corregir ya.
+
+**Construido (el prompt solo se AMPLÍA):** `analizar-evaluacion-individual` +776 caracteres — regla de ENFOQUE BAP:
+en `nee`, `observaciones`, `alertas` y `resumen_general` solo barreras observables en el contexto del aula, nunca
+diagnósticos ni términos clínicos (dislalia, TDAH, TEA, autismo, Asperger, dislexia, trastorno, síndrome, déficit,
+hiperactividad), aunque el documento de la educadora los mencione; se traducen a la barrera observable.
+
+**Verificado:** documento de prueba que decía "diagnóstico de TDAH" y "dislalia" → etiquetas, observación y apoyos
+sin ningún término clínico ("Dificultad en la pronunciación de sonidos r y rr en situaciones orales").
+
+**Lenguaje neutro (mismo día, a propuesta del fundador):** +regla que extiende el lenguaje neutro a `nee`,
+`observaciones`, `alertas` y `resumen_general` (ej. "permanece en silencio" en lugar de "permanece callada").
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -144,8 +160,6 @@ fortalezas, sin nombres; confirmadas a AL-02 (reemplazó el texto anterior) y AL
 ## Pendientes
 
 **Fase 1 — Honestidad de datos (continúa):**
-- Etiquetas de barreras (`nee`) de la evaluación individual: a veces traen términos clínicos (ej. "Dislalia"),
-  contrario al enfoque BAP. Vienen de la parte original del prompt (zona protegida): decidir con el fundador.
 - Mi Avance (pestaña Diversidad) y panel del directivo muestran las NEE detectadas por la IA; deben mostrar
   los apoyos CONFIRMADOS por la educadora (`alumnos_codigo`).
 - Distintivos de prioritario en Nueva Planeación comparan texto exacto (`p.pda === pda.pda`) y fallan por el
