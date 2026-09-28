@@ -212,7 +212,7 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   **0** planeaciones afectadas. El guardado actual de Nueva Planeación registra bien el segundo PDA.
 - Conclusión: son datos viejos de prueba. No se recuperan ni se modifican.
 
-## Fase 2 — Estructura · 27 sep 2026 · ✅ CERRADA
+## Fase 2 — Estructura · 27 sep 2026 · 🟡 Partes 1–9 publicadas; falta Parte 10 (estilos de aprendizaje)
 
 ### Parte 1 — Ciclo escolar sin valores escritos a mano · 27 sep 2026 · rama `saneamiento/fase2-ciclo`
 - **Hallazgo:** `generar-planeacion` guardaba siempre `school_year_id = 96cae520…` (fila 2025-2026). Las 44
@@ -316,6 +316,34 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - Cerrar ciclo (pantalla y API): propone el ciclo anterior al activo, rechaza el activo o uno posterior (pantalla
   y servidor), valida el formato y marca `is_current` en `school_years`. Se retiró el "paso 2 manual".
 - Verificado: fechas límite (31 jul 23:59 → 2026-2027; 1 ago 00:00 → 2027-2028).
+
+### Parte 10 — Estilos de aprendizaje en Mi Grupo · ✅ ENFOQUE APROBADO (27 sep 2026) · se construye al inicio de la siguiente sesión
+- **Origen (fundador, CTE 25 sep 2026):** las educadoras ya aplican una evaluación de estilos de aprendizaje; en
+  algunos jardines ~85 % del grupo sale kinestésico y el resto visual/auditivo. Se propone una tarjeta
+  **opcional** en Mi Grupo, después de la evaluación individual ("Alumno 1: kinestésico", "Alumno 2: visual"…),
+  para que MÍA ajuste el diseño de actividades (más cuerpo, expresión y movimiento si el grupo es kinestésico).
+- **A favor:** dato que las educadoras ya tienen (cero trabajo extra); refleja al grupo real; en preescolar el
+  movimiento es adecuado al desarrollo; encaja con el enfoque de neurodidáctica y con Musilandia.
+- **En contra / riesgos:** la investigación no respalda que enseñar "según el estilo" mejore el aprendizaje
+  (hipótesis de correspondencia; la OCDE la lista como neuromito); riesgo de etiquetar niños ("es kinestésico"),
+  contrario al enfoque BAP/NEM; riesgo de empobrecer la variedad (menos actividades visuales o auditivas para
+  quien sí las necesita); instrumentos no estandarizados; requiere una regla nueva en el prompt (zona protegida).
+- **Diseño propuesto:** (1) tarjeta opcional "3.3 · Preferencias de aprendizaje del grupo"; (2) MÍA guarda solo
+  el **resumen del grupo** (porcentajes), sin etiqueta por niño en las planeaciones; (3) regla que se AGREGA al
+  prompt: el resumen calibra la **proporción** de actividades (más movimiento si predomina kinestésico) pero
+  **siempre** con variedad multisensorial (DUA: múltiples formas de representación y de acción); nunca menciona
+  estilos de niños concretos. Requiere autorización del fundador para la regla.
+- **Aprobado por el fundador (27 sep 2026, 20:24):** resumen del grupo, sin etiquetas individuales, siempre con
+  variedad multisensorial (DUA). Autoriza AGREGAR la regla al prompt. Con esta parte se cierra la Fase 2.
+- **Captura (28 sep):** opción A del fundador: la educadora escribe cuántos niños salieron kinestésicos, visuales y
+  auditivos (sin subir documento: sin costo de IA ni riesgo de nombres). Ubicación: tarjeta **3.3** dentro de
+  "3 · Diagnóstico Pedagógico", con barra de porcentajes, validación "N de total" y estado "Guardado".
+- **Paso 1 (28 sep):** SQL `database/2026-09-28_fase2_estilos_aprendizaje.sql` (columna `users.estilos_aprendizaje` y
+  sección `estilos_aprendizaje` en el historial; aplicado). API `/api/estilos-aprendizaje`, componente
+  `TarjetaEstilosAprendizaje`, sección 3 en columnas adaptables y cerrar ciclo limpia el dato.
+- **Paso 2 (pendiente):** regla en `SYSTEM_PROMPT_DIAS` (se agrega), resumen en `lib/planeacion/contexto.ts` y aviso en
+  "Creando tu planeación" ("MÍA considera que tu grupo es mayormente kinestésico").
+- Nota: `analizar-diagnostico` todavía usa `grado || '2°'` en el servidor (la pantalla ya exige grado); ajustar en Fase 3.
 
 ## Decisiones de producto registradas (26-27 sep 2026)
 

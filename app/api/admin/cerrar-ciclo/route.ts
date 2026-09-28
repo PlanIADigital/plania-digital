@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       grado: null,
       grupo_letra: null,
       total_alumnos: null,
+      estilos_aprendizaje: null,
     })
     .not('id', 'is', null) // actualiza todas las filas (condición siempre verdadera, requerida por Supabase para updates masivos)
     .select('id')
