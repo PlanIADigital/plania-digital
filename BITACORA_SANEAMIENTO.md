@@ -212,7 +212,7 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   **0** planeaciones afectadas. El guardado actual de Nueva Planeación registra bien el segundo PDA.
 - Conclusión: son datos viejos de prueba. No se recuperan ni se modifican.
 
-## Fase 2 — Estructura · desde 27 sep 2026 · 🟡 EN CURSO
+## Fase 2 — Estructura · 27 sep 2026 · ✅ CERRADA
 
 ### Parte 1 — Ciclo escolar sin valores escritos a mano · 27 sep 2026 · rama `saneamiento/fase2-ciclo`
 - **Hallazgo:** `generar-planeacion` guardaba siempre `school_year_id = 96cae520…` (fila 2025-2026). Las 44
@@ -299,6 +299,24 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   `fechaLocalISO(new Date(), zonaHorariaPorCCT(cct))`, igual que el generador.
 - Datos previos: AL-18 y AL-19 de la cuenta de prueba quedaron con 28 sep (no se corrigen).
 
+- ✅ Verificado en local: AL-20 "alta 27 sep" y "(baja 27 sep)" registrados a las 19:50 (antes marcaba 28).
+
+### Parte 8 — "Completado" solo después de guardar · 27 sep 2026 · PR #17
+- `generar-planeacion` marcaba `estado: 'completado'` ("¡Tu planeación está lista!") ANTES de guardar; si el
+  guardado fallaba, la pantalla pasaba de "lista" a "error". Ahora el aviso previo dice "Guardando tu
+  planeación..." y `completado` se marca una sola vez, ya con `planning_id` (se quitó el `as any`).
+
+### Parte 9 — Cambio de ciclo automático · 27 sep 2026 · rama `saneamiento/fase2-ciclo-automatico`
+- **Hallazgo:** `CICLO_ESCOLAR_ACTIVO` era una constante escrita a mano que usan 23 archivos; cambiar de ciclo
+  exigía editar código y desplegar. El admin proponía cerrar `'2025-2026'` y nada impedía cerrar el ciclo activo
+  (limpiaría Mi Grupo de todas las cuentas a mitad del ciclo).
+- `lib/calendarioEscolar.ts`: `CICLO_ESCOLAR_ACTIVO` se calcula por fecha con `cicloEscolarParaFecha()` (cambia el
+  1 de agosto, hora del centro de México) + `cicloAnterior()`. Emergencia: `NEXT_PUBLIC_CICLO_ESCOLAR_FORZADO`.
+  Los 23 archivos siguen leyendo la misma constante (sin cambios en ellos).
+- Cerrar ciclo (pantalla y API): propone el ciclo anterior al activo, rechaza el activo o uno posterior (pantalla
+  y servidor), valida el formato y marca `is_current` en `school_years`. Se retiró el "paso 2 manual".
+- Verificado: fechas límite (31 jul 23:59 → 2026-2027; 1 ago 00:00 → 2027-2028).
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -307,6 +325,12 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - Maestros de música (futuro): el federal (19DJN) rota entre muchos jardines; el estatal (19EJN) atiende uno
   o dos. Tabla anual de asignaciones (CCT, día, turno, horas) y planeación general ligada a varios CCT.
 - Códigos de alumnos y apoyos: ver Fase 1, Parte 2.
+- **Cambio de ciclo (27 sep 2026):** el ciclo activo cambia solo el **1 de agosto**. Motivo del fundador: las clases
+  terminan a mediados de julio (2027: 9 de julio), el colectivo docente trabaja una semana o 10 días más y el
+  1 de agosto ya nadie labora; los docentes regresan una semana antes que los niños (fines de agosto / 1 de
+  septiembre), así que al volver ya está activo el ciclo nuevo. Pasos cada año: (1) nada el 1 de agosto;
+  (2) cargar el calendario del ciclo nuevo en el admin; (3) en Admin → Cerrar ciclo, cerrar el ciclo que terminó
+  (ya viene propuesto) antes de que regresen las educadoras. No se edita código.
 - Directivo en periodo de prueba (`trial`): SÍ ve el panel completo de sus docentes (planeaciones, PDA,
   campos formativos, ejes articuladores). Motivo: la prueba debe mostrar el beneficio real de la membresía
   (y a mediano plazo, la ficha de avances por grupo y por jardín). Se mantiene active/trial/founder.
@@ -317,10 +341,8 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 dashboard), endpoint seguro para que el directivo abra una planeación de su docente, tabla de informes
 (CCT + autor + ciclo + tipo + archivo + foto JSON), tabla de asignaciones de CCT para maestros itinerantes.
 
-**Fase 2 — Estructura:** flujo de cambio de ciclo en el admin (cerrar ciclo + ciclo activo sin editar código +
-`is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
-por defecto), doble `estado: 'completado'`. Retiro de `pda_coverage`, su vista `pda_coverage_avanzada` y el trigger
-`registrar_pda_coverage` (ya nada los lee desde la Parte 5).
+**Pasa a Fase 3:** retiro de `pda_coverage`, su vista `pda_coverage_avanzada` y el trigger `registrar_pda_coverage`
+(ya nada los lee desde la Fase 2, Parte 5).
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`

@@ -27,13 +27,18 @@
 //  5. Registra el cierre en cierres_ciclo con el conteo de
 //     cuentas afectadas.
 //
-//  IMPORTANTE — este endpoint NO cambia CICLO_ESCOLAR_ACTIVO.
-//  Ese es un paso manual aparte (editar lib/calendarioEscolar.ts
-//  y hacer git push) — ver la UI de /admin/acciones para las
-//  instrucciones exactas paso a paso.
+//  6. [Saneado 27 sep 2026 — Fase 2] Marca en school_years el ciclo
+//     activo como is_current.
+//
+//  El ciclo activo (CICLO_ESCOLAR_ACTIVO) cambia solo el 1 de agosto
+//  (lib/calendarioEscolar.ts). Por seguridad este endpoint RECHAZA
+//  cerrar el ciclo activo o uno posterior: solo se cierran ciclos que
+//  ya terminaron.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarSuperAdmin } from '@/lib/verificarSuperAdmin'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { obtenerSchoolYearId } from '@/lib/schoolYear'
 
 export async function POST(request: NextRequest) {
   const auth = await verificarSuperAdmin(request)
@@ -45,6 +50,16 @@ export async function POST(request: NextRequest) {
   const { ciclo_a_cerrar } = await request.json()
   if (!ciclo_a_cerrar || typeof ciclo_a_cerrar !== 'string') {
     return NextResponse.json({ error: 'Falta el ciclo a cerrar (ej. "2025-2026")' }, { status: 400 })
+  }
+  if (!/^\d{4}-\d{4}$/.test(ciclo_a_cerrar)) {
+    return NextResponse.json({ error: 'Formato de ciclo inválido (ej. "2025-2026").' }, { status: 400 })
+  }
+  // [Saneado 27 sep 2026] Nunca cerrar el ciclo activo (ni uno posterior):
+  // limpiaría Mi Grupo de todas las cuentas a mitad del ciclo.
+  if (ciclo_a_cerrar >= CICLO_ESCOLAR_ACTIVO) {
+    return NextResponse.json({
+      error: `${ciclo_a_cerrar} es el ciclo activo o uno posterior (activo: ${CICLO_ESCOLAR_ACTIVO}). Solo se pueden cerrar ciclos que ya terminaron.`,
+    }, { status: 400 })
   }
 
   // Paso 2 — evitar doble ejecución sobre el mismo ciclo
@@ -109,6 +124,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       error: 'Los datos se limpiaron pero NO se pudo registrar el cierre en cierres_ciclo: ' + errorRegistro.message + '. Revisa manualmente antes de reintentar.',
     }, { status: 500 })
+  }
+
+  // Paso 6 — marcar en school_years el ciclo activo (no crítico: nadie lo
+  // lee para calcular; si falla, el cierre ya quedó registrado).
+  try {
+    const idActivo = await obtenerSchoolYearId(supabaseAdmin, CICLO_ESCOLAR_ACTIVO)
+    await supabaseAdmin.from('school_years').update({ is_current: false }).eq('is_current', true).neq('id', idActivo)
+    await supabaseAdmin.from('school_years').update({ is_current: true, updated_at: new Date().toISOString() }).eq('id', idActivo)
+  } catch (e) {
+    console.error('No se pudo marcar el ciclo activo en school_years (no crítico):', e)
   }
 
   return NextResponse.json({

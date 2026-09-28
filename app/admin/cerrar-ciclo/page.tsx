@@ -5,10 +5,10 @@
 //  Fase 2 del ciclo de vida de datos. Acción de dos partes:
 //  (1) esta página limpia los datos en base de datos, vía
 //      /api/admin/cerrar-ciclo
-//  (2) el fundador debe editar CICLO_ESCOLAR_ACTIVO en el código
-//      manualmente después — nunca se puede automatizar porque
-//      es una constante de build-time, no un valor en la base
-//      de datos. Esta página deja las instrucciones exactas.
+//  (2) [Saneado 27 sep 2026 — Fase 2] Ya no hay paso manual: el ciclo
+//      activo cambia solo el 1 de agosto (lib/calendarioEscolar.ts).
+//      Esta página propone por defecto el ciclo ANTERIOR al activo y
+//      no permite cerrar el activo.
 //
 //  [sep 2026] Tras un cierre exitoso, el botón deja de verse como
 //  advertencia roja (invitando a repetir la acción) y pasa a un
@@ -19,9 +19,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { fetchAdmin } from '@/lib/fetchAdmin'
+import { CICLO_ESCOLAR_ACTIVO, cicloAnterior } from '@/lib/calendarioEscolar'
 
 export default function CerrarCicloPage() {
-  const [cicloACerrar, setCicloACerrar] = useState('2025-2026')
+  const [cicloACerrar, setCicloACerrar] = useState(cicloAnterior(CICLO_ESCOLAR_ACTIVO))
   const [confirmando, setConfirmando] = useState(false)
   const [ejecutando, setEjecutando] = useState(false)
   const [resultado, setResultado] = useState<{ ok: boolean; mensaje: string; usuariosAfectados?: number } | null>(null)
@@ -76,6 +77,8 @@ export default function CerrarCicloPage() {
   }
 
     const yaCerradoAhora = cicloACerrar.trim() && ciclosCerrados.includes(cicloACerrar.trim())
+  // No se puede cerrar el ciclo activo ni uno posterior (borraría Mi Grupo a mitad del ciclo).
+  const cicloNoCerrable = !!cicloACerrar.trim() && cicloACerrar.trim() >= CICLO_ESCOLAR_ACTIVO
 
   return (
     <div style={{ maxWidth: 680 }}>
@@ -90,7 +93,7 @@ export default function CerrarCicloPage() {
         <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#3730A3', lineHeight: 1.8 }}>
           <li>No borra nada del historial — cada diagnóstico ya queda preservado en <code>documentos_historial</code>, etiquetado con su ciclo real.</li>
           <li>Limpia a vacío PMC, PA, Diagnóstico Grupal, Diagnóstico Individual, PDAs del jardín y Observaciones directivas de <strong>todas</strong> las cuentas, de golpe.</li>
-          <li>No cambia <code>CICLO_ESCOLAR_ACTIVO</code> — ese paso es manual, y las instrucciones están más abajo.</li>
+          <li>No cambia el ciclo activo: ese cambia solo el <strong>1 de agosto</strong> (hoy es <strong>{CICLO_ESCOLAR_ACTIVO}</strong>). Solo se puede cerrar un ciclo <strong>anterior</strong> al activo.</li>
           <li>Solo se puede ejecutar <strong>una vez</strong> por ciclo — si ya se cerró, el sistema lo rechaza.</li>
         </ul>
       </div>
@@ -107,6 +110,11 @@ export default function CerrarCicloPage() {
           placeholder="Ej. 2025-2026"
           style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #D1D5DB', fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }}
         />
+        {cicloNoCerrable && (
+          <p style={{ fontSize: 12, color: '#991B1B', margin: '-8px 0 14px' }}>
+            {cicloACerrar.trim()} es el ciclo activo (o uno posterior): no se puede cerrar. Solo se cierran ciclos anteriores a {CICLO_ESCOLAR_ACTIVO}.
+          </p>
+        )}
 
         {yaCerradoAhora ? (
           <button
@@ -121,11 +129,11 @@ export default function CerrarCicloPage() {
         ) : !confirmando ? (
           <button
             onClick={() => setConfirmando(true)}
-            disabled={!cicloACerrar.trim()}
+            disabled={!cicloACerrar.trim() || cicloNoCerrable}
             style={{
-              background: cicloACerrar.trim() ? '#DC2626' : '#D1D5DB',
+              background: cicloACerrar.trim() && !cicloNoCerrable ? '#DC2626' : '#D1D5DB',
               color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8,
-              fontSize: 13, fontWeight: 600, cursor: cicloACerrar.trim() ? 'pointer' : 'default',
+              fontSize: 13, fontWeight: 600, cursor: cicloACerrar.trim() && !cicloNoCerrable ? 'pointer' : 'default',
             }}
           >
             Cerrar ciclo {cicloACerrar}
@@ -175,29 +183,23 @@ export default function CerrarCicloPage() {
         </div>
       )}
 
-      {/* Paso manual — SIEMPRE visible, no solo tras el cierre, para que puedas
-          revisarlo con anticipación */}
-      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '16px 18px' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#92400E', margin: '0 0 10px' }}>
-          ⚠️ Paso 2 (manual, obligatorio) — actualizar el ciclo activo en el código
+      {/* [Saneado 27 sep 2026 — Fase 2] Cambio de ciclo automático (antes: paso manual en el código) */}
+      <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 10, padding: '16px 18px' }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#3730A3', margin: '0 0 10px' }}>
+          🔄 Cambio de ciclo automático · ciclo activo hoy: {CICLO_ESCOLAR_ACTIVO}
         </p>
-        <p style={{ fontSize: 12, color: '#92400E', margin: '0 0 12px', lineHeight: 1.6 }}>
-          Limpiar los datos NO cambia qué ciclo usa el generador. Ese valor vive en el código, no en la base de datos, así que tienes que editarlo tú mismo y desplegar.
-        </p>
-        <ol style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 12, color: '#92400E', lineHeight: 1.9 }}>
-          <li>Abre en VS Code el archivo: <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>lib/calendarioEscolar.ts</code></li>
-          <li>Busca la línea: <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>export const CICLO_ESCOLAR_ACTIVO = '...'</code></li>
-          <li>Cámbiala al ciclo nuevo, por ejemplo: <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>export const CICLO_ESCOLAR_ACTIVO = '2026-2027'</code></li>
-          <li>Guarda el archivo, y en tu terminal corre:</li>
+        <ol style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: 12, color: '#3730A3', lineHeight: 1.9 }}>
+          <li>El <strong>1 de agosto</strong> (hora del centro de México) el ciclo activo cambia solo. No hay que editar código ni desplegar.</li>
+          <li>Después del 1 de agosto, entra a esta página: ya propone el ciclo que terminó. Ciérralo antes de que las educadoras regresen (CTE intensivo).</li>
+          <li>Al cerrar, el ciclo nuevo queda marcado como actual en <code>school_years</code>.</li>
         </ol>
-        <pre style={{ background: 'white', border: '1px solid #FDE68A', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#374151', margin: '0 0 12px', overflowX: 'auto' }}>
-{`npx tsc --noEmit
-git add .
-git commit -m "Actualizar CICLO_ESCOLAR_ACTIVO a [nuevo ciclo]"
-git push`}
-        </pre>
-        <p style={{ fontSize: 12, color: '#92400E', margin: 0, lineHeight: 1.6 }}>
-          <strong>Cómo validar que quedó bien:</strong> espera a que el deploy diga "Ready" en Vercel, entra a cualquier cuenta de prueba en <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>/mi-grupo</code>, y confirma que todas las tarjetas (PMC, PA, Diagnóstico Grupal, Individual, PDAs del jardín, Observaciones) muestren <strong>"Seleccionar"</strong> en vez de datos ya guardados — eso confirma que tanto la limpieza de datos como el cambio de ciclo activo quedaron sincronizados correctamente.
+        <p style={{ fontSize: 12, color: '#3730A3', margin: '0 0 10px', lineHeight: 1.6 }}>
+          <strong>Emergencia</strong> (solo si la SEP cambiara las fechas): en Vercel → Settings → Environment Variables, crea{' '}
+          <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>NEXT_PUBLIC_CICLO_ESCOLAR_FORZADO</code> con el ciclo
+          (ej. <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>2027-2028</code>) y vuelve a desplegar. Bórrala cuando ya no haga falta.
+        </p>
+        <p style={{ fontSize: 12, color: '#3730A3', margin: 0, lineHeight: 1.6 }}>
+          <strong>Cómo validar el cierre:</strong> entra a una cuenta de prueba en <code style={{ background: 'white', padding: '1px 5px', borderRadius: 4 }}>/mi-grupo</code> y confirma que todas las tarjetas (PMC, PA, Diagnóstico Grupal, Individual, PDAs del jardín, Observaciones) muestren <strong>"Seleccionar"</strong> y que Configura tu grupo pida grado, grupo y alumnos.
         </p>
       </div>
     </div>
