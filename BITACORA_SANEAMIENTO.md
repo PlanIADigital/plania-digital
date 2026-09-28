@@ -212,7 +212,7 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   **0** planeaciones afectadas. El guardado actual de Nueva Planeación registra bien el segundo PDA.
 - Conclusión: son datos viejos de prueba. No se recuperan ni se modifican.
 
-## Fase 2 — Estructura · 27 sep 2026 · 🟡 Partes 1–9 publicadas; falta Parte 10 (estilos de aprendizaje)
+## Fase 2 — Estructura · 27-28 sep 2026 · ✅ CERRADA
 
 ### Parte 1 — Ciclo escolar sin valores escritos a mano · 27 sep 2026 · rama `saneamiento/fase2-ciclo`
 - **Hallazgo:** `generar-planeacion` guardaba siempre `school_year_id = 96cae520…` (fila 2025-2026). Las 44
@@ -317,7 +317,7 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   y servidor), valida el formato y marca `is_current` en `school_years`. Se retiró el "paso 2 manual".
 - Verificado: fechas límite (31 jul 23:59 → 2026-2027; 1 ago 00:00 → 2027-2028).
 
-### Parte 10 — Estilos de aprendizaje en Mi Grupo · ✅ ENFOQUE APROBADO (27 sep 2026) · se construye al inicio de la siguiente sesión
+### Parte 10 — Estilos de aprendizaje en Mi Grupo · 27-28 sep 2026 · ramas `saneamiento/fase2-estilos` y `saneamiento/fase2-estilos-mia`
 - **Origen (fundador, CTE 25 sep 2026):** las educadoras ya aplican una evaluación de estilos de aprendizaje; en
   algunos jardines ~85 % del grupo sale kinestésico y el resto visual/auditivo. Se propone una tarjeta
   **opcional** en Mi Grupo, después de la evaluación individual ("Alumno 1: kinestésico", "Alumno 2: visual"…),
@@ -341,8 +341,13 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - **Paso 1 (28 sep):** SQL `database/2026-09-28_fase2_estilos_aprendizaje.sql` (columna `users.estilos_aprendizaje` y
   sección `estilos_aprendizaje` en el historial; aplicado). API `/api/estilos-aprendizaje`, componente
   `TarjetaEstilosAprendizaje`, sección 3 en columnas adaptables y cerrar ciclo limpia el dato.
-- **Paso 2 (pendiente):** regla en `SYSTEM_PROMPT_DIAS` (se agrega), resumen en `lib/planeacion/contexto.ts` y aviso en
-  "Creando tu planeación" ("MÍA considera que tu grupo es mayormente kinestésico").
+- ✅ Paso 1 verificado en local: 10 · 1 · 1 → "Predomina: Kinestésico (83%)"; suma mayor al grupo bloquea el guardado.
+- **Paso 2 (28 sep):** `lib/estilosAprendizaje.ts` (nuevo: `resumenEstilosGrupo`, `estiloPredominante`; solo ciclo activo).
+  `generadores.ts` agrega "Estilos de aprendizaje del grupo: mayormente kinestésico (83 %); visual 8 %, auditivo 8 %"
+  al CONTEXTO DEL GRUPO (solo si la tarjeta está llena). `prompts.ts`: se AGREGA `R-ESTILOS-GRUPO` (proporción según el
+  estilo que predomina + cada día al menos una forma visual y una auditiva; nunca mencionar estilos ni etiquetar niños);
+  el parche verifica que el único cambio en el prompt sea la regla. Nueva Planeación muestra "MÍA considera que tu grupo
+  es mayormente kinestésico (83 %), con variedad para todos".
 - Nota: `analizar-diagnostico` todavía usa `grado || '2°'` en el servidor (la pantalla ya exige grado); ajustar en Fase 3.
 
 ## Decisiones de producto registradas (26-27 sep 2026)

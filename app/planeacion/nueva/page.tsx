@@ -1,6 +1,7 @@
 // app/planeacion/nueva/page.tsx
 'use client'
 import { esPdaPrioritario } from '@/lib/cobertura'
+import { estiloPredominante } from '@/lib/estilosAprendizaje'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
@@ -914,6 +915,11 @@ function NuevaPlaneacionInner() {
                 <p style={{ color: '#666', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
                   Diseñada para <strong>{gradoGrupo}{seccionGrupo ? ` ${seccionGrupo}` : ''}</strong>{totalAlumnos ? <> con <strong>{totalAlumnos} alumnos</strong></> : null}
                 </p>
+                {estiloPredominante(profile.estilos_aprendizaje) && (
+                  <p style={{ color: '#0F6E56', fontSize: 12, margin: '6px 0 0' }}>
+                    ✦ MÍA considera que tu grupo es mayormente <strong>{estiloPredominante(profile.estilos_aprendizaje)?.estilo}</strong> ({estiloPredominante(profile.estilos_aprendizaje)?.porcentaje} %), con variedad para todos.
+                  </p>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
