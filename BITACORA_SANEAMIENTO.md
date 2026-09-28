@@ -262,6 +262,16 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - `limites.ts` (`recortarAlLimite`): si no hay fin de oración después de la mitad del límite, corta en la última
   pausa natural (coma, punto y coma, dos puntos, guion largo) y cierra con punto. "..." queda como último recurso.
 
+- ✅ Verificado en producción ("Chef de las Emociones 2"): la narración dice "los niños", "cada niño" y "el grupo";
+  ningún campo termina en "...".
+
+### Parte 5 — Trayectoria de MÍA desde lib/cobertura · 27 sep 2026 · rama `saneamiento/fase2-trayectoria`
+- `obtenerTrayectoriaPDA` (`lib/planeacion/contexto.ts`) ya no lee `pda_coverage_avanzada`: usa
+  `cargarContextoAvance` + `calcularAvanceDocente` (mismo cálculo que Mi Avance y el directivo). Sin descartadas,
+  dentro de las fechas del calendario estatal, cuenta el 2.º PDA y "ya trabajado N veces" = planeaciones distintas.
+- El formato de cada línea que recibe MÍA es el mismo; ordenado por veces (antes por times_used y fecha).
+- Con esto ninguna parte de la app lee `pda_coverage`: solo la escribe el trigger. Queda lista para retirarse.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -282,12 +292,13 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 
 **Fase 2 — Estructura:** flujo de cambio de ciclo en el admin (cerrar ciclo + ciclo activo sin editar código +
 `is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
-por defecto), doble `estado: 'completado'`. Trayectoria de MÍA desde `lib/cobertura.ts` (hoy lee `pda_coverage_avanzada`,
-que no excluye descartadas, no registra el 2.º PDA y acumula `times_used`); después, retiro de `pda_coverage`,
-su vista y el trigger `registrar_pda_coverage` (Fase 3).
+por defecto), doble `estado: 'completado'`. Retiro de `pda_coverage`, su vista `pda_coverage_avanzada` y el trigger
+`registrar_pda_coverage` (ya nada los lee desde la Parte 5).
 
 **Tamaño del grupo:** hoy hay dos fuentes (`users.total_alumnos`, capturado a mano, y los códigos activos de
 `alumnos_codigo`); en la cuenta de prueba no coinciden (3 vs 12). Definir una sola fuente antes del lanzamiento.
+**Grado sin elegir:** `generar-planeacion` guarda `grade: profile.grado || '2°'`; si la educadora no configuró su
+grupo, la planeación queda como 2° sin avisar. Probablemente exigir grado antes de generar (Configura tu grupo).
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
