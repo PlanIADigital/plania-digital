@@ -236,6 +236,20 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - `lib/parsearJSON.ts` (nuevo): versión única, con los mensajes de log y lanzando el primer error.
 - Las 4 rutas importan `parsearJSONRobusto`; se quitaron ~326 líneas duplicadas.
 
+- ✅ Verificado en producción: planeación generada y evaluación individual analizada sin cambios.
+
+### Parte 3 — `generar-planeacion` separado en módulos · 27 sep 2026 · rama `saneamiento/fase2-separar-generador`
+- 1,071 líneas → `route.ts` (~500, solo el flujo `POST` y el progreso) + `lib/planeacion/`:
+  `prompts.ts` (zona protegida: DIAS, CIERRE, EJE, EVALUACION_FORMATIVA), `generadores.ts` (llamadas a MÍA y
+  sus mensajes), `contexto.ts` (trayectoria, grupo y apoyos, prioridades, dirección, estilo), `limites.ts`,
+  `costos.ts`, `tipos.ts`.
+- Solo se movió código y se agregó `export`. Verificado antes de publicar: los 14 bloques originales aparecen
+  idénticos y los 4 prompts coinciden carácter por carácter (8,485 / 6,221 / 1,069 / 765).
+- **Hallazgo (pendiente):** `obtenerTrayectoriaPDA` lee `pda_coverage_avanzada` y se la entrega a MÍA como
+  "TRAYECTORIA DEL GRUPO". Esos datos incluyen planeaciones descartadas y `times_used` se infla, así que MÍA
+  puede leer "ya trabajado N veces" cuando no es cierto. Hay que pasarla a `lib/cobertura.ts` antes de
+  retirar `pda_coverage`.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -256,10 +270,9 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 
 **Fase 2 — Estructura:** flujo de cambio de ciclo en el admin (cerrar ciclo + ciclo activo sin editar código +
 `is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
-por defecto), separar `generar-planeacion` (prompts, límites), doble
-`estado: 'completado'`. Retiro de `pda_coverage`, su vista y el trigger `registrar_pda_coverage`: ninguna
-pantalla los lee y sus datos no son confiables (no excluye descartadas, no registra el 2.º PDA, `times_used`
-acumula); candidato a Fase 3.
+por defecto), doble `estado: 'completado'`. Trayectoria de MÍA desde `lib/cobertura.ts` (hoy lee `pda_coverage_avanzada`,
+que no excluye descartadas, no registra el 2.º PDA y acumula `times_used`); después, retiro de `pda_coverage`,
+su vista y el trigger `registrar_pda_coverage` (Fase 3).
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
