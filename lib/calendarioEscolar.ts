@@ -19,7 +19,26 @@
 //  fines de semana, en los 32 estados, desde julio.
 // ============================================================
 import type { SupabaseClient } from '@supabase/supabase-js'
-export const CICLO_ESCOLAR_ACTIVO = '2026-2027'
+// [Saneado 27 sep 2026 — Fase 2] El ciclo activo se calcula por fecha
+// (decisión del fundador): cambia solo el 1 de AGOSTO, hora del centro de
+// México. Clases terminan a mediados de julio y el CTE intensivo empieza a
+// mediados de agosto, así que el cambio no toca ningún ciclo en curso.
+//   1 ago – 31 dic → "año-año+1"      1 ene – 31 jul → "año-1-año"
+// Emergencia (si la SEP cambiara fechas): variable de entorno
+// NEXT_PUBLIC_CICLO_ESCOLAR_FORZADO="2027-2028" en Vercel + redeploy.
+export function cicloEscolarParaFecha(fecha: Date = new Date()): string {
+  const [anio, mes] = fecha.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).split('-').map(Number)
+  const inicio = mes >= 8 ? anio : anio - 1
+  return `${inicio}-${inicio + 1}`
+}
+
+export function cicloAnterior(ciclo: string): string {
+  const inicio = parseInt(ciclo.slice(0, 4), 10)
+  return `${inicio - 1}-${inicio}`
+}
+
+const CICLO_FORZADO = (process.env.NEXT_PUBLIC_CICLO_ESCOLAR_FORZADO || '').trim()
+export const CICLO_ESCOLAR_ACTIVO = /^\d{4}-\d{4}$/.test(CICLO_FORZADO) ? CICLO_FORZADO : cicloEscolarParaFecha()
 export type DiaHabil = { fecha: string; label: string; esCTE: boolean; motivo?: string }
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
