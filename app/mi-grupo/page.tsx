@@ -5,6 +5,7 @@ import SidebarWrapper from '@/components/SidebarWrapper'
 import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
+import TarjetaEstilosAprendizaje from '@/components/TarjetaEstilosAprendizaje'
 import GrupoAlumnosApoyos, { sugerenciasPendientes } from '@/components/GrupoAlumnosApoyos'
 
 const MENSAJES_ANALISIS = [
@@ -935,7 +936,7 @@ async function abrirModalAlumnos() {
             <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <p style={s.cardTitle}>3 · Diagnóstico Pedagógico</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, flex: 1 }}>
                   <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
                       <p style={s.subTitle}>3.1 · Diagnóstico Grupal</p>
                     <p style={s.desc}>Necesidades y áreas de oportunidad del Grupo,<br/>para personalizar tu planeaciones.</p>
@@ -1069,6 +1070,12 @@ async function abrirModalAlumnos() {
                       </div>
                     )}
                   </div>
+                  {/* [Saneado 28 sep 2026] 3.3 · Estilos de aprendizaje (opcional, resumen del grupo) */}
+                  <TarjetaEstilosAprendizaje
+                    guardado={profile.estilos_aprendizaje || null}
+                    totalAlumnos={profile.total_alumnos || 0}
+                    onGuardado={(estilos) => { setProfile((prev: any) => ({ ...prev, estilos_aprendizaje: estilos })); refrescarFechas() }}
+                  />
                 </div>
               </div>
             </div>
