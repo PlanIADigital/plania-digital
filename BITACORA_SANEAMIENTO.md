@@ -289,6 +289,16 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - `/api/alumnos-codigo` (GET) sincroniza `users.total_alumnos` con los códigos activos (espejo para MÍA, Word y
   directivo). Los códigos iniciales solo se generan con un total confirmado.
 
+- ✅ Verificado en local y en producción: alta AL-18 / AL-19 → total 13; baja → total 12 sin captura manual;
+  los números dados de baja no se reutilizan.
+
+### Parte 7 — Fechas de alta y baja en hora local · 27 sep 2026 · rama `saneamiento/fase2-fechas-locales`
+- **Hallazgo (confirmado en pruebas):** el 27 sep a las 19:40 las marcas decían "alta 28 sep" / "baja 28 sep".
+  `fecha_alta` usaba el valor por defecto de la base (UTC) y `fecha_baja` `new Date().toISOString()` (UTC).
+- `/api/alumnos-codigo` (códigos iniciales y altas) y `/api/alumnos-codigo/baja` calculan la fecha con
+  `fechaLocalISO(new Date(), zonaHorariaPorCCT(cct))`, igual que el generador.
+- Datos previos: AL-18 y AL-19 de la cuenta de prueba quedaron con 28 sep (no se corrigen).
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -316,8 +326,7 @@ por defecto), doble `estado: 'completado'`. Retiro de `pda_coverage`, su vista `
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
 sin uso, respaldos `total_students` en `mi-grupo`, `planeacion/nueva` y `generar-planeacion` (la columna real
 es `total_alumnos`), columna `users.alumnos_inclusion` sin uso, estados sin uso en Mi Grupo
-(`alumnosCodigo`, `cargandoAlumnos`, `errorAlumnos`), `fecha_baja` se calcula en UTC (puede marcar el día
-siguiente si la baja se registra de noche).
+(`alumnosCodigo`, `cargandoAlumnos`, `errorAlumnos`).
 
 **Revisión ESLint (27 sep 2026, al cerrar Fase 1):** proyecto completo 293 problemas (259 errores, 34 avisos);
 archivos tocados en Fase 1: 91 (60 `no-explicit-any`, 14 `no-unescaped-entities`, 8 `set-state-in-effect`,

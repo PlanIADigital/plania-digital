@@ -22,6 +22,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarUsuario } from '@/lib/verificarUsuario'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
 
 const MAX_ALUMNOS = 60
 const MAX_LARGO_APOYOS = 600
@@ -139,6 +140,9 @@ export async function POST(request: NextRequest) {
   }
   const { supabaseAdmin: supabase, usuario } = auth
   const userId = usuario.id
+  // [Saneado 27 sep 2026] Fecha de alta en la zona del CCT (antes, el valor por
+  // defecto de la base en UTC marcaba el día siguiente después de las 18:00).
+  const hoy = fechaLocalISO(new Date(), zonaHorariaPorCCT(usuario.cct_primary)) ?? undefined
 
   const body = await request.json()
   const accion = body?.accion
@@ -172,6 +176,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         ciclo_escolar: CICLO_ESCOLAR_ACTIVO,
         codigo: `AL-${String(i + 1).padStart(2, '0')}`,
+        fecha_alta: hoy,
       }))
       const { data, error } = await supabase.from('alumnos_codigo').insert(filas).select(COLUMNAS)
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -184,7 +189,7 @@ export async function POST(request: NextRequest) {
     }
     const { data, error } = await supabase
       .from('alumnos_codigo')
-      .insert({ user_id: userId, ciclo_escolar: CICLO_ESCOLAR_ACTIVO, codigo: siguienteCodigo(codigosExistentes) })
+      .insert({ user_id: userId, ciclo_escolar: CICLO_ESCOLAR_ACTIVO, codigo: siguienteCodigo(codigosExistentes), fecha_alta: hoy })
       .select(COLUMNAS)
       .single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
