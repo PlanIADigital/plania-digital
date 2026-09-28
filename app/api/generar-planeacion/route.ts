@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     const estadoCodigo = (profile.cct_primary || '').slice(0, 2)
     const calDatos = await obtenerCalendarioEstatal(supabaseAdmin, estadoCodigo, CICLO_ESCOLAR_ACTIVO)
 
-    const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id)
+    const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id, estadoCodigo)
     const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)
     const retroalimentacionDireccion = obtenerRetroalimentacionDireccion(profile)
     const estiloNarrativo = obtenerEstiloNarrativo(profile)

@@ -5,26 +5,31 @@
 //  Lo que el generador lee del perfil y del grupo de la educadora.
 // ============================================================
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { calcularAvanceDocente, cargarContextoAvance } from '@/lib/avanceServidor'
 
-export async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string): Promise<string> {
+// [Saneado 27 sep 2026 — Fase 2] Trayectoria calculada con lib/cobertura.ts
+// (vía calcularAvanceDocente): mismo ciclo, sin descartadas, dentro de las
+// fechas del calendario estatal, contando el 2.º PDA; "veces" = planeaciones
+// distintas. Antes se leía pda_coverage_avanzada, que inflaba las repeticiones.
+// El formato de cada línea que recibe MÍA es el mismo de antes.
+export async function obtenerTrayectoriaPDA(supabaseAdmin: any, userId: string, estadoCodigo = ''): Promise<string> {
   if (!userId) return ''
   try {
-        const { data, error } = await supabaseAdmin
-      .from('pda_coverage_avanzada')
-      .select('campo, contenido, pda_literal, is_primary, covered_on, times_used')
-      .eq('user_id', userId)
-      .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
-      .order('times_used', { ascending: false })
-      .order('covered_on', { ascending: false })
-      .limit(12)
+    const ctx = await cargarContextoAvance(supabaseAdmin, estadoCodigo, CICLO_ESCOLAR_ACTIVO)
+    const { avance } = await calcularAvanceDocente(supabaseAdmin, { id: userId }, ctx)
+    if (avance.pdas.length === 0) return ''
 
-    if (error || !data || data.length === 0) return ''
+    const textoPorId: Record<string, string> = {}
+    for (const c of ctx.catalogo) textoPorId[c.id] = c.pda
 
-    return data.map((r: any) => {
-      const tipo = r.is_primary ? 'principal' : 'transversal'
-      const repeticion = r.times_used > 1 ? ` — ya trabajado ${r.times_used} veces con este grupo` : ''
-      return `- [${r.campo}] (${tipo}${repeticion}): ${r.pda_literal}`
-    }).join('\n')
+    return [...avance.pdas]
+      .sort((a, b) => b.veces - a.veces)
+      .slice(0, 12)
+      .map(p => {
+        const tipo = p.comoPrincipal > 0 ? 'principal' : 'transversal'
+        const repeticion = p.veces > 1 ? ` — ya trabajado ${p.veces} veces con este grupo` : ''
+        return `- [${p.campo}] (${tipo}${repeticion}): ${textoPorId[p.id] || ''}`
+      }).join('\n')
   } catch (e) {
     console.error('No se pudo obtener la trayectoria de PDA (no crítico):', e)
     return ''
