@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarUsuario } from '@/lib/verificarUsuario'
+import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
 
 // POST /api/alumnos-codigo/baja
 // body: { id } -> marca ese registro como inactivo (activo=false, fecha_baja=hoy)
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   // Verifica que el registro pertenezca a este usuario antes de modificarlo
   const { data, error } = await supabase
     .from('alumnos_codigo')
-    .update({ activo: false, fecha_baja: new Date().toISOString().slice(0, 10) })
+    .update({ activo: false, fecha_baja: fechaLocalISO(new Date(), zonaHorariaPorCCT(usuario.cct_primary)) })
     .eq('id', id)
     .eq('user_id', usuario.id)
     .select()
