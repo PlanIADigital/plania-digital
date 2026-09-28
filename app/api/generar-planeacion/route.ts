@@ -92,6 +92,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // [Saneado 27 sep 2026 — Fase 2] Grado y grupo obligatorios: sin ellos MÍA
+    // calibraría la planeación para un grado supuesto (antes '2°').
+    if (!profile.grado || !profile.grupo_letra) {
+      return NextResponse.json(
+        { error: 'Primero configura tu grupo (grado y grupo) en Mi Grupo.' },
+        { status: 400 }
+      )
+    }
+
     const { form, job_id } = await request.json()
     jobId = job_id
 
@@ -436,7 +445,7 @@ export async function POST(request: NextRequest) {
       starts_on: form.fecha_inicio || null,
       ends_on: form.fecha_fin || null,
       duration_days: diasHabiles.length,
-      grade: profile.grado || '2°',
+      grade: profile.grado,
       content_json: planeacion,
       eje_principal: form.eje_principal || null,
       eje_secundario: form.eje_secundario || null,

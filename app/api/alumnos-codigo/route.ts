@@ -104,6 +104,19 @@ export async function GET(request: NextRequest) {
     alta_posterior: !!fechaInicioGrupo && a.fecha_alta > fechaInicioGrupo,
   }))
 
+  // [Saneado 27 sep 2026 — Fase 2] Fuente única del tamaño del grupo: los códigos
+  // activos. users.total_alumnos queda como espejo (lo leen MÍA, el Word y el
+  // directivo) y se actualiza aquí después de cada alta o baja.
+  const totalActivos = conMarcas.filter((a: any) => a.activo).length
+  if (totalActivos > 0) {
+    const { error: errorTotal } = await supabase
+      .from('users')
+      .update({ total_alumnos: totalActivos })
+      .eq('id', usuario.id)
+      .or(`total_alumnos.is.null,total_alumnos.neq.${totalActivos}`)
+    if (errorTotal) console.error('No se pudo sincronizar total_alumnos:', errorTotal.message)
+  }
+
   return NextResponse.json({
     ok: true,
     ciclo: CICLO_ESCOLAR_ACTIVO,

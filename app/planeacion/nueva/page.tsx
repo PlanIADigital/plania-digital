@@ -217,9 +217,11 @@ function NuevaPlaneacionInner() {
 
   const finalidadRef = useRef<HTMLTextAreaElement>(null)
   const gradoMap: Record<string, string> = { '1er Grado': '1°', '2do Grado': '2°', '3er Grado': '3°' }
-  const gradoGrupo = gradoMap[profile?.grado || ''] || profile?.grado || '2°'
-  const seccionGrupo = (profile?.seccion_grupo || '').trim()
-  const totalAlumnos = profile?.total_alumnos || profile?.total_students || null
+  // [Saneado 27 sep 2026 — Fase 2] Sin grado no se supone '2°'; el grupo sale de
+  // grupo_letra (la misma columna de Mi Grupo) y el total de total_alumnos.
+  const gradoGrupo = profile?.grado ? (gradoMap[profile.grado] || profile.grado) : ''
+  const seccionGrupo = (profile?.grupo_letra || '').trim()
+  const totalAlumnos = profile?.total_alumnos || null
   const todasPdasSeleccionadas = contenidosElegidos.flatMap(c => c.pdasSeleccionados)
   const hayPdasSeleccionados = todasPdasSeleccionadas.length > 0
   const limitePdaAlcanzado = todasPdasSeleccionadas.length >= 2
@@ -857,6 +859,25 @@ function NuevaPlaneacionInner() {
     </div>
   )
 
+  // [Saneado 27 sep 2026 — Fase 2] Sin grado y grupo no se planea.
+  if (!profile.grado || !profile.grupo_letra) return (
+    <SidebarWrapper profile={profile}>
+      <div style={{ padding: '0 16px', maxWidth: 560, margin: '60px auto', textAlign: 'center' }}>
+        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 14, padding: 32 }}>
+          <p style={{ fontSize: 32, margin: '0 0 8px' }}>👥</p>
+          <h3 style={{ color: '#3D3A8C', margin: '0 0 8px', fontSize: 18 }}>Primero configura tu grupo</h3>
+          <p style={{ color: '#666', fontSize: 13, lineHeight: 1.6, margin: '0 0 20px' }}>
+            MÍA necesita tu <strong>grado</strong> y tu <strong>grupo</strong> para mostrarte los PDA correctos y calibrar tu planeación.
+            Elígelos en <strong>Configura tu grupo</strong>, en Mi Grupo.
+          </p>
+          <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            Ir a Mi Grupo →
+          </button>
+        </div>
+      </div>
+    </SidebarWrapper>
+  )
+
   return (
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 32px' }}>
@@ -891,7 +912,7 @@ function NuevaPlaneacionInner() {
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 4, fontSize: 18 }}>CREANDO TU PLANEACIÓN</h3>
                 <p style={{ color: '#666', fontSize: 13, marginBottom: 0, marginTop: 0 }}>
-                  Diseñada para <strong>{gradoGrupo || '2°'}{seccionGrupo ? ` ${seccionGrupo}` : ''}</strong>{totalAlumnos ? <> con <strong>{totalAlumnos} alumnos</strong></> : null}
+                  Diseñada para <strong>{gradoGrupo}{seccionGrupo ? ` ${seccionGrupo}` : ''}</strong>{totalAlumnos ? <> con <strong>{totalAlumnos} alumnos</strong></> : null}
                 </p>
               </div>
 
