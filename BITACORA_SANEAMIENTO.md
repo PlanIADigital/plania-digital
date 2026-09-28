@@ -272,6 +272,23 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
 - El formato de cada línea que recibe MÍA es el mismo; ordenado por veces (antes por times_used y fecha).
 - Con esto ninguna parte de la app lee `pda_coverage`: solo la escribe el trigger. Queda lista para retirarse.
 
+- ✅ Verificado en producción ("El Semáforo de mi Cuerpo 2", 3° B, 12 alumnos): encabezado "3er Grado B", sin número
+  de niños en la narración, sin textos cortados.
+
+### Parte 6 — Datos del grupo con una sola fuente · 27 sep 2026 · rama `saneamiento/fase2-grupo-unico`
+- **Hallazgo:** con grado vacío se suponía "2°" en Mi Grupo (análisis de documentos), Nueva Planeación (PDA) y el
+  guardado; con total vacío se suponían 24 alumnos (incluso para crear los códigos). Nueva Planeación leía
+  `seccion_grupo` en vez de `grupo_letra`. El total y los códigos AL-XX no estaban conectados (Mariana: 3 vs 12).
+- **Decisiones del fundador:** grado y grupo obligatorios (sin opción "Único": si hay un solo grupo, es A). El número
+  de alumnos sale de los códigos AL-XX activos: se confirma una vez al inicio y después cambia solo con altas y
+  bajas. Los documentos nunca cambian el total: si MÍA detecta otra cifra, solo pregunta.
+- Mi Grupo: sin grado y grupo no se analizan PA, diagnóstico grupal ni evaluación individual. El campo "Alumnos"
+  queda de solo lectura con "Altas y bajas →" cuando ya hay códigos. El aviso de MÍA ofrece "Revisar mi lista".
+- Nueva Planeación: pantalla "Primero configura tu grupo" con botón a Mi Grupo. `generar-planeacion` responde 400
+  sin grado y grupo, y guarda `grade: profile.grado` (sin "2°" supuesto).
+- `/api/alumnos-codigo` (GET) sincroniza `users.total_alumnos` con los códigos activos (espejo para MÍA, Word y
+  directivo). Los códigos iniciales solo se generan con un total confirmado.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -294,11 +311,6 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 `is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
 por defecto), doble `estado: 'completado'`. Retiro de `pda_coverage`, su vista `pda_coverage_avanzada` y el trigger
 `registrar_pda_coverage` (ya nada los lee desde la Parte 5).
-
-**Tamaño del grupo:** hoy hay dos fuentes (`users.total_alumnos`, capturado a mano, y los códigos activos de
-`alumnos_codigo`); en la cuenta de prueba no coinciden (3 vs 12). Definir una sola fuente antes del lanzamiento.
-**Grado sin elegir:** `generar-planeacion` guarda `grade: profile.grado || '2°'`; si la educadora no configuró su
-grupo, la planeación queda como 2° sin avisar. Probablemente exigir grado antes de generar (Configura tu grupo).
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`

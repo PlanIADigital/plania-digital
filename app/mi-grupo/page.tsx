@@ -43,7 +43,7 @@ function PantallaAnimacion({ grado, totalAlumnos, cct }: { grado: string; totalA
         @keyframes giroPlanIA { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
       `}</style>
       <h2 style={{ color: '#3D3A8C', fontSize: 20, fontWeight: 700, marginBottom: 8, marginTop: 0 }}>Analizando tu grupo{puntos}</h2>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>{grado} grado · {totalAlumnos} alumnos · {cct}</p>
+      <p style={{ color: '#888', fontSize: 13, marginBottom: 28, marginTop: 0 }}>{grado} grado{totalAlumnos ? ` · ${totalAlumnos} alumnos` : ''} · {cct}</p>
       <div style={{ background: 'white', borderRadius: 12, padding: '16px 24px', boxShadow: '0 2px 12px rgba(61,58,140,0.08)', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 360, width: '100%' }}>
         <p style={{ color: '#3D3A8C', fontSize: 14, fontWeight: 500, margin: 0, lineHeight: 1.5 }}>{MENSAJES_ANALISIS[mensajeIdx]}</p>
       </div>
@@ -169,6 +169,8 @@ const [errorEval, setErrorEval] = useState('')
 
 // 2C — Códigos de alumnos (roster)
 const [modalAlumnos, setModalAlumnos] = useState(false)
+// [Saneado 27 sep 2026] Número de alumnos = códigos AL-XX activos (fuente única).
+const [codigosActivos, setCodigosActivos] = useState<number | null>(null)
 const [alumnosCodigo, setAlumnosCodigo] = useState<any[]>([])
 const [cargandoAlumnos, setCargandoAlumnos] = useState(false)
 const [errorAlumnos, setErrorAlumnos] = useState('')
@@ -188,7 +190,10 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
   const [errorJardin, setErrorJardin] = useState('')
   const [resultadoJardin, setResultadoJardin] = useState<any>(null)
 
-  const gradoGrupo = GRADO_MAP[profile?.grado || ''] || profile?.grado || '2°'
+  // [Saneado 27 sep 2026 — Fase 2] Sin grado no se supone '2°': grado y grupo
+  // son obligatorios para analizar documentos (y para planear).
+  const gradoGrupo = profile?.grado ? (GRADO_MAP[profile.grado] || profile.grado) : ''
+  const grupoConfigurado = !!profile?.grado && !!profile?.grupo_letra
 
   useEffect(() => {
     async function load() {
@@ -197,6 +202,15 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
       const { data } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!data?.profile_completed) { router.push('/onboarding'); return }
       setProfile(data)
+      try {
+        const resCodigos = await fetchConSesion('/api/alumnos-codigo')
+        const jsonCodigos = await resCodigos.json()
+        if (jsonCodigos.ok) {
+          const activos = (jsonCodigos.alumnos || []).length
+          setCodigosActivos(activos)
+          if (activos > 0 && data.total_alumnos !== activos) setProfile((prev: any) => ({ ...prev, total_alumnos: activos }))
+        }
+      } catch { /* sin conexión: se muestra el total guardado */ }
       if (data.observaciones_directivo) { setResultadoObservaciones(data.observaciones_directivo); setObservacionesGuardadas(true) }
       if (data.diagnostico_escolar) { setResultadoEscolar(data.diagnostico_escolar); setDiagnosticoEscolarGuardado(true) }
       // [jul 2026] Faltaba marcar guardado=true al restaurar — sin
@@ -254,11 +268,9 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
 
   async function revisarDiscrepanciaAlumnos(detectado: number, origen: OrigenConteo) {
     if (!detectado || detectado <= 0) return
-    const actual = profile?.total_alumnos
-    if (!actual) {
-      await actualizarTotalAlumnos(detectado)
-      return
-    }
+    // [Saneado 27 sep 2026] MÍA solo PREGUNTA: nunca cambia el total por su cuenta.
+    // Con códigos, la referencia es la lista de alumnos activos.
+    const actual = codigosActivos && codigosActivos > 0 ? codigosActivos : profile?.total_alumnos
     if (actual === detectado) return
     setDiscrepanciaAlumnos({ detectado, origen })
   }
@@ -364,6 +376,7 @@ async function abrirModalAlumnos() {
   async function handleArchivoPA(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!grupoConfigurado) { setErrorPA('Primero configura tu grupo (grado y grupo) en la parte de arriba.'); e.target.value = ''; return }
     setAnalizandoPA(true); setErrorPA('')
     const ext = file.name.split('.').pop()?.toLowerCase() || 'desconocido'
     try {
@@ -408,6 +421,7 @@ async function abrirModalAlumnos() {
   async function handleArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0]
     if (!archivo) return
+    if (!grupoConfigurado) { setErrorDiagnostico('Primero configura tu grupo (grado y grupo) en la parte de arriba.'); e.target.value = ''; return }
     setAnalizando(true); setErrorDiagnostico(''); setPdas([]); setGuardado(false)
     try {
       const formData = new FormData()
@@ -434,6 +448,7 @@ async function abrirModalAlumnos() {
   async function handleArchivoEvaluacionIndividual(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!grupoConfigurado) { setErrorEval('Primero configura tu grupo (grado y grupo) en la parte de arriba.'); e.target.value = ''; return }
     setGuardandoEval(true); setErrorEval('')
     try {
       const formData = new FormData()
@@ -557,7 +572,7 @@ async function abrirModalAlumnos() {
     </div>
   )
 
-  const totalAlumnos = profile.total_students || profile.total_alumnos || 24
+  const totalAlumnos = profile.total_alumnos || 0
   const evalCompleta = evaluacionIndividual && typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && (evaluacionIndividual as any).resumen_general
   const cargandoAnimacionCompleta = analizando
 
@@ -629,6 +644,12 @@ async function abrirModalAlumnos() {
             </div>
             <div>
               <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Alumnos</label>
+              {codigosActivos && codigosActivos > 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ minWidth: 46, padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #E0DFF5', background: '#F8F8FC', display: 'inline-block' }}>{codigosActivos}</span>
+                  <button type="button" onClick={abrirModalAlumnos} style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Altas y bajas →</button>
+                </div>
+              ) : (
               <input
                 type="number" min="1" max="50" placeholder="24"
                 value={profile.total_alumnos || ''}
@@ -641,22 +662,26 @@ async function abrirModalAlumnos() {
                 }}
                 style={{ width: 70, padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
               />
+              )}
               {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
             </div>
           </div>
           {discrepanciaAlumnos && (
             <div style={{ background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' as const }}>
               <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', lineHeight: 1.6, flex: 1, minWidth: 260 }}>
-                🔔 <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '3.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}, pero tienes registrados <strong>{profile.total_alumnos}</strong> en tu grupo. ¿Actualizamos el total a {discrepanciaAlumnos.detectado}?
+                🔔 <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '3.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}
+                {codigosActivos && codigosActivos > 0
+                  ? <>, pero tu lista tiene <strong>{codigosActivos}</strong> alumnos activos. Si llegó o se fue alguien, regístralo en tu lista (si el documento no incluye a todo el grupo, deja tu lista igual).</>
+                  : <>. ¿Tu grupo tiene <strong>{discrepanciaAlumnos.detectado}</strong> alumnos?</>}
               </p>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button onClick={confirmarActualizarAlumnos}
+                <button onClick={codigosActivos && codigosActivos > 0 ? () => { setDiscrepanciaAlumnos(null); abrirModalAlumnos() } : confirmarActualizarAlumnos}
                   style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  ✅ Sí, actualizar
+                  {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : `✅ Sí, usar ${discrepanciaAlumnos.detectado}`}
                 </button>
                 <button onClick={descartarDiscrepanciaAlumnos}
                   style={{ background: 'white', border: '1.5px solid #93C5FD', color: '#1E40AF', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  ✕ Mantener {profile.total_alumnos}
+                  ✕ Mantener {codigosActivos && codigosActivos > 0 ? codigosActivos : (profile.total_alumnos || 'sin cambio')}
                 </button>
               </div>
             </div>
@@ -1085,8 +1110,12 @@ async function abrirModalAlumnos() {
             <DetalleModal titulo="Alumnos de tu grupo y apoyos" onClose={() => setModalAlumnos(false)}>
               <GrupoAlumnosApoyos
                 evaluacionIndividual={evaluacionIndividual}
-                totalAlumnos={profile?.total_alumnos || 24}
+                totalAlumnos={profile?.total_alumnos || 0}
                 onEvaluacionActualizada={setEvaluacionIndividual}
+                onTotalActualizado={(n: number) => {
+                  setCodigosActivos(n)
+                  if (n > 0) setProfile((prev: any) => (prev && prev.total_alumnos !== n ? { ...prev, total_alumnos: n } : prev))
+                }}
               />
             </DetalleModal>
           )}

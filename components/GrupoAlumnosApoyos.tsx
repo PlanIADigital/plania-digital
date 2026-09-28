@@ -77,10 +77,13 @@ export default function GrupoAlumnosApoyos({
   evaluacionIndividual,
   totalAlumnos,
   onEvaluacionActualizada,
+  onTotalActualizado,
 }: {
   evaluacionIndividual: any
   totalAlumnos: number
   onEvaluacionActualizada: (evaluacion: any) => void
+  // [Saneado 27 sep 2026] Avisa a Mi Grupo cuántos códigos activos hay (fuente única del total).
+  onTotalActualizado?: (total: number) => void
 }) {
   const [alumnos, setAlumnos] = useState<Alumno[]>([])
   const [bajas, setBajas] = useState<Alumno[]>([])
@@ -102,6 +105,7 @@ export default function GrupoAlumnosApoyos({
       if (json.ok) {
         setAlumnos(json.alumnos || [])
         setBajas(json.bajas || [])
+        onTotalActualizado?.((json.alumnos || []).length)
       } else {
         setError(json.error || 'No se pudo cargar tu grupo.')
       }
@@ -296,11 +300,19 @@ export default function GrupoAlumnosApoyos({
 
         {alumnos.length === 0 ? (
           <div style={{ textAlign: 'center' as const }}>
-            <p style={{ fontSize: 13, color: '#444', marginBottom: 12 }}>
-              Aún no tienes alumnos registrados. Genera la lista inicial con tu total actual ({totalAlumnos} alumnos),
-              en el mismo orden de tu lista.
-            </p>
-            <button type="button" disabled={ocupado} onClick={generarInicial} style={estilos.btnMarca}>Generar códigos iniciales</button>
+            {totalAlumnos > 0 ? (
+              <>
+                <p style={{ fontSize: 13, color: '#444', marginBottom: 12 }}>
+                  Aún no tienes alumnos registrados. Genera la lista inicial con tu total actual ({totalAlumnos} alumnos),
+                  en el mismo orden de tu lista.
+                </p>
+                <button type="button" disabled={ocupado} onClick={generarInicial} style={estilos.btnMarca}>Generar códigos iniciales</button>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: '#444', margin: 0 }}>
+                Primero escribe cuántos alumnos tiene tu grupo en <strong>Configura tu grupo</strong>; con ese número se generan los códigos.
+              </p>
+            )}
           </div>
         ) : (
           <>
