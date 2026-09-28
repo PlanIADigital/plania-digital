@@ -43,6 +43,7 @@ async function actualizarProgreso(
     estado: string
     error_mensaje: string
     fases_lotes: string[]
+    planning_id: string
   }>
 ) {
   if (!jobId) return
@@ -374,8 +375,10 @@ export async function POST(request: NextRequest) {
     if (jobId) {
       await actualizarProgreso(supabaseAdmin, jobId, {
         lotes_completados: lotes.length + 1,
-        fase_actual: '¡Tu planeación está lista!',
-        estado: 'completado',
+        // [Saneado 27 sep 2026] 'completado' se marca solo DESPUÉS de guardar (más
+        // abajo, con planning_id); antes la pantalla decía "lista" aunque el
+        // guardado todavía pudiera fallar.
+        fase_actual: 'Guardando tu planeación...',
       })
     }
 
@@ -488,7 +491,7 @@ export async function POST(request: NextRequest) {
         estado: 'completado',
         fase_actual: '¡Tu planeación está lista!',
         planning_id: savedData.id,
-      } as any)
+      })
     }
 
     return NextResponse.json({ planeacion, costo_generacion_usd: acumuladorCosto.total, planning_id: savedData?.id })
