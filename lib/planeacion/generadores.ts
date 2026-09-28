@@ -6,6 +6,7 @@
 // ============================================================
 import Anthropic from '@anthropic-ai/sdk'
 import { parsearJSONRobusto } from '@/lib/parsearJSON'
+import { resumenEstilosGrupo } from '@/lib/estilosAprendizaje'
 import { sumarCostoLlamada, type AcumuladorCosto } from './costos'
 import { SYSTEM_PROMPT_CIERRE, SYSTEM_PROMPT_DIAS, SYSTEM_PROMPT_EJE, SYSTEM_PROMPT_EVALUACION_FORMATIVA } from './prompts'
 import { LIMITE_DESCRIPCION_CIERRE, recortarAlLimite, validarAjustesCompletos, validarDiaCompleto } from './limites'
@@ -32,6 +33,7 @@ export async function generarLoteDeDias(params: {
 }): Promise<DiaGenerado[]> {
   const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, retroalimentacionDireccion, estiloNarrativo, esUltimoLote, acumuladorCosto } = params
 
+  const resumenEstilos = resumenEstilosGrupo(profile.estilos_aprendizaje)
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
   const materialesTexto = materialesUsados.length > 0
     ? `MATERIALES YA USADOS EN DÍAS ANTERIORES (no los repitas): ${materialesUsados.join(', ')}`
@@ -46,7 +48,7 @@ export async function generarLoteDeDias(params: {
 CONTEXTO DEL GRUPO:
 - CCT: ${profile.cct_primary} | Turno: ${profile.shift_primary} | Grado: ${profile.grade}
 - Alumnos: ${profile.total_alumnos || profile.total_students || 'no registrado'}
-- Contexto: ${profile.contexto_grupo || 'Grupo de preescolar Fase 2'}
+- Contexto: ${profile.contexto_grupo || 'Grupo de preescolar Fase 2'}${resumenEstilos ? `\n- Estilos de aprendizaje del grupo: ${resumenEstilos}` : ''}
 
 ESTILO PERSONAL DE LA EDUCADORA (calibra SOLO la voz — tono, longitud de oraciones, vocabulario — para que el texto suene auténticamente a ella; el contenido pedagógico y todas las reglas núcleo de este prompt siguen aplicando sin excepción):
 ${estiloNarrativo || 'No hay estilo personal registrado — usa el tono cálido y directo por defecto (ver sección TONO).'}
