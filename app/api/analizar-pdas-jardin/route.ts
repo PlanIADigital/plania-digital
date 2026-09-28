@@ -1,3 +1,4 @@
+import { parsearJSONRobusto } from '@/lib/parsearJSON'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { verificarUsuario } from '@/lib/verificarUsuario'
@@ -12,73 +13,6 @@ const CAMPOS_VALIDOS = [
   'Ética, Naturaleza y Sociedades',
   'De lo Humano y lo Comunitario',
 ]
-
-function repararJSON(raw: string): string {
-  const n = raw.length
-  let resultado = ''
-  let dentroDeString = false
-  let escapando = false
-  for (let i = 0; i < n; i++) {
-    const ch = raw[i]
-    if (!dentroDeString) {
-      resultado += ch
-      if (ch === '"') dentroDeString = true
-      continue
-    }
-    if (escapando) { resultado += ch; escapando = false; continue }
-    if (ch === '\\') { resultado += ch; escapando = true; continue }
-    if (ch === '\n') { resultado += '\\n'; continue }
-    if (ch === '\r') { resultado += '\\r'; continue }
-    if (ch === '\t') { resultado += '\\t'; continue }
-    if (ch === '"') {
-      let j = i + 1
-      while (j < n && /\s/.test(raw[j])) j++
-      const siguiente = raw[j]
-      const esCierreReal = siguiente === ',' || siguiente === '}' || siguiente === ']' || siguiente === ':' || siguiente === undefined
-      if (esCierreReal) { resultado += ch; dentroDeString = false }
-      else resultado += '\\"'
-      continue
-    }
-    resultado += ch
-  }
-  return resultado
-}
-
-function cerrarJSONTruncado(raw: string): string {
-  const n = raw.length
-  let dentroDeString = false
-  let escapando = false
-  const pila: string[] = []
-  for (let i = 0; i < n; i++) {
-    const ch = raw[i]
-    if (dentroDeString) {
-      if (escapando) { escapando = false; continue }
-      if (ch === '\\') { escapando = true; continue }
-      if (ch === '"') { dentroDeString = false; continue }
-      continue
-    }
-    if (ch === '"') { dentroDeString = true; continue }
-    if (ch === '{' || ch === '[') { pila.push(ch); continue }
-    if (ch === '}' || ch === ']') { pila.pop(); continue }
-  }
-  let cierre = ''
-  if (dentroDeString) cierre += '"'
-  while (pila.length > 0) {
-    const abierto = pila.pop()
-    cierre += abierto === '{' ? '}' : ']'
-  }
-  return raw + cierre
-}
-
-function parsearJSONRobusto(rawContent: string): any {
-  const sinFences = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim()
-  const reparado = repararJSON(sinFences)
-  try {
-    return JSON.parse(reparado)
-  } catch {
-    return JSON.parse(cerrarJSONTruncado(reparado))
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {

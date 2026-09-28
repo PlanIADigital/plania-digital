@@ -229,6 +229,13 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   `school_year_id` en `plannings` y `pda_coverage`. El trigger es solo `AFTER INSERT`: no genera duplicados.
 - Revisado y descartado: `pda_coverage` agrupa por `ciclo_escolar`, así que su cobertura no estaba mezclada.
 
+### Parte 2 — Reparador de JSON único · 27 sep 2026 · rama `saneamiento/fase2-json-unico`
+- **Hallazgo:** `repararJSON`, `cerrarJSONTruncado` y `parsearJSONRobusto` estaban copiadas en 4 rutas
+  (evaluación individual, PDA del jardín, programa analítico, generar planeación). Comparadas línea por
+  línea: misma lógica; solo cambiaban formato y los mensajes de log (dos copias no registraban nada).
+- `lib/parsearJSON.ts` (nuevo): versión única, con los mensajes de log y lanzando el primer error.
+- Las 4 rutas importan `parsearJSONRobusto`; se quitaron ~326 líneas duplicadas.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -249,9 +256,10 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 
 **Fase 2 — Estructura:** flujo de cambio de ciclo en el admin (cerrar ciclo + ciclo activo sin editar código +
 `is_current` en `school_years`; hoy `CICLO_ESCOLAR_ACTIVO` se cambia a mano y la pantalla propone `'2025-2026'`
-por defecto), separar `generar-planeacion` (prompts, JSON, límites), reparador de JSON copiado
-4 veces, ciclo escolar y UUID escritos a mano, doble `estado: 'completado'`. Decidir qué hacer con
-`pda_coverage` y el trigger `registrar_pda_coverage` (ya no los lee ninguna pantalla).
+por defecto), separar `generar-planeacion` (prompts, límites), doble
+`estado: 'completado'`. Retiro de `pda_coverage`, su vista y el trigger `registrar_pda_coverage`: ninguna
+pantalla los lee y sus datos no son confiables (no excluye descartadas, no registra el 2.º PDA, `times_used`
+acumula); candidato a Fase 3.
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
