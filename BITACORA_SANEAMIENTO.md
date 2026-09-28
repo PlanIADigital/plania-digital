@@ -250,6 +250,18 @@ abren Nueva Planeación con campo, contenido y PDA elegidos y la etiqueta.
   puede leer "ya trabajado N veces" cuando no es cierto. Hay que pasarla a `lib/cobertura.ts` antes de
   retirar `pda_coverage`.
 
+- ✅ Verificado en producción: planeación con 2 PDA, rúbricas y ajustes de AL-02 / AL-03.
+
+### Parte 4 — Narrativa sin número de alumnos y recorte sin frases rotas · 27 sep 2026 · rama `saneamiento/fase2-narrativa`
+- **Hallazgo:** MÍA narraba "Al entrar los tres al salón" porque recibe "Alumnos: N". Con 25 niños sería igual
+  de artificial y el texto deja de ser cierto con una baja o una falta.
+- `prompts.ts`: se AGREGA `R-GRUPO-SIN-NUMERO` (autorizada por el fundador) entre R-JORNADA-COMPLETA y
+  R-FORMATO-JSON. El parche verifica que el único cambio en el prompt sea esa regla.
+- **Hallazgo:** la red de seguridad de caracteres cortaba a media frase con "..." cuando la oración era muy larga
+  (ej. actividad complementaria del día 2: "…que refuerza lo mismo que...").
+- `limites.ts` (`recortarAlLimite`): si no hay fin de oración después de la mitad del límite, corta en la última
+  pausa natural (coma, punto y coma, dos puntos, guion largo) y cierra con punto. "..." queda como último recurso.
+
 ## Decisiones de producto registradas (26-27 sep 2026)
 
 - Informes del directivo: la cuenta es de la persona; los informes (trimestrales y de cierre, Word + "foto"
@@ -273,6 +285,9 @@ dashboard), endpoint seguro para que el directivo abra una planeación de su doc
 por defecto), doble `estado: 'completado'`. Trayectoria de MÍA desde `lib/cobertura.ts` (hoy lee `pda_coverage_avanzada`,
 que no excluye descartadas, no registra el 2.º PDA y acumula `times_used`); después, retiro de `pda_coverage`,
 su vista y el trigger `registrar_pda_coverage` (Fase 3).
+
+**Tamaño del grupo:** hoy hay dos fuentes (`users.total_alumnos`, capturado a mano, y los códigos activos de
+`alumnos_codigo`); en la cuenta de prueba no coinciden (3 vs 12). Definir una sola fuente antes del lanzamiento.
 
 **Fase 3 — Limpieza:** respaldos versionados (`.bak`, `.backup`, `aplicar_fix_generador.sh`),
 `design-tokens.ts` y `wordTemplates.ts` sin uso, llave duplicada `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
