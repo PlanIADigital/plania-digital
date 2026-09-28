@@ -34,6 +34,18 @@ export function recortarAlLimite(texto: string, limite: number): string {
   if (ultimoCierre > limite * 0.5) {
     return cortado.slice(0, ultimoCierre + 1)
   }
+  // [Saneado 27 sep 2026 — Fase 2] Si no hay fin de oración cerca, se corta en
+  // la última pausa natural (coma, punto y coma, dos puntos o guion largo) y se
+  // cierra con punto, para no dejar la frase rota con "...".
+  const ultimaPausa = Math.max(
+    cortado.lastIndexOf(', '),
+    cortado.lastIndexOf('; '),
+    cortado.lastIndexOf(': '),
+    cortado.lastIndexOf(' — ')
+  )
+  if (ultimaPausa > limite * 0.5) {
+    return cortado.slice(0, ultimaPausa).trim() + '.'
+  }
   const ultimoEspacio = cortado.lastIndexOf(' ')
   const base = ultimoEspacio > 0 ? cortado.slice(0, ultimoEspacio) : cortado
   return base.trim() + '...'
