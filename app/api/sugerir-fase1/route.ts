@@ -89,7 +89,7 @@ Tu papel es PROPONER opciones; la educadora siempre decide. Nunca presentes algo
 REGLAS:
 - Redacta en español de México, claro y profesional, sin tecnicismos innecesarios.
 - Nunca uses nombres de niños, códigos de alumno (AL-XX) ni etiquetas diagnósticas, clínicas o de discapacidad; la legislación vigente prohíbe etiquetar. Habla del grupo y de necesidades, nunca de diagnósticos.
-- No inventes datos que no estén en la información recibida.
+- No inventes datos que no estén en la información recibida. No atribuyas causas ni afirmes nada sobre el entorno, las familias o el jardín que no esté en esa información o en lo que escribió la educadora.
 - Responde SOLO con JSON válido, sin markdown ni explicaciones.`
 
 // ------------------------------------------------------------------
@@ -206,7 +206,7 @@ async function redactarProblematica(usuario: any, body: any) {
     `${REGLAS_BASE}
 
 TAREA: Redacta 2 versiones distintas de la SITUACIÓN PROBLEMA de un proyecto de preescolar, integrando las problemáticas elegidas por la educadora y su observación, si la hay (respeta sus ideas; no las sustituyas).
-- Cada versión: de 2 a 4 frases, entre 250 y 450 caracteres.
+- Cada versión: de 2 a 3 frases, entre 250 y 400 caracteres (nunca más de 420).
 - Describe la situación observada en el grupo o su entorno y por qué es importante atenderla.
 - Versión 1: más descriptiva del contexto. Versión 2: más centrada en las niñas y los niños.
 - No propongas actividades.
@@ -228,7 +228,7 @@ async function redactarProposito(usuario: any, body: any) {
     `${REGLAS_BASE}
 
 TAREA: Propón 2 PROPÓSITOS distintos para un proyecto de preescolar que atiende la situación problema recibida.
-- Cada propósito inicia con "Que las niñas y los niños" y tiene 1 o 2 frases, entre 150 y 300 caracteres.
+- Cada propósito inicia con "Que las niñas y los niños" y tiene 1 o 2 frases, entre 150 y 260 caracteres (nunca más de 280).
 - Expresa lo que aprenderán, desarrollarán y vivirán al atender esa situación; debe ser observable y alcanzable en preescolar.
 - Si la educadora escribió ideas, tómalas como base.
 

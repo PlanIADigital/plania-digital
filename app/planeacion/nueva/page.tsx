@@ -5,6 +5,8 @@ import { estiloPredominante } from '@/lib/estilosAprendizaje'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import Fase1Alma from '@/components/planeacion/Fase1Alma'
+import type { ValoresFase1 } from '@/components/planeacion/Fase1Alma'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
@@ -121,7 +123,8 @@ function NuevaPlaneacionInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [profile, setProfile] = useState<any>(null)
-  const [problematicasPA, setProblematicasPA] = useState<string[]>([])
+  // [30 sep 2026] Rediseño: primero Fase 1 (alma del proyecto), luego Fase 2.
+  const [pantalla, setPantalla] = useState<'fase1' | 'fase2'>('fase1')
   const [generating, setGenerating] = useState(false)
   const [progreso, setProgreso] = useState<ProgresoReal>({ totalLotes: 0, lotesCompletados: 0, faseActual: 'Iniciando...', estado: 'en_progreso', fasesLotes: [] })
   const [result, setResult] = useState<any>(null)
@@ -242,7 +245,6 @@ function NuevaPlaneacionInner() {
     && form.fecha_inicio >= fechaMinima
 
   const modalidadLista = fechaCompletaYValida && diasHabilesReales !== null && modalidadActualCabe && !modalidadBloqueada
-  const datosProyectoCompletos = !!form.nombre_proyecto && !!form.situacion_problema && !!form.finalidad
   const todosCamposCompletos =
     !!form.nombre_proyecto &&
     !!form.situacion_problema &&
@@ -271,16 +273,6 @@ function NuevaPlaneacionInner() {
       } catch (e) {
         console.error('No se pudo obtener el inicio del ciclo:', e)
       }
-      const { data: pa } = await supabase
-        .from('programa_analitico')
-        .select('pda_ponderacion')
-        .eq('educadora_id', session.user.id)
-        .eq('activo', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      const problematicas = pa?.pda_ponderacion?.problematicas_institucionales
-      if (Array.isArray(problematicas)) setProblematicasPA(problematicas)
     }
     load()
   }, [])
@@ -459,6 +451,19 @@ function NuevaPlaneacionInner() {
       fecha_fin: 'fecha',
     }
     if (mapa[field] && campoInvalido === mapa[field]) setCampoInvalido(null)
+  }
+
+  // [30 sep 2026] Fase 1 (Fase1Alma) confirmada por la educadora → pasa a Fase 2.
+  // Si cambió algo del alma del proyecto, las sugerencias de eje y
+  // transversales se vuelven a pedir con los datos nuevos.
+  function aplicarFase1(v: ValoresFase1) {
+    const cambio = v.nombre_proyecto !== form.nombre_proyecto
+      || v.situacion_problema !== form.situacion_problema
+      || v.finalidad !== form.finalidad
+    setForm(prev => ({ ...prev, ...v }))
+    if (cambio) setSugerenciaYaObtenida(false)
+    setPantalla('fase2')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleMetodologiaChange(value: string) {
@@ -881,7 +886,7 @@ function NuevaPlaneacionInner() {
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '0 32px' }}>
+      <div style={{ padding: '0 16px' }}>
 
         {generating && (
           <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -1084,67 +1089,34 @@ function NuevaPlaneacionInner() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'stretch' }}>
-
-              <div style={{ ...s.card, height: '100%', boxSizing: 'border-box' }}>
-                <p style={s.sectionTitle}>1 · Datos del proyecto</p>
-                <label style={s.label}>Nombre del proyecto *</label>
-                <input ref={refNombreInput} placeholder="Ej: El agua en nuestra vida" value={form.nombre_proyecto} onChange={e => update('nombre_proyecto', e.target.value)} style={{ ...s.input, ...estiloResaltado('nombre') }} />
-                {campoInvalido === 'nombre' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
-                                <label style={s.label}>Situación problema *</label>
-                {problematicasPA.length === 0 && (
-                  <p style={{ fontSize: 12, color: '#92400E', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '8px 10px', margin: '0 0 8px' }}>
-                    💡 Aún no has subido tu Programa Analítico en Mi Grupo — cuando lo subas, aquí podrás elegir directamente entre las problemáticas de tu jardín en vez de escribirlas a mano.
-                  </p>
-                )}
-                {problematicasPA.length > 0 && (
-                  <select
-                    value=""
-                    onChange={e => { if (e.target.value) update('situacion_problema', e.target.value) }}
-                    style={{ ...s.input, marginBottom: 8, color: '#6B7280', fontSize: 13 }}
-                  >
-                    <option value="">💡 Problemáticas detectadas en tu jardín (Programa Analítico) — elige una o escribe la tuya</option>
-                    {problematicasPA.map((p, i) => (
-                      <option key={i} value={p}>{p}</option>
-                    ))}
-                  </select>
-                )}
-                <textarea ref={refSituacionInput} placeholder="¿Qué situación del entorno motivó este proyecto?" value={form.situacion_problema} onChange={e => update('situacion_problema', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('situacion') }} />
-                {campoInvalido === 'situacion' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
-                <label style={s.label}>Propósito *</label>
-                <textarea ref={finalidadRef} placeholder="¿Cuál es el propósito de este proyecto? ¿Qué lograrán los alumnos al concluirlo?" value={form.finalidad} onChange={e => update('finalidad', e.target.value)} onInput={ajustarAlturaTextarea} rows={3} style={{ ...s.textarea, ...estiloResaltado('finalidad') }} />
-                {campoInvalido === 'finalidad' && <p style={{ color: '#DC2626', fontSize: 12, margin: '-12px 0 12px' }}>Este campo es obligatorio.</p>}
-                <div style={{ background: '#F8F8FE', border: '1px solid #D8D6F0', borderRadius: 10, padding: 16 }}>
-                  <label style={{ ...s.label, marginBottom: 4 }}>
-                    Recursos o materiales específicos
-                    <span style={{ fontWeight: 400, color: '#888', fontSize: 13, marginLeft: 6 }}>(opcional)</span>
-                  </label>
-                  <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>¿Tu directora indicó usar algún material en específico? El agente lo integrará en las actividades.</p>
-                  <textarea placeholder="Ej: báscula, objetos de medición, lupas, material reciclado..." value={form.recursos_materiales} onChange={e => update('recursos_materiales', e.target.value)} onInput={ajustarAlturaTextarea} rows={2}
-                    style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 14, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', background: 'white' } as React.CSSProperties} />
+            {pantalla === 'fase1' ? (
+              <Fase1Alma
+                inicial={{
+                  nombre_proyecto: form.nombre_proyecto,
+                  situacion_problema: form.situacion_problema,
+                  finalidad: form.finalidad,
+                  recursos_materiales: form.recursos_materiales,
+                }}
+                gradoGrupo={gradoGrupo}
+                seccionGrupo={seccionGrupo}
+                onAvanzar={aplicarFase1}
+              />
+            ) : (
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+              <div style={{ ...s.card, padding: 16, background: '#F4F3FB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <p style={{ ...s.sectionTitle, marginBottom: 0 }}>✓ El alma de tu planeación</p>
+                  <button onClick={() => setPantalla('fase1')} style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 4 }}>
+                    ← Editar
+                  </button>
                 </div>
+                <p style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: '#1A1A2E' }}>{form.nombre_proyecto}</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#555', lineHeight: 1.6 }}>{form.finalidad}</p>
               </div>
-
-                            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const, position: 'relative' as const }}>
-                {!datosProyectoCompletos && (
-                  <div style={{
-                    position: 'absolute', inset: 0, borderRadius: 12, zIndex: 5,
-                    background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(1.5px)',
-                    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
-                    textAlign: 'center' as const, padding: 32, gap: 10,
-                  }}>
-                    <span style={{ fontSize: 26 }}>🔒</span>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#3D3A8C' }}>
-                      Completa primero los datos del proyecto
-                    </p>
-                    <p style={{ margin: 0, fontSize: 12.5, color: '#666', maxWidth: 260, lineHeight: 1.6 }}>
-                      Nombre, situación problema y propósito, a la izquierda — así el sistema puede sugerirte los campos transversales correctos.
-                    </p>
-                  </div>
-                )}
-                <div style={datosProyectoCompletos ? undefined : { pointerEvents: 'none' as const, opacity: 0.45, filter: 'blur(0.3px)' }}>
+              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 16 }}>
+                <div>
                 <div ref={refModalidadSection} style={{ marginBottom: 24, padding: 6, borderRadius: 10, ...(modalidadBloqueada ? { boxShadow: '0 0 0 3px #EF4444', transition: 'box-shadow 0.25s ease' } : estiloResaltado('modalidad')) }}>
-                  <p style={s.sectionTitle}>2 · Modalidad de trabajo</p>
+                  <p style={s.sectionTitle}>1 · Modalidad de trabajo</p>
                   <label style={s.label}>
                     Modalidad didáctica *
                     <span style={{ fontWeight: 400, color: '#00A896', fontSize: 12, marginLeft: 8, background: '#E8F5F2', padding: '2px 8px', borderRadius: 99 }}>Sugerida por NEM 2022</span>
@@ -1195,7 +1167,7 @@ function NuevaPlaneacionInner() {
                 </div>
 
                 <div ref={refCampoFormativoSection} style={{ marginBottom: 24, padding: 6, borderRadius: 10, ...estiloResaltado(campoInvalido === 'pdas' ? 'pdas' : 'campoFormativo') }}>
-                  <p style={s.sectionTitle}>3 · Campo formativo principal</p>
+                  <p style={s.sectionTitle}>2 · Campo formativo principal</p>
                   {campoInvalido === 'campoFormativo' && (
                     <p style={{ color: '#DC2626', fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>Selecciona un campo formativo y al menos un contenido.</p>
                   )}
@@ -1362,7 +1334,7 @@ function NuevaPlaneacionInner() {
 
                 {ejePrincipal && (
                   <div style={{ marginBottom: 24 }}>
-                    <p style={s.sectionTitle}>4 · Eje articulador <span style={{ color: '#DC2626', fontWeight: 400 }}>(obligatorio)</span></p>
+                    <p style={s.sectionTitle}>3 · Eje articulador <span style={{ color: '#DC2626', fontWeight: 400 }}>(obligatorio)</span></p>
                     <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
                       MÍA determinó automáticamente el eje que mejor articula tu proyecto. Si no te convence, puedes cambiarlo abajo.
                     </p>
@@ -1444,7 +1416,7 @@ function NuevaPlaneacionInner() {
 
                 {transversales.length > 0 && (
                   <div style={{ marginBottom: 24 }}>
-                    <p style={s.sectionTitle}>5 · Campos transversales sugeridos <span style={{ color: '#888', fontWeight: 400 }}>(opcional)</span></p>
+                    <p style={s.sectionTitle}>4 · Campos transversales sugeridos <span style={{ color: '#888', fontWeight: 400 }}>(opcional)</span></p>
                     <p style={{ fontSize: 13, color: '#666', marginTop: 0, marginBottom: 20, lineHeight: 1.6 }}>
                       El sistema analizó tu proyecto y sugirió estos campos. Son completamente opcionales — puedes descartar los que no apliquen.
                     </p>
@@ -1479,7 +1451,7 @@ function NuevaPlaneacionInner() {
                 )}
 
                 <div ref={refFechaSection} style={{ marginBottom: 24, padding: 6, borderRadius: 10, ...estiloResaltado('fecha') }}>
-                  <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '6' : '5') : (transversales.length > 0 ? '5' : '4')} · Período de aplicación</p>
+                  <p style={s.sectionTitle}>{ejePrincipal ? (transversales.length > 0 ? '5' : '4') : (transversales.length > 0 ? '4' : '3')} · Período de aplicación</p>
                   {campoInvalido === 'fecha' && (
                     <p style={{ color: '#DC2626', fontSize: 12, margin: '0 0 10px', fontWeight: 600 }}>{mensajeErrorFecha}</p>
                   )}
@@ -1537,6 +1509,7 @@ function NuevaPlaneacionInner() {
 
               </div>
             </div>
+            )}
           </>
         )}
 
