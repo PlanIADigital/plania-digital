@@ -2,6 +2,9 @@
 // ============================================================
 //  PlanIA Digital — components/TarjetaEstilosAprendizaje.tsx
 //  [Saneado 28 sep 2026 — Fase 2, Parte 10] Tarjeta 3.3 de Mi Grupo.
+//  [Rediseño 30 sep 2026] Ahora dibuja su tarjeta completa con el mismo
+//  lenguaje visual que el resto de Mi Grupo y "El alma de tu planeación"
+//  (una columna, texto a la izquierda, estado ✓ guardado con borde cian).
 //  La educadora escribe cuántos niños salieron kinestésicos, visuales y
 //  auditivos. Opcional: si no la llena, no se bloquea nada. Solo se guarda
 //  el resumen del grupo (sin datos por niño). Guarda en /api/estilos-aprendizaje.
@@ -18,15 +21,30 @@ export type EstilosAprendizaje = {
   fecha?: string | null
 }
 
+const C = {
+  indigo: '#3D3A8C',
+  cian: '#00A896',
+  indigoClaro: '#EEEDF8',
+  texto: '#1A1A2E',
+  gris: '#6B7280',
+  borde: '#E0DFF5',
+}
+
+// Paleta oficial: cian, índigo e índigo claro (sin naranja ni rojo).
 const ESTILOS: { clave: 'kinestesico' | 'visual' | 'auditivo'; etiqueta: string; icono: string; color: string }[] = [
   { clave: 'kinestesico', etiqueta: 'Kinestésico', icono: '🏃', color: '#00A896' },
   { clave: 'visual', etiqueta: 'Visual', icono: '👁️', color: '#3D3A8C' },
-  { clave: 'auditivo', etiqueta: 'Auditivo', icono: '👂', color: '#F59E0B' },
+  { clave: 'auditivo', etiqueta: 'Auditivo', icono: '👂', color: '#9C99DB' },
 ]
 
 function fechaCorta(iso?: string | null): string {
   if (!iso) return ''
   return new Date(iso.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const enlace: React.CSSProperties = {
+  background: 'none', border: 'none', color: C.indigo, fontSize: 13, fontWeight: 600,
+  cursor: 'pointer', padding: '4px 0', textDecoration: 'underline', fontFamily: 'inherit',
 }
 
 export default function TarjetaEstilosAprendizaje({
@@ -81,29 +99,37 @@ export default function TarjetaEstilosAprendizaje({
   const predominante = mostrar && total > 0
     ? ESTILOS.map((e, i) => ({ e, n: [mostrar.kinestesico, mostrar.visual, mostrar.auditivo][i] })).sort((a, b) => b.n - a.n)[0]
     : null
+  const vistaGuardada = !editando && !!guardado
 
   return (
-    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 6px' }}>
-        3.3 · Estilos de aprendizaje <span style={{ fontSize: 9, color: '#888', border: '1px solid #D8D6F0', borderRadius: 10, padding: '1px 6px', marginLeft: 4 }}>OPCIONAL</span>
+    <div style={{
+      background: vistaGuardada ? '#FAFFFE' : 'white',
+      border: `1px solid ${vistaGuardada ? C.cian : C.borde}`,
+      borderRadius: 12, padding: 16, marginBottom: 12,
+    }}>
+      <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: vistaGuardada ? C.cian : C.indigo, textTransform: 'uppercase', letterSpacing: '0.07em', lineHeight: 1.4 }}>
+        {vistaGuardada ? '✓ ' : ''}3.3 · Estilos de aprendizaje
+        <span style={{ fontSize: 10, fontWeight: 600, color: C.gris, border: '1px solid #D8D6F0', borderRadius: 99, padding: '1px 8px', marginLeft: 8, letterSpacing: '0.04em', textTransform: 'none', verticalAlign: 'middle' }}>Opcional</span>
       </p>
-      <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>
-        ¿Cuántos niños salieron en cada estilo?<br />MÍA equilibrará las actividades de tu grupo.
-      </p>
+      {!vistaGuardada && (
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: C.gris, lineHeight: 1.6 }}>
+          ¿Cuántos niños salieron en cada estilo? MÍA equilibrará las actividades de tu grupo.
+        </p>
+      )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'left', margin: '0 auto', width: '100%', maxWidth: 260 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
         {ESTILOS.map((e, i) => (
           <div key={e.clave} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#1A1A2E' }}>{e.icono} {e.etiqueta}</span>
+            <span style={{ fontSize: 14, color: C.texto }}>{e.icono} {e.etiqueta}</span>
             {editando ? (
               <input
                 type="number" min="0" max="60" inputMode="numeric"
                 value={valores[e.clave]}
                 onChange={ev => setValores(v => ({ ...v, [e.clave]: ev.target.value.replace(/[^0-9]/g, '') }))}
-                style={{ width: 56, padding: '5px 8px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', textAlign: 'center' }}
+                style={{ width: 64, padding: '7px 8px', fontSize: 16, borderRadius: 8, border: `1px solid ${C.borde}`, textAlign: 'center' }}
               />
             ) : (
-              <span style={{ fontSize: 13, fontWeight: 700, color: e.color, minWidth: 56, textAlign: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: e.color === '#9C99DB' ? C.indigo : e.color, minWidth: 64, textAlign: 'right' }}>
                 {[guardado?.kinestesico, guardado?.visual, guardado?.auditivo][i] ?? 0} · {pct([guardado?.kinestesico || 0, guardado?.visual || 0, guardado?.auditivo || 0][i])}%
               </span>
             )}
@@ -112,7 +138,7 @@ export default function TarjetaEstilosAprendizaje({
       </div>
 
       {total > 0 && mostrar && (
-        <div style={{ display: 'flex', height: 10, borderRadius: 99, overflow: 'hidden', margin: '12px auto 6px', width: '100%', maxWidth: 260, background: '#EEEDF8' }}>
+        <div style={{ display: 'flex', height: 10, borderRadius: 99, overflow: 'hidden', margin: '12px 0 6px', maxWidth: 360, background: C.indigoClaro }}>
           {ESTILOS.map((e, i) => {
             const n = [mostrar.kinestesico, mostrar.visual, mostrar.auditivo][i]
             return n > 0 ? <div key={e.clave} title={`${e.etiqueta} ${pct(n)}%`} style={{ width: `${pct(n)}%`, background: e.color }} /> : null
@@ -122,40 +148,35 @@ export default function TarjetaEstilosAprendizaje({
 
       {editando ? (
         <>
-          <p style={{ fontSize: 11, margin: '4px 0 8px', color: excede ? '#991B1B' : '#888' }}>
+          <p style={{ fontSize: 12, margin: '6px 0 10px', color: excede ? C.indigo : C.gris, fontWeight: excede ? 700 : 400 }}>
             {totalAlumnos > 0
               ? `${suma} de ${totalAlumnos} alumnos${suma === totalAlumnos ? ' ✓' : excede ? ' · la suma pasa de tu grupo' : ` · faltan ${totalAlumnos - suma}`}`
               : `${suma} alumnos`}
           </p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-            {guardado && (
-              <button type="button" onClick={() => { setEditando(false); setError('') }}
-                style={{ background: 'white', color: '#3D3A8C', border: '1px solid #E0DFF5', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Cancelar
-              </button>
-            )}
-            <button type="button" onClick={guardar} disabled={guardando || suma === 0 || excede}
-              style={{ background: suma === 0 || excede ? '#D1D5DB' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: suma === 0 || excede ? 'default' : 'pointer' }}>
-              {guardando ? 'Guardando...' : '💾 Guardar'}
+          <button type="button" onClick={guardar} disabled={guardando || suma === 0 || excede}
+            style={{ width: '100%', background: suma === 0 || excede ? '#B9B9C9' : C.cian, color: 'white', border: 'none', padding: '12px 14px', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: suma === 0 || excede ? 'default' : 'pointer' }}>
+            {guardando ? 'Guardando…' : 'Guardar'}
+          </button>
+          {guardado && (
+            <button type="button" onClick={() => { setEditando(false); setError('') }} style={{ ...enlace, marginTop: 8 }}>
+              Cancelar
             </button>
-          </div>
+          )}
         </>
       ) : (
-        <div style={{ background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '8px 10px', marginTop: 8 }}>
-          <p style={{ margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 }}>✅ Estilos guardados</p>
-          {guardado?.fecha && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#888' }}>Guardado el {fechaCorta(guardado.fecha)}</p>}
+        <>
+          {guardado?.fecha && <p style={{ margin: '4px 0 0', fontSize: 12, color: C.gris }}>Guardado el {fechaCorta(guardado.fecha)}</p>}
           {predominante && predominante.n > 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#0F6E56' }}>
-              Predomina: {predominante.e.icono} {predominante.e.etiqueta} ({pct(predominante.n)}%)
+            <p style={{ margin: '4px 0 0', fontSize: 14, color: C.texto }}>
+              Predomina: {predominante.e.icono} <strong>{predominante.e.etiqueta}</strong> ({pct(predominante.n)}%)
             </p>
           )}
-          <button type="button" onClick={() => setEditando(true)}
-            style={{ background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0, marginTop: 6 }}>
-            ↑ Actualizar
-          </button>
-        </div>
+          <div style={{ marginTop: 10 }}>
+            <button type="button" onClick={() => setEditando(true)} style={enlace}>Actualizar</button>
+          </div>
+        </>
       )}
-      {error && <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 }}>{error}</div>}
+      {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 }}>{error}</p>}
     </div>
   )
 }

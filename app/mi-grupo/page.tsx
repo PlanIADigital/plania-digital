@@ -102,7 +102,7 @@ function TiempoGuardado({ fechaISO }: { fechaISO?: string }) {
   }, [])
   if (!fechaISO) return null
   return (
-    <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>{formatearTiempoRelativo(fechaISO)}</p>
+    <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{formatearTiempoRelativo(fechaISO)}</p>
   )
 }
 
@@ -112,6 +112,69 @@ type OrigenConteo = '3.1' | '3.2'
 interface DiscrepanciaAlumnos {
   detectado: number
   origen: OrigenConteo
+}
+
+// [30 sep 2026] Rediseño de Mi Grupo con el lenguaje visual de
+// "El alma de tu planeación" (Nueva Planeación, Fase 1): una columna,
+// texto a la izquierda, etiqueta de origen y dos estados (pendiente / ✓ guardado).
+const C = {
+  indigo: '#3D3A8C',
+  cian: '#00A896',
+  menta: '#E8F5F2',
+  indigoClaro: '#EEEDF8',
+  texto: '#1A1A2E',
+  gris: '#6B7280',
+  borde: '#E0DFF5',
+}
+
+// Mismas etiquetas y colores que usa MÍA en Nueva Planeación (Fase1Alma.tsx),
+// para que la educadora reconozca de dónde sale cada problemática detectada.
+type OrigenMiGrupo = 'PMC' | 'PA' | 'Grupo' | 'Dirección' | 'Jardín'
+const COLOR_ORIGEN: Record<OrigenMiGrupo, { fg: string; bg: string }> = {
+  'Grupo': { fg: '#0F6E56', bg: '#E0F5F3' },
+  'PMC': { fg: '#3D3A8C', bg: '#EEEDF8' },
+  'PA': { fg: '#00796B', bg: '#E8F5F2' },
+  'Dirección': { fg: '#5B3F8C', bg: '#F1ECF8' },
+  'Jardín': { fg: '#6B5B2E', bg: '#F5F0E1' },
+}
+
+const chipOpcional: React.CSSProperties = {
+  fontSize: 10, fontWeight: 600, color: C.gris, border: '1px solid #D8D6F0',
+  borderRadius: 99, padding: '1px 8px', marginLeft: 8, letterSpacing: '0.04em',
+  textTransform: 'none', verticalAlign: 'middle',
+}
+
+function TarjetaDoc({ numero, titulo, descripcion, origen, opcional, guardado, children }: {
+  numero: string
+  titulo: string
+  descripcion: string
+  origen?: OrigenMiGrupo
+  opcional?: boolean
+  guardado: boolean
+  children: React.ReactNode
+}) {
+  const color = origen ? COLOR_ORIGEN[origen] : null
+  return (
+    <div style={{
+      background: guardado ? '#FAFFFE' : 'white',
+      border: `1px solid ${guardado ? C.cian : C.borde}`,
+      borderRadius: 12, padding: 16, marginBottom: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: guardado ? 4 : 6 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: guardado ? C.cian : C.indigo, textTransform: 'uppercase', letterSpacing: '0.07em', lineHeight: 1.4 }}>
+          {guardado ? '✓ ' : ''}{numero} · {titulo}
+          {opcional && <span style={chipOpcional}>Opcional</span>}
+        </p>
+        {color && origen && (
+          <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: color.fg, background: color.bg, borderRadius: 99, padding: '2px 8px' }}>
+            {origen.toUpperCase()}
+          </span>
+        )}
+      </div>
+      {!guardado && <p style={{ margin: '0 0 12px', fontSize: 13, color: C.gris, lineHeight: 1.6 }}>{descripcion}</p>}
+      {children}
+    </div>
+  )
 }
 
 export default function MiGrupoPage() {
@@ -549,23 +612,31 @@ async function abrirModalAlumnos() {
     setGuardandoJardin(false)
   }
   const s = {
-    page: { padding: '0 40px' } as React.CSSProperties,
-    card: { background: 'white', borderRadius: 12, padding: '20px 20px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } as React.CSSProperties,
-    cardTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 16px', textAlign: 'center' as const } as React.CSSProperties,
-    subTitle: { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 4px', textAlign: 'center' as const } as React.CSSProperties,
-    desc: { fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.5, textAlign: 'center' as const } as React.CSSProperties,
-    btn: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
-    btnGreen: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3D3A8C', color: 'white', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
-    ok: { background: '#E8F5F2', border: '1.5px solid #00A896', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const } as React.CSSProperties,
-    okText: { margin: 0, fontWeight: 700, color: '#0F6E56', fontSize: 12 } as React.CSSProperties,
-    err: { background: '#fee2e2', color: '#991b1b', fontSize: 12, padding: '8px 12px', borderRadius: 8, marginTop: 8 } as React.CSSProperties,
-    textarea: { display: 'block', width: '100%', padding: '8px 10px', fontSize: 12, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box' as const, resize: 'none' as const, overflow: 'hidden' as const, fontFamily: 'sans-serif', lineHeight: 1.5, marginBottom: 8, textAlign: 'left' as const } as React.CSSProperties,
-    // Fila de acciones unificada — misma posición y estilo en las 6 tarjetas
-    // con historial (todas menos la Sección 4)
-    accionesFila: { display: 'flex', gap: 14, justifyContent: 'center', marginTop: 'auto', paddingTop: 8, flexWrap: 'wrap' as const } as React.CSSProperties,
-    accionBtn: { background: 'none', border: 'none', color: '#0F6E56', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' } as React.CSSProperties,
-    badgeMia: { display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FFFBEB', border: '1px solid #FCD34D', color: '#92400E', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, cursor: 'pointer' } as React.CSSProperties,
+    card: { background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: 16, marginBottom: 12 } as React.CSSProperties,
+    titulo: { margin: 0, fontSize: 13, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.07em' } as React.CSSProperties,
+    seccion: { margin: '24px 0 10px', fontSize: 12, fontWeight: 700, color: C.gris, textTransform: 'uppercase' as const, letterSpacing: '0.08em' } as React.CSSProperties,
+    label: { display: 'block', fontSize: 12, fontWeight: 600, color: C.gris, marginBottom: 4 } as React.CSSProperties,
+    select: { padding: '9px 12px', fontSize: 16, borderRadius: 8, border: `1px solid ${C.borde}`, background: 'white', minWidth: 96, height: 44, lineHeight: '24px', boxSizing: 'border-box' as const } as React.CSSProperties,
+    check: { fontSize: 12, color: C.cian, fontWeight: 700, marginLeft: 6 } as React.CSSProperties,
+    subir: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', boxSizing: 'border-box' as const, background: C.indigoClaro, color: C.indigo, border: `1.5px solid ${C.indigo}`, padding: '11px 14px', fontSize: 14, fontWeight: 600, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' } as React.CSSProperties,
+    nota: { margin: '6px 0 0', fontSize: 12, color: C.gris } as React.CSSProperties,
+    aviso: { margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 } as React.CSSProperties,
+    err: { margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 } as React.CSSProperties,
+    dato: { margin: '4px 0 0', fontSize: 14, color: C.texto, lineHeight: 1.5 } as React.CSSProperties,
+    acciones: { display: 'flex', gap: 18, flexWrap: 'wrap' as const, marginTop: 10 } as React.CSSProperties,
+    accionBtn: { background: 'none', border: 'none', color: C.indigo, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '4px 0', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', fontFamily: 'inherit' } as React.CSSProperties,
+    miaCaja: { background: C.indigoClaro, borderLeft: `3px solid ${C.indigo}`, borderRadius: 8, padding: '8px 10px', margin: '8px 0 0', fontSize: 13, color: C.texto, lineHeight: 1.5, cursor: 'pointer' } as React.CSSProperties,
+    textarea: { display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: `1px solid ${C.borde}`, boxSizing: 'border-box' as const, resize: 'none' as const, overflow: 'hidden' as const, fontFamily: 'inherit', lineHeight: 1.5, marginBottom: 8, textAlign: 'left' as const } as React.CSSProperties,
+    btnPrimario: { background: C.indigo, color: 'white', border: 'none', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
+    btnSecundario: { background: 'white', color: C.indigo, border: `1.5px solid ${C.borde}`, padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties,
   }
+
+  // Avance amable de Mi Grupo (no punitivo): cuántas de las 7 tarjetas tienen algo guardado.
+  const evalRegistrada = !!(evaluacionIndividual && typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && (evaluacionIndividual as any).resumen_general)
+  const registrados = [
+    diagnosticoEscolarGuardado, !!paActivo, guardadoJardin, observacionesGuardadas,
+    guardado, evalRegistrada, !!profile?.estilos_aprendizaje,
+  ].filter(Boolean).length
 
   if (!profile) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -582,7 +653,7 @@ async function abrirModalAlumnos() {
       {cargandoAnimacionCompleta ? (
         <PantallaAnimacion grado={gradoGrupo} totalAlumnos={totalAlumnos} cct={profile.cct_primary || ''} />
       ) : (
-        <div style={{ padding: '0 32px' }}>
+        <div style={{ padding: '0 16px' }}>
 
           <style>{`
             input[type=number]::-webkit-inner-spin-button,
@@ -594,312 +665,285 @@ async function abrirModalAlumnos() {
             <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
           </div>
 
-                    {/* [ago 2026] Banner de MÍA — avisa cuando falta 3.1 o 3.2 (Diagnóstico
-              Grupal/Individual), los dos insumos clave para personalizar las
-              planeaciones. No bloquea nada (Cero Fricción) — la educadora
-              puede seguir generando planeaciones sin ellos, solo se le
-              recuerda que no estarán personalizadas hasta que los suba. */}
-          {(!guardado || !evalCompleta) && (
-            <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <p style={{ margin: 0, fontSize: 13, color: '#92400E', lineHeight: 1.6 }}>
-                💡 <strong>MÍA:</strong> {!guardado && !evalCompleta
-                  ? 'aún no has subido tu Diagnóstico Grupal ni tu Diagnóstico Individual'
-                  : !guardado
-                    ? 'aún no has subido tu Diagnóstico Grupal'
-                    : 'aún no has subido tu Diagnóstico Individual'
-                } — tus planeaciones no estarán personalizadas hasta entonces.
+          {/* [30 sep 2026] Rediseño: una sola columna, mismo lenguaje visual que
+              "El alma de tu planeación". Solo cambia la presentación: handlers,
+              modales, historial y altas/bajas quedan intactos. */}
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+            {/* Introducción + avance (reemplaza el aviso amarillo) */}
+            <div style={{ ...s.card, background: C.menta, borderColor: '#CDEBE4' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: C.indigo }}>Así conoce MÍA a tu grupo</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#335', lineHeight: 1.6 }}>
+                Lo que registres aquí es lo que MÍA usa para <strong>personalizar tus planeaciones</strong>. Lo subes una vez y lo actualizas cuando cambie.
               </p>
-            </div>
-          )}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' as const }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              👥 Configura tu grupo
-            </p>
-            <div>
-              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Grado</label>
-              <select
-                value={profile.grado || ''}
-                onChange={(e) => actualizarGrado(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
-              >
-                <option value="" disabled>— Selecciona —</option>
-                {GRADOS_OPCIONES.map(g => (
-                  <option key={g} value={g}>{GRADO_MAP[g]}</option>
-                ))}
-              </select>
-              {gradoGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Grupo</label>
-              <select
-                value={profile.grupo_letra || ''}
-                onChange={(e) => actualizarGrupoLetra(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
-              >
-                <option value="" disabled>— Selecciona —</option>
-                {['A', 'B', 'C', 'D', 'E'].map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-              {grupoLetraGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Alumnos</label>
-              {codigosActivos && codigosActivos > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ minWidth: 46, padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #E0DFF5', background: '#F8F8FC', display: 'inline-block' }}>{codigosActivos}</span>
-                  <button type="button" onClick={abrirModalAlumnos} style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Altas y bajas →</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                <div style={{ flex: 1, height: 8, borderRadius: 99, background: 'white', overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.round((registrados / 7) * 100)}%`, height: '100%', background: C.cian, transition: 'width 0.3s' }} />
                 </div>
-              ) : (
-              <input
-                type="number" min="1" max="50" placeholder="24"
-                value={profile.total_alumnos || ''}
-                onChange={async (e) => {
-                  const val = parseInt(e.target.value)
-                  if (!val || val < 1) return
-                  await actualizarTotalAlumnos(val)
-                  setAlumnosGuardado(true)
-                  setTimeout(() => setAlumnosGuardado(false), 2000)
-                }}
-                style={{ width: 70, padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', background: 'white' }}
-              />
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.indigo, whiteSpace: 'nowrap' as const }}>{registrados} de 7 registrados</span>
+              </div>
+              {(!guardado || !evalCompleta) && (
+                <p style={{ ...s.aviso, marginTop: 12 }}>
+                  ✦ <strong>MÍA:</strong> {!guardado && !evalCompleta
+                    ? 'aún no has subido tu Diagnóstico Grupal ni tu Diagnóstico Individual'
+                    : !guardado
+                      ? 'aún no has subido tu Diagnóstico Grupal'
+                      : 'aún no has subido tu Diagnóstico Individual'
+                  } — tus planeaciones no estarán personalizadas hasta entonces.
+                </p>
               )}
-              {alumnosGuardado && <span style={{ fontSize: 11, color: '#00A896', fontWeight: 600, marginLeft: 6 }}>✓</span>}
             </div>
-          </div>
-          {discrepanciaAlumnos && (
-            <div style={{ background: '#EFF6FF', border: '1.5px solid #93C5FD', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' as const }}>
-              <p style={{ margin: 0, fontSize: 13, color: '#1E40AF', lineHeight: 1.6, flex: 1, minWidth: 260 }}>
-                🔔 <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '3.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}
-                {codigosActivos && codigosActivos > 0
-                  ? <>, pero tu lista tiene <strong>{codigosActivos}</strong> alumnos activos. Si llegó o se fue alguien, regístralo en tu lista (si el documento no incluye a todo el grupo, deja tu lista igual).</>
-                  : <>. ¿Tu grupo tiene <strong>{discrepanciaAlumnos.detectado}</strong> alumnos?</>}
-              </p>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button onClick={codigosActivos && codigosActivos > 0 ? () => { setDiscrepanciaAlumnos(null); abrirModalAlumnos() } : confirmarActualizarAlumnos}
-                  style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : `✅ Sí, usar ${discrepanciaAlumnos.detectado}`}
-                </button>
-                <button onClick={descartarDiscrepanciaAlumnos}
-                  style={{ background: 'white', border: '1.5px solid #93C5FD', color: '#1E40AF', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  ✕ Mantener {codigosActivos && codigosActivos > 0 ? codigosActivos : (profile.total_alumnos || 'sin cambio')}
-                </button>
+
+            {/* Configura tu grupo */}
+            <div style={s.card}>
+              <p style={{ ...s.titulo, marginBottom: 12 }}>👥 Configura tu grupo</p>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const, alignItems: 'flex-end' }}>
+                <div>
+                  <label style={s.label}>Grado</label>
+                  <select value={profile.grado || ''} onChange={(e) => actualizarGrado(e.target.value)} style={s.select}>
+                    <option value="" disabled>— Selecciona —</option>
+                    {GRADOS_OPCIONES.map(g => (
+                      <option key={g} value={g}>{GRADO_MAP[g]}</option>
+                    ))}
+                  </select>
+                  {gradoGuardado && <span style={s.check}>✓</span>}
+                </div>
+                <div>
+                  <label style={s.label}>Grupo</label>
+                  <select value={profile.grupo_letra || ''} onChange={(e) => actualizarGrupoLetra(e.target.value)} style={s.select}>
+                    <option value="" disabled>— Selecciona —</option>
+                    {['A', 'B', 'C', 'D', 'E'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                  {grupoLetraGuardado && <span style={s.check}>✓</span>}
+                </div>
+                <div>
+                  <label style={s.label}>Alumnos</label>
+                  {codigosActivos && codigosActivos > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ ...s.select, minWidth: 56, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
+                      <button type="button" onClick={abrirModalAlumnos} style={s.accionBtn}>Altas y bajas →</button>
+                    </div>
+                  ) : (
+                    <input
+                      type="number" min="1" max="50" placeholder="24"
+                      value={profile.total_alumnos || ''}
+                      onChange={async (e) => {
+                        const val = parseInt(e.target.value)
+                        if (!val || val < 1) return
+                        await actualizarTotalAlumnos(val)
+                        setAlumnosGuardado(true)
+                        setTimeout(() => setAlumnosGuardado(false), 2000)
+                      }}
+                      style={{ ...s.select, width: 80, minWidth: 0 }}
+                    />
+                  )}
+                  {alumnosGuardado && <span style={s.check}>✓</span>}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* GRID 2×2 — cada sección es su propia tarjeta con posición fija en
-              la cuadrícula (fila/columna explícita), así el navegador iguala
-              automáticamente la altura entre 1↔2 (misma fila) y 3↔4 (misma fila) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'stretch' }}>
+            {discrepanciaAlumnos && (
+              <div style={{ ...s.card, background: C.indigoClaro, borderColor: '#D8D6F0' }}>
+                <p style={{ margin: '0 0 10px', fontSize: 14, color: C.texto, lineHeight: 1.6 }}>
+                  ✦ <strong>MÍA:</strong> detecté <strong>{discrepanciaAlumnos.detectado} alumnos</strong> en {discrepanciaAlumnos.origen === '3.2' ? 'tu Diagnóstico Individual' : 'tu Diagnóstico Grupal'}
+                  {codigosActivos && codigosActivos > 0
+                    ? <>, pero tu lista tiene <strong>{codigosActivos}</strong> alumnos activos. Si llegó o se fue alguien, regístralo en tu lista (si el documento no incluye a todo el grupo, deja tu lista igual).</>
+                    : <>. ¿Tu grupo tiene <strong>{discrepanciaAlumnos.detectado}</strong> alumnos?</>}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                  <button onClick={codigosActivos && codigosActivos > 0 ? () => { setDiscrepanciaAlumnos(null); abrirModalAlumnos() } : confirmarActualizarAlumnos} style={s.btnPrimario}>
+                    {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : `Sí, usar ${discrepanciaAlumnos.detectado}`}
+                  </button>
+                  <button onClick={descartarDiscrepanciaAlumnos} style={s.btnSecundario}>
+                    Mantener {codigosActivos && codigosActivos > 0 ? codigosActivos : (profile.total_alumnos || 'sin cambio')}
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {/* Sección 1 · Diagnóstico Escolar (fila 1, columna 1) */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 1, gridRow: 1 }}>
+            {/* ============ 1 · Diagnóstico escolar ============ */}
+            <p style={s.seccion}>1 · Diagnóstico escolar</p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>1 · Diagnóstico Escolar</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>1.1 · PROGRAMA DE MEJORA CONTINUA</p>
-                    <p style={s.desc}>Contexto Institucional del Jardín:<br/>Entorno, Organización y Recursos.</p>
-                    {!diagnosticoEscolarGuardado ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btn, opacity: analizandoEscolar ? 0.6 : 1 }}>
-                          {analizandoEscolar ? '🔍 Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
-                        </label>
-                        {errorEscolar && <div style={s.err}>{errorEscolar}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ PMC guardado</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['pmc']?.fecha} />
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => setModalDetalle({
-                              titulo: '1.1 · Programa de Mejora Continua',
-                              contenido: (
-                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
-                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoEscolar?.contexto_social || 'Sin detalle disponible.'}</p>
-                                </div>
-                              ),
-                            })}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['pmc']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('pmc', '1.1 · Historial del PMC')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                          <label style={s.accionBtn}>
-                            ↑ Actualizar
-                            <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>1.2 · Programa Analítico</p>
-                    <p style={s.desc}>Contenidos y PDA Priorizados.<br/>Acepta formato Docx, Pptx, Pdf.</p>
-                    {!paActivo ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btn, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
-                          {analizandoPA ? '🔍 Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
-                        </label>
-                        {analizandoPA && <p style={{ fontSize: 11, color: '#3D3A8C', margin: '6px 0 0' }}>MÍA está leyendo el PA...</p>}
-                        {errorPA && <div style={s.err}>{errorPA}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <div style={{ ...s.ok, flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-                            <p style={s.okText}>✅ PA guardado</p>
-                            {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
-                              <button onClick={() => setModalMiaPA(true)} style={s.badgeMia}>⚠ MÍA</button>
-                            )}
+            <TarjetaDoc numero="1.1" titulo="Programa de Mejora Continua" origen="PMC" guardado={diagnosticoEscolarGuardado}
+              descripcion="Contexto institucional del jardín: entorno, organización y recursos.">
+              {!diagnosticoEscolarGuardado ? (
+                <>
+                  <label style={{ ...s.subir, opacity: analizandoEscolar ? 0.6 : 1, cursor: analizandoEscolar ? 'default' : 'pointer' }}>
+                    {analizandoEscolar ? '✦ MÍA está analizando…' : '↑ Subir documento'}
+                    <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
+                  </label>
+                  <p style={s.nota}>PDF, Word o PowerPoint.</p>
+                  {errorEscolar && <p style={s.aviso}>{errorEscolar}</p>}
+                </>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={fechasGuardado['pmc']?.fecha} />
+                  {analizandoEscolar && <p style={s.aviso}>✦ MÍA está analizando la nueva versión…</p>}
+                  {errorEscolar && <p style={s.aviso}>{errorEscolar}</p>}
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => setModalDetalle({
+                        titulo: '1.1 · Programa de Mejora Continua',
+                        contenido: (
+                          <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                            <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoEscolar?.contexto_social || 'Sin detalle disponible.'}</p>
                           </div>
-                          <TiempoGuardado fechaISO={paActivo.fecha_carga} />
-                          {paActivo.nota_directivo && (
-                            <p style={{ fontSize: 11, color: '#185FA5', margin: '6px 0 0' }}>💬 {paActivo.nota_directivo}</p>
-                          )}
-                          <div style={s.accionesFila}>
-                            <button
-                              onClick={() => setModalDetalle({
-                                titulo: '1.2 · Resumen del Programa Analítico',
-                                contenido: (
-                                  <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
-                                    <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{paActivo.pda_ponderacion?.resumen_pa || 'Sin resumen disponible.'}</p>
+                        ),
+                      })}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {(fechasGuardado['pmc']?.version ?? 0) >= 2 && (
+                      <button onClick={() => abrirHistorial('pmc', '1.1 · Historial del PMC')} style={s.accionBtn}>Historial</button>
+                    )}
+                    <label style={s.accionBtn}>
+                      Actualizar
+                      <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPMC} style={{ display: 'none' }} disabled={analizandoEscolar} />
+                    </label>
+                  </div>
+                </>
+              )}
+            </TarjetaDoc>
+
+            <TarjetaDoc numero="1.2" titulo="Programa Analítico" origen="PA" guardado={!!paActivo}
+              descripcion="Contenidos y PDA priorizados por tu jardín para este ciclo.">
+              {!paActivo ? (
+                <>
+                  <label style={{ ...s.subir, opacity: analizandoPA ? 0.6 : 1, cursor: analizandoPA ? 'default' : 'pointer' }}>
+                    {analizandoPA ? '✦ MÍA está leyendo el PA…' : '↑ Subir documento'}
+                    <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
+                  </label>
+                  <p style={s.nota}>PDF, Word o PowerPoint.</p>
+                  {errorPA && <p style={s.aviso}>{errorPA}</p>}
+                </>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={paActivo.fecha_carga} />
+                  {paActivo.nota_directivo && <p style={s.dato}>💬 {paActivo.nota_directivo}</p>}
+                  {paActivo.pda_ponderacion?.inconsistencias?.length > 0 && (
+                    <div onClick={() => setModalMiaPA(true)} style={s.miaCaja}>
+                      ✦ MÍA tiene <strong>{paActivo.pda_ponderacion.inconsistencias.length}</strong> observaci{paActivo.pda_ponderacion.inconsistencias.length !== 1 ? 'ones' : 'ón'} sobre tu PA. Revísal{paActivo.pda_ponderacion.inconsistencias.length !== 1 ? 'as' : 'a'} →
+                    </div>
+                  )}
+                  {analizandoPA && <p style={s.aviso}>✦ MÍA está analizando la nueva versión…</p>}
+                  {errorPA && <p style={s.aviso}>{errorPA}</p>}
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => setModalDetalle({
+                        titulo: '1.2 · Resumen del Programa Analítico',
+                        contenido: (
+                          <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                            <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{paActivo.pda_ponderacion?.resumen_pa || 'Sin resumen disponible.'}</p>
+                          </div>
+                        ),
+                      })}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {paActivo.version_numero >= 2 && (
+                      <button onClick={toggleHistorial} style={s.accionBtn}>Historial</button>
+                    )}
+                    <label style={s.accionBtn}>
+                      Actualizar
+                      <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
+                    </label>
+                  </div>
+                </>
+              )}
+            </TarjetaDoc>
+
+            {/* ============ 2 · Recomendaciones directivas ============ */}
+            <p style={s.seccion}>2 · Recomendaciones directivas</p>
+
+            <TarjetaDoc numero="2.1" titulo="PDA del jardín" origen="Jardín" opcional guardado={guardadoJardin}
+              descripcion="PDA acordados por el colectivo este ciclo. MÍA los integrará con tu diagnóstico.">
+              {!guardadoJardin ? (
+                <>
+                  <label style={{ ...s.subir, opacity: guardandoJardin ? 0.6 : 1, cursor: guardandoJardin ? 'default' : 'pointer' }}>
+                    {guardandoJardin ? '✦ MÍA está analizando…' : '↑ Subir documento'}
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
+                  </label>
+                  <p style={s.nota}>PDF o Word.</p>
+                  {errorJardin && <p style={s.aviso}>{errorJardin}</p>}
+                </>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
+                  <p style={s.dato}>{resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
+                  {guardandoJardin && <p style={s.aviso}>✦ MÍA está analizando la nueva versión…</p>}
+                  {errorJardin && <p style={s.aviso}>{errorJardin}</p>}
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => setModalDetalle({
+                        titulo: '2.1 · PDAs del jardín',
+                        contenido: (
+                          <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
+                            <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>
+                          </div>
+                        ),
+                      })}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {(fechasGuardado['pdas_jardin']?.version ?? 0) >= 2 && (
+                      <button onClick={() => abrirHistorial('pdas_jardin', '2.1 · Historial de PDAs del jardín')} style={s.accionBtn}>Historial</button>
+                    )}
+                    <label style={s.accionBtn}>
+                      Actualizar
+                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
+                    </label>
+                  </div>
+                </>
+              )}
+            </TarjetaDoc>
+
+            <TarjetaDoc numero="2.2" titulo="Áreas de oportunidad" origen="Dirección" opcional guardado={observacionesGuardadas}
+              descripcion="Observaciones de tu última visita áulica. MÍA las integrará en tus planeaciones.">
+              {!observacionesGuardadas ? (
+                <button type="button" onClick={() => { setObservacionesModalExito(false); setModalObservacionesAbierto(true) }} style={s.subir}>
+                  ✎ Escribir o subir observaciones
+                </button>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
+                  {resultadoObservaciones?.areas_mejora?.length > 0 && (
+                    <p style={s.dato}>{resultadoObservaciones.areas_mejora.length} área{resultadoObservaciones.areas_mejora.length !== 1 ? 's' : ''} de oportunidad registrada{resultadoObservaciones.areas_mejora.length !== 1 ? 's' : ''}</p>
+                  )}
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => setModalDetalle({
+                        titulo: '2.2 · Áreas de oportunidad',
+                        contenido: (
+                          <div>
+                            {resultadoObservaciones?.areas_mejora?.length > 0
+                              ? resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
+                                  <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: i < resultadoObservaciones.areas_mejora.length - 1 ? 8 : 0 }}>
+                                    <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5 }}>{area}</p>
                                   </div>
-                                ),
-                              })}
-                              style={s.accionBtn}
-                            >▾ Ver detalle</button>
-                            {paActivo.version_numero >= 2 && (
-                              <button onClick={toggleHistorial} style={s.accionBtn}>▾ Historial</button>
-                            )}
-                            <label style={s.accionBtn}>
-                              ↑ Actualizar
-                              <input type="file" accept=".pdf,.doc,.docx,.pptx" onChange={handleArchivoPA} style={{ display: 'none' }} disabled={analizandoPA} />
-                            </label>
+                                ))
+                              : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin áreas de mejora registradas.</p>}
                           </div>
-                        </div>
-                        {errorPA && <div style={s.err}>{errorPA}</div>}
-                      </div>
+                        ),
+                      })}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
+                      <button onClick={() => abrirHistorial('observaciones_directivo', '2.2 · Historial de observaciones')} style={s.accionBtn}>Historial</button>
                     )}
+                    <button onClick={() => { setObservacionesModalExito(false); setModalObservacionesAbierto(true) }} style={s.accionBtn}>Actualizar</button>
                   </div>
-                </div>
-              </div>
-            </div>
+                </>
+              )}
+            </TarjetaDoc>
 
-            {/* Sección 2 · Recomendaciones Directivas (fila 1, columna 2) */}
-              <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: 2, gridRow: 1 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>2 · Recomendaciones Directivas</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>2.1 · PDAs del jardín <span style={{ fontSize: 10, background: '#F8F8FE', color: '#888', border: '1px solid #D8D6F0', padding: '1px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 4 }}>Opcional</span></p>
-                    <p style={s.desc}>PDAs acordados por el colectivo este ciclo.<br/>El sistema los integrará con tu diagnóstico.</p>
-                    {!guardadoJardin ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btn, opacity: guardandoJardin ? 0.6 : 1 }}>
-                          {guardandoJardin ? '🔍 Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} disabled={guardandoJardin} />
-                        </label>
-                        {errorJardin && <div style={s.err}>{errorJardin}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ {resultadoJardin?.total_vinculados ?? resultadoJardin?.pdas_jardin?.length ?? 0} PDA{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''} del jardín identificado{(resultadoJardin?.total_vinculados ?? 0) !== 1 ? 's' : ''}</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['pdas_jardin']?.fecha} />
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => setModalDetalle({
-                              titulo: '2.1 · PDAs del jardín',
-                              contenido: (
-                                <div style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '12px 14px' }}>
-                                  <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{resultadoJardin?.resumen || 'Sin resumen disponible.'}</p>
-                                </div>
-                              ),
-                            })}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['pdas_jardin']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('pdas_jardin', '2.1 · Historial de PDAs del jardín')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                          <label style={s.accionBtn}>
-                            ↑ Actualizar
-                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoJardin} style={{ display: 'none' }} />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>2.2 · Áreas de Oportunidad</p>
-                    <p style={s.desc}>Observaciones de tu última visita áulica.<br/>MÍA las integrará en tus planeaciones.</p>
-                                          {!observacionesGuardadas ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <button
-                          type="button"
-                          onClick={() => { setObservacionesModalExito(false); setModalObservacionesAbierto(true) }}
-                          style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                          ✍️ Redactar observaciones
-                        </button>
-                        <p style={{ fontSize: 10, color: '#aaa', marginTop: 8 }}>Opcional</p>
-                      </div>
-                      ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ Observaciones integradas</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['observaciones_directivo']?.fecha} />
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => setModalDetalle({
-                              titulo: '2.2 · Áreas de oportunidad',
-                              contenido: (
-                                <div>
-                                  {resultadoObservaciones?.areas_mejora?.length > 0
-                                    ? resultadoObservaciones.areas_mejora.map((area: string, i: number) => (
-                                        <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: i < resultadoObservaciones.areas_mejora.length - 1 ? 8 : 0 }}>
-                                          <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5 }}>{area}</p>
-                                        </div>
-                                      ))
-                                    : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin áreas de mejora registradas.</p>}
-                                </div>
-                              ),
-                            })}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['observaciones_directivo']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('observaciones_directivo', '2.2 · Historial de observaciones')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                        <button onClick={() => { setObservacionesModalExito(false); setModalObservacionesAbierto(true) }} style={s.accionBtn}>↑ Actualizar</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* [ago 2026] Modal de redacción/edición de 2.2 Áreas de Oportunidad —
-                sustituye al formulario inline (que hacía "saltar" el alto de la
-                tarjeta al entrar en modo edición). La tarjeta nunca cambia de
-                tamaño ahora; toda la edición ocurre en esta capa flotante. */}
+            {/* Modal de redacción/edición de 2.2 Áreas de Oportunidad (sin cambios de lógica) */}
             {modalObservacionesAbierto && (
-                            <DetalleModal titulo="2.2 · Áreas de oportunidad" onClose={() => setModalObservacionesAbierto(false)}>
+              <DetalleModal titulo="2.2 · Áreas de oportunidad" onClose={() => setModalObservacionesAbierto(false)}>
                 {observacionesModalExito ? (
-                  // [ago 2026] El modal ya NO se cierra solo al terminar el análisis —
-                  // se queda mostrando esta confirmación hasta que el usuario mismo lo
-                  // cierre, para no generar duda de si de verdad se guardó.
                   <div style={{ textAlign: 'center' as const, padding: '8px 0' }}>
                     <p style={{ fontSize: 32, margin: '0 0 8px' }}>✅</p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#065f46', margin: '0 0 6px' }}>Observaciones guardadas correctamente</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#0F6E56', margin: '0 0 6px' }}>Observaciones guardadas correctamente</p>
                     <p style={{ fontSize: 12, color: '#666', margin: '0 0 18px' }}>MÍA ya las integrará en tus próximas planeaciones.</p>
-                    <button
-                      type="button"
-                      onClick={() => setModalObservacionesAbierto(false)}
-                      style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <button type="button" onClick={() => setModalObservacionesAbierto(false)} style={s.btnPrimario}>
                       Cerrar
                     </button>
                   </div>
@@ -910,177 +954,168 @@ async function abrirModalAlumnos() {
                       style={s.textarea} />
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center', marginTop: 10 }}>
                       <button onClick={handleAnalizarObservaciones} disabled={analizandoObservaciones || !observacionesTexto.trim()}
-                        style={{ background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                        {analizandoObservaciones ? '🔍...' : '✨ Guardar'}
+                        style={{ ...s.btnPrimario, background: analizandoObservaciones || !observacionesTexto.trim() ? '#C4C2E8' : C.indigo }}>
+                        {analizandoObservaciones ? '✦ Analizando…' : '✨ Guardar'}
                       </button>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                        {analizandoObservaciones ? '🔍 Analizando...' : '📎 Archivo'}
+                      <label style={{ ...s.btnSecundario, display: 'inline-flex', alignItems: 'center', gap: 4, borderColor: C.indigo }}>
+                        {analizandoObservaciones ? '✦ Analizando…' : '📎 Archivo'}
                         <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoObservaciones} style={{ display: 'none' }} disabled={analizandoObservaciones} />
                       </label>
                       <button
                         type="button"
                         disabled={analizandoObservaciones}
                         onClick={() => { setModalObservacionesAbierto(false); setErrorObservaciones('') }}
-                        style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoObservaciones ? 'default' : 'pointer' }}>
+                        style={{ ...s.btnSecundario, color: C.gris, cursor: analizandoObservaciones ? 'default' : 'pointer' }}>
                         Cancelar
                       </button>
                     </div>
                     {errorObservaciones && <div style={s.err}>{errorObservaciones}</div>}
-                    <p style={{ fontSize: 10, color: '#aaa', marginTop: 6, textAlign: 'center' as const }}>Opcional · al subir un archivo se analiza automáticamente</p>
+                    <p style={{ fontSize: 11, color: C.gris, marginTop: 8, textAlign: 'center' as const }}>Opcional · al subir un archivo se analiza automáticamente</p>
                   </>
                 )}
               </DetalleModal>
             )}
 
-                        {/* Sección 3 · Diagnóstico Pedagógico (fila 2, ancho completo) */}
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, boxSizing: 'border-box' as const, gridColumn: '1 / -1', gridRow: 2 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <p style={s.cardTitle}>3 · Diagnóstico Pedagógico</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, flex: 1 }}>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                      <p style={s.subTitle}>3.1 · Diagnóstico Grupal</p>
-                    <p style={s.desc}>Necesidades y áreas de oportunidad del Grupo,<br/>para personalizar tu planeaciones.</p>
-                    {!guardado ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btnGreen, opacity: analizando ? 0.6 : 1 }}>
-                          {analizando ? '🔍 Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
-                        </label>
-                        {errorDiagnostico && <div style={s.err}>{errorDiagnostico}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                        <p style={s.okText}>✅ Diagnóstico grupal guardado</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']?.fecha} />
-                        <p style={{ fontSize: 11, color: '#444', margin: '3px 0 0' }}>{pdas.length} PDAs prioritarios identificados</p>
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => {
-                              const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
-                              pdas.forEach((p) => {
-                                const key = `${p.campo}||${p.contenido}`
-                                if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
-                                grupos[key].items.push(p)
-                              })
-                              setModalDetalle({
-                              titulo: '3.1 · PDAs priorizados para tu grupo',
-                                contenido: (
-                                  <div>
-                                    {Object.values(grupos).map((grupo, gi) => (
-                                      <div key={gi} style={{ border: '1px solid #E0F5F3', borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: '#FAFFFE' }}>
-                                        <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
-                                          <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
-                                          <span style={{ background: '#F0FFF8', color: '#059669', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
-                                        </div>
-                                        <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{grupo.contenido}</p>
-                                        {grupo.items.map((p, pi) => (
-                                          <div key={pi} style={{ background: 'white', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
-                                            <p style={{ margin: '0 0 4px', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{p.pda}</p>
-                                            <p style={{ margin: 0, fontSize: 11, color: '#666', lineHeight: 1.4 }}>{p.justificacion}</p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ),
-                              })
-                            }}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['diagnostico_grupal']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('diagnostico_grupal', '3.1 · Historial del diagnóstico grupal')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                          <label style={s.accionBtn}>
-                            ↑ Actualizar
-                            <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p style={s.subTitle}>3.2 · Diagnóstico Individual</p>
-                    <p style={s.desc}>Evaluación por alumno.<br/>MÍA protege nombres y detecta NEE.</p>
-                    {!evalCompleta ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                        <label style={{ ...s.btn, opacity: guardandoEval ? 0.6 : 1 }}>
-                          {guardandoEval ? '✦ Analizando...' : '📁 Seleccionar'}
-                          <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
-                        </label>
-                      <p style={{ fontSize: 10, color: '#aaa', margin: '8px 0 0', textAlign: 'center' }}>🔒 Nombres nunca almacenados</p>
-                        {errorEval && <div style={s.err}>{errorEval}</div>}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.ok, flex: 1 }}>
-                                                <p style={s.okText}>✅ Diagnóstico individual guardado</p>
-                        <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']?.fecha} />
-                        <p
-                          onClick={abrirModalAlumnos}
-                          style={{ fontSize: 11, color: '#444', margin: '3px 0 0', cursor: 'pointer' }}
-                        >
-                          👥 Alumnos {(evaluacionIndividual as any).total_alumnos_detectados || 0} · <span style={{ textDecoration: 'underline' }}>ver grupo y apoyos</span>
-                        </p>
-                        {sugerenciasPendientes(evaluacionIndividual) > 0 && (
-                          <div
-                            onClick={abrirModalAlumnos}
-                            style={{ background: '#EEEDF8', borderLeft: '3px solid #3D3A8C', borderRadius: 8, padding: '8px 10px', margin: '8px 0 0', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, cursor: 'pointer' }}
-                          >
-                            ✦ MÍA detectó <strong>{sugerenciasPendientes(evaluacionIndividual)}</strong> niño{sugerenciasPendientes(evaluacionIndividual) !== 1 ? 's' : ''} que {sugerenciasPendientes(evaluacionIndividual) !== 1 ? 'podrían' : 'podría'} necesitar apoyos. Revisa y confirma para que lleguen a tus planeaciones →
-                          </div>
-                        )}
-                        <div style={s.accionesFila}>
-                          <button
-                            onClick={() => setModalDetalle({
-                              titulo: '3.2 · PDAs prioritarios (Diagnóstico Individual)',
-                              contenido: (
-                                <div>
-                                  {(evaluacionIndividual as any)?.pdas_prioritarios_grupo?.length > 0
-                                    ? (evaluacionIndividual as any).pdas_prioritarios_grupo.map((pda: any, i: number) => {
-                                        const esObjeto = typeof pda !== 'string'
-                                        return (
-                                          <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
-                                            {esObjeto && pda?.campo && (
-                                              <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
-                                                <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{pda.campo}</span>
-                                              </div>
-                                            )}
-                                            {esObjeto && pda?.contenido && (
-                                              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{pda.contenido}</p>
-                                            )}
-                                            <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>
-                                              {esObjeto ? pda.pda : pda}
-                                            </p>
-                                          </div>
-                                        )
-                                      })
-                                    : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin PDAs prioritarios registrados.</p>}
-                                </div>
-                              ),
-                            })}
-                            style={s.accionBtn}
-                          >▾ Ver detalle</button>
-                          {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
-                            <button onClick={() => abrirHistorial('diagnostico_individual', '3.2 · Historial del diagnóstico individual')} style={s.accionBtn}>▾ Historial</button>
-                          )}
-                             <label style={s.accionBtn}>
-                            ↑ Actualizar
-                            <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* [Saneado 28 sep 2026] 3.3 · Estilos de aprendizaje (opcional, resumen del grupo) */}
-                  <TarjetaEstilosAprendizaje
-                    guardado={profile.estilos_aprendizaje || null}
-                    totalAlumnos={profile.total_alumnos || 0}
-                    onGuardado={(estilos) => { setProfile((prev: any) => ({ ...prev, estilos_aprendizaje: estilos })); refrescarFechas() }}
-                  />
-                </div>
-              </div>
-            </div>
+            {/* ============ 3 · Diagnóstico pedagógico ============ */}
+            <p style={s.seccion}>3 · Diagnóstico pedagógico</p>
 
-           </div>
+            <TarjetaDoc numero="3.1" titulo="Diagnóstico grupal" origen="Grupo" guardado={guardado}
+              descripcion="Necesidades y áreas de oportunidad de tu grupo, para personalizar tus planeaciones.">
+              {!guardado ? (
+                <>
+                  <label style={{ ...s.subir, opacity: analizando ? 0.6 : 1, cursor: analizando ? 'default' : 'pointer' }}>
+                    {analizando ? '✦ MÍA está analizando…' : '↑ Subir documento'}
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} disabled={analizando} />
+                  </label>
+                  <p style={s.nota}>PDF o Word.</p>
+                  {errorDiagnostico && <p style={s.aviso}>{errorDiagnostico}</p>}
+                </>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={fechasGuardado['diagnostico_grupal']?.fecha} />
+                  <p style={s.dato}>{pdas.length} PDA prioritarios identificados</p>
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => {
+                        const grupos: Record<string, { campo: string; contenido: string; items: any[] }> = {}
+                        pdas.forEach((p) => {
+                          const key = `${p.campo}||${p.contenido}`
+                          if (!grupos[key]) grupos[key] = { campo: p.campo, contenido: p.contenido, items: [] }
+                          grupos[key].items.push(p)
+                        })
+                        setModalDetalle({
+                          titulo: '3.1 · PDAs priorizados para tu grupo',
+                          contenido: (
+                            <div>
+                              {Object.values(grupos).map((grupo, gi) => (
+                                <div key={gi} style={{ border: '1px solid #E0F5F3', borderRadius: 8, padding: '10px 12px', marginBottom: 8, background: '#FAFFFE' }}>
+                                  <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
+                                    <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{grupo.campo}</span>
+                                    <span style={{ background: '#E0F5F3', color: '#0F6E56', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{grupo.items.length} PDA{grupo.items.length > 1 ? 's' : ''}</span>
+                                  </div>
+                                  <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{grupo.contenido}</p>
+                                  {grupo.items.map((p, pi) => (
+                                    <div key={pi} style={{ background: 'white', border: '1px solid #C8EFE9', borderRadius: 6, padding: '8px 10px', marginBottom: 4 }}>
+                                      <p style={{ margin: '0 0 4px', fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>{p.pda}</p>
+                                      <p style={{ margin: 0, fontSize: 11, color: '#666', lineHeight: 1.4 }}>{p.justificacion}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ),
+                        })
+                      }}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {(fechasGuardado['diagnostico_grupal']?.version ?? 0) >= 2 && (
+                      <button onClick={() => abrirHistorial('diagnostico_grupal', '3.1 · Historial del diagnóstico grupal')} style={s.accionBtn}>Historial</button>
+                    )}
+                    <label style={s.accionBtn}>
+                      Actualizar
+                      <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivo} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                </>
+              )}
+            </TarjetaDoc>
+
+            <TarjetaDoc numero="3.2" titulo="Diagnóstico individual" origen="Grupo" guardado={!!evalCompleta}
+              descripcion="Evaluación por alumno. MÍA protege los nombres y sugiere apoyos que tú confirmas.">
+              {!evalCompleta ? (
+                <>
+                  <label style={{ ...s.subir, opacity: guardandoEval ? 0.6 : 1, cursor: guardandoEval ? 'default' : 'pointer' }}>
+                    {guardandoEval ? '✦ MÍA está analizando…' : '↑ Subir documento'}
+                    <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} disabled={guardandoEval} onChange={handleArchivoEvaluacionIndividual} />
+                  </label>
+                  <p style={s.nota}>PDF o Word · 🔒 Los nombres nunca se almacenan.</p>
+                  {errorEval && <p style={s.aviso}>{errorEval}</p>}
+                </>
+              ) : (
+                <>
+                  <TiempoGuardado fechaISO={fechasGuardado['diagnostico_individual']?.fecha} />
+                  <p style={s.dato}>
+                    👥 {(evaluacionIndividual as any).total_alumnos_detectados || 0} alumnos en tu diagnóstico ·{' '}
+                    <button type="button" onClick={abrirModalAlumnos} style={{ ...s.accionBtn, padding: 0, fontSize: 14 }}>ver grupo y apoyos</button>
+                  </p>
+                  {sugerenciasPendientes(evaluacionIndividual) > 0 && (
+                    <div onClick={abrirModalAlumnos} style={s.miaCaja}>
+                      ✦ MÍA detectó <strong>{sugerenciasPendientes(evaluacionIndividual)}</strong> niño{sugerenciasPendientes(evaluacionIndividual) !== 1 ? 's' : ''} que {sugerenciasPendientes(evaluacionIndividual) !== 1 ? 'podrían' : 'podría'} necesitar apoyos. Revisa y confirma para que lleguen a tus planeaciones →
+                    </div>
+                  )}
+                  {guardandoEval && <p style={s.aviso}>✦ MÍA está analizando la nueva versión…</p>}
+                  {errorEval && <p style={s.aviso}>{errorEval}</p>}
+                  <div style={s.acciones}>
+                    <button
+                      onClick={() => setModalDetalle({
+                        titulo: '3.2 · PDAs prioritarios (Diagnóstico Individual)',
+                        contenido: (
+                          <div>
+                            {(evaluacionIndividual as any)?.pdas_prioritarios_grupo?.length > 0
+                              ? (evaluacionIndividual as any).pdas_prioritarios_grupo.map((pda: any, i: number) => {
+                                  const esObjeto = typeof pda !== 'string'
+                                  return (
+                                    <div key={i} style={{ background: '#F8FFFE', border: '1px solid #C8EFE9', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                                      {esObjeto && pda?.campo && (
+                                        <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' as const }}>
+                                          <span style={{ background: '#EEEDF8', color: '#3D3A8C', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{pda.campo}</span>
+                                        </div>
+                                      )}
+                                      {esObjeto && pda?.contenido && (
+                                        <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{pda.contenido}</p>
+                                      )}
+                                      <p style={{ margin: 0, fontSize: 13, color: '#1A1A2E', lineHeight: 1.5, fontStyle: 'italic' }}>
+                                        {esObjeto ? pda.pda : pda}
+                                      </p>
+                                    </div>
+                                  )
+                                })
+                              : <p style={{ fontSize: 13, color: '#444', margin: 0 }}>Sin PDAs prioritarios registrados.</p>}
+                          </div>
+                        ),
+                      })}
+                      style={s.accionBtn}
+                    >Ver detalle</button>
+                    {(fechasGuardado['diagnostico_individual']?.version ?? 0) >= 2 && (
+                      <button onClick={() => abrirHistorial('diagnostico_individual', '3.2 · Historial del diagnóstico individual')} style={s.accionBtn}>Historial</button>
+                    )}
+                    <label style={s.accionBtn}>
+                      Actualizar
+                      <input type="file" accept=".docx,.pdf" style={{ display: 'none' }} onChange={handleArchivoEvaluacionIndividual} disabled={guardandoEval} />
+                    </label>
+                  </div>
+                </>
+              )}
+            </TarjetaDoc>
+
+            {/* 3.3 · Estilos de aprendizaje (opcional) — la tarjeta completa vive en su componente */}
+            <TarjetaEstilosAprendizaje
+              guardado={profile.estilos_aprendizaje || null}
+              totalAlumnos={profile.total_alumnos || 0}
+              onGuardado={(estilos) => { setProfile((prev: any) => ({ ...prev, estilos_aprendizaje: estilos })); refrescarFechas() }}
+            />
+
+          </div>
 
           <div style={{ height: 40 }} />
 
