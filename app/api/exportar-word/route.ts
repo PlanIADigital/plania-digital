@@ -479,24 +479,55 @@ export async function POST(request: NextRequest) {
     const ANCHO_CRITERIO = 25
     const ANCHO_NIVEL = Math.round((100 - ANCHO_CRITERIO) / 3)
 
-    // Empareja cada rúbrica con su código de PDA real, por texto exacto
-    // (no por nombre de campo — puede haber dos "Lenguajes" con PDA
-    // distintos, como en esta misma planeación). `pda_evaluado` lo pone
-    // nuestro propio backend, no el modelo, así que es la clave confiable;
-    // `r.pda` es la versión que la IA reescribió y puede no traer el código.
-    const codigoPorPda: Record<string, string> = {}
-    camposFormativos.forEach((c) => { if (c.pdaTexto) codigoPorPda[c.pdaTexto] = c.pdaCodigo })
+    // [30 sep 2026] Corrección de códigos corridos en las rúbricas.
+    // Antes: la rúbrica i tomaba el código del RENGLÓN i de la tabla
+    // curricular, pero esa tabla tiene un renglón por campo formativo y
+    // las rúbricas son una por PDA. Con 2 PDA en el campo principal todo
+    // se corría una posición (la rúbrica 2 recibía el código de la 3).
+    // Ahora: lista plana con un renglón por PDA (separando " | ") y
+    // emparejamiento por texto normalizado; la posición queda solo como
+    // último recurso y únicamente si ambas listas miden lo mismo.
+    const PREFIJO_CODIGO = /^([A-ZÁÉÍÓÚ]{2,6}-?\d*)\s*—\s*/
+    const normalizarPda = (t: string) => (t || '')
+      .replace(PREFIJO_CODIGO, '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    const pdasPlanos: { codigo: string; clave: string }[] = []
+    camposFormativos.forEach((c) => {
+      const partes = (c.pdaTexto || '').split('|').map((p: string) => p.trim()).filter(Boolean)
+      partes.forEach((parte: string, i: number) => {
+        const m = parte.match(PREFIJO_CODIGO)
+        const codigo = m ? m[1] : (i === 0 ? (c.pdaCodigo || '') : '')
+        pdasPlanos.push({ codigo, clave: normalizarPda(parte) })
+      })
+    })
+
+    function codigoDeRubrica(r: any, indice: number): string {
+      const claves = [r.pda_evaluado, r.pda].filter(Boolean).map(normalizarPda).filter(Boolean)
+      // 1) Texto igual (sin acentos, mayúsculas ni signos)
+      for (const k of claves) {
+        const hit = pdasPlanos.find((p) => p.clave === k)
+        if (hit?.codigo) return hit.codigo
+      }
+      // 2) Un texto contiene al otro (la IA a veces recorta o agrega)
+      for (const k of claves) {
+        if (k.length < 20) continue
+        const hit = pdasPlanos.find((p) => p.clave.length >= 20 && (p.clave.includes(k) || k.includes(p.clave)))
+        if (hit?.codigo) return hit.codigo
+      }
+      // 3) Último recurso: posición, solo si hay una rúbrica por PDA
+      if (pdasPlanos.length === rubricas.length) return pdasPlanos[indice]?.codigo || ''
+      console.error('⚠️ Rúbrica sin código de PDA identificable:', r.pda_evaluado || r.pda)
+      return ''
+    }
 
     function bloqueRubrica(r: any, esPrimera: boolean, indice: number): (Paragraph | Table)[] {
-      const textoPdaBase = r.pda_evaluado || r.pda || ''
-      // Emparejamiento primario: por POSICIÓN — instrumentos_evaluacion[] y
-      // camposFormativos[] los arma el mismo backend, en el mismo orden
-      // (principal primero, luego transversales), así que la rúbrica i
-      // corresponde siempre al campo formativo i. Más confiable que
-      // comparar texto, que puede diferir en un espacio o en si el código
-      // ya viene pegado al texto. Si el orden no coincidiera (defensivo),
-      // cae al emparejamiento por texto exacto como respaldo.
-      const codigo = camposFormativos[indice]?.pdaCodigo || codigoPorPda[textoPdaBase]
+      const textoPdaBase = (r.pda_evaluado || r.pda || '').replace(PREFIJO_CODIGO, '')
+      const codigo = codigoDeRubrica(r, indice)
       const pdaConCodigo = codigo ? `${codigo} — ${textoPdaBase}` : textoPdaBase
       const niveles: any[] = Array.isArray(r.niveles) ? r.niveles : []
       const porEtiqueta = (etq: string) => niveles.find((n) => n.etiqueta === etq)?.descriptor || '—'
