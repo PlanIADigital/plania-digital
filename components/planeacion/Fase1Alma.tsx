@@ -331,7 +331,7 @@ export default function Fase1Alma({ inicial, gradoGrupo, seccionGrupo, onAvanzar
       <div style={{ ...st.card, background: C.menta, borderColor: '#CDEBE4' }}>
         <p style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 800, color: C.indigo }}>El alma de tu planeación</p>
         <p style={{ margin: 0, fontSize: 13, color: '#335', lineHeight: 1.6 }}>
-          Para <strong>{gradoGrupo}{seccionGrupo ? ` ${seccionGrupo}` : ''}</strong>. MÍA te propone ideas a partir de Mi Grupo; <strong>tú eliges, ajustas y confirmas</strong> cada paso.
+          Para <strong>{gradoGrupo}{seccionGrupo ? ` ${seccionGrupo}` : ''}</strong>. MÍA te propone ideas con lo que registraste en Mi Grupo; <strong>tú eliges, ajustas y confirmas</strong> cada paso.
         </p>
       </div>
 
@@ -339,7 +339,7 @@ export default function Fase1Alma({ inicial, gradoGrupo, seccionGrupo, onAvanzar
       <PasoRedaccion
         numero={1}
         titulo="Situación problema"
-        ayuda="Elige hasta 2 problemáticas que MÍA detectó en tu Mi Grupo y, si quieres, agrega algo que observaste. MÍA te propondrá cómo redactarla."
+        ayuda="MÍA revisó lo que registraste en Mi Grupo y detectó estas problemáticas. Elige hasta 2 y, si quieres, agrega algo que observaste."
         bloqueado={false}
         mensajeBloqueo=""
         confirmado={conf1}
@@ -356,7 +356,7 @@ export default function Fase1Alma({ inicial, gradoGrupo, seccionGrupo, onAvanzar
         textoSugerir="✦ Redactar con MÍA"
         placeholder="Elige una propuesta de MÍA o escribe tu propia situación problema."
       >
-        {detectando && <p style={st.aviso}>✦ MÍA está leyendo tu Mi Grupo…</p>}
+        {detectando && <p style={st.aviso}>✦ MÍA está revisando lo que registraste en Mi Grupo…</p>}
 
         {!detectando && errorDetectar && (
           <div style={st.aviso}>
@@ -367,7 +367,7 @@ export default function Fase1Alma({ inicial, gradoGrupo, seccionGrupo, onAvanzar
 
         {!detectando && !errorDetectar && sinFuentes && (
           <p style={st.aviso}>
-            Aún no hay documentos en tu <strong>Mi Grupo</strong>. Escribe abajo lo que observas en tu grupo y MÍA te ayuda a redactarlo. Cuando completes Mi Grupo, MÍA te propondrá problemáticas de tu propio contexto.
+            Aún no has registrado documentos en <strong>Mi Grupo</strong>. Escribe abajo lo que observas en tu grupo y MÍA te ayuda a redactarlo. Cuando completes Mi Grupo, MÍA te propondrá problemáticas de tu propio contexto.
           </p>
         )}
 
