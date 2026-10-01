@@ -5,6 +5,7 @@ import { estiloPredominante } from '@/lib/estilosAprendizaje'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import EncabezadoPagina from '@/components/EncabezadoPagina'
 import Fase1Alma from '@/components/planeacion/Fase1Alma'
 import type { ValoresFase1 } from '@/components/planeacion/Fase1Alma'
 import { supabase } from '@/lib/supabase'
@@ -1069,9 +1070,7 @@ function NuevaPlaneacionInner() {
 
         {!generating && !result && (
           <>
-            <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '16px 32px', marginBottom: 24, textAlign: 'center' }}>
-              <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>NUEVA PLANEACIÓN</h2>
-            </div>
+            <EncabezadoPagina titulo="Nueva planeación" subtitulo="Diseña tu proyecto paso a paso; MÍA te acompaña." />
 
             {avisoAvance && !avisoDescartado && (
               <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>

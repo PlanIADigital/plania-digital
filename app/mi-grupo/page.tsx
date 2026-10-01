@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import EncabezadoPagina from '@/components/EncabezadoPagina'
 import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
@@ -154,25 +155,43 @@ function TarjetaDoc({ numero, titulo, descripcion, origen, opcional, guardado, c
   children: React.ReactNode
 }) {
   const color = origen ? COLOR_ORIGEN[origen] : null
+  // [30 sep 2026] La etiqueta de origen va JUNTO al título (no en su propio
+  // renglón): así título y descripción quedan juntos y el botón sube.
+  const encabezado = (
+    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: guardado ? C.cian : C.indigo, textTransform: 'uppercase', letterSpacing: '0.07em', lineHeight: 1.6 }}>
+      {guardado ? '✓ ' : ''}{numero} · {titulo}
+      {color && origen && (
+        <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: color.fg, background: color.bg, borderRadius: 99, padding: '2px 8px', marginLeft: 8, verticalAlign: 'middle', lineHeight: 1.4 }}>
+          {origen.toUpperCase()}
+        </span>
+      )}
+      {opcional && <span style={chipOpcional}>Opcional</span>}
+    </p>
+  )
   return (
     <div style={{
       background: guardado ? '#FAFFFE' : 'white',
       border: `1px solid ${guardado ? C.cian : C.borde}`,
       borderRadius: 12, padding: 16, marginBottom: 12,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: guardado ? 4 : 6 }}>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: guardado ? C.cian : C.indigo, textTransform: 'uppercase', letterSpacing: '0.07em', lineHeight: 1.4 }}>
-          {guardado ? '✓ ' : ''}{numero} · {titulo}
-          {opcional && <span style={chipOpcional}>Opcional</span>}
-        </p>
-        {color && origen && (
-          <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: color.fg, background: color.bg, borderRadius: 99, padding: '2px 8px' }}>
-            {origen.toUpperCase()}
-          </span>
-        )}
-      </div>
-      {!guardado && <p style={{ margin: '0 0 12px', fontSize: 13, color: C.gris, lineHeight: 1.6 }}>{descripcion}</p>}
-      {children}
+      {!guardado ? (
+        // Pendiente: título + descripción a la izquierda; acción compacta a la
+        // derecha, centrada en la altura. En pantallas angostas la acción baja sola.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+            {encabezado}
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: C.gris, lineHeight: 1.6 }}>{descripcion}</p>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '100%' }}>
+            {children}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 4 }}>{encabezado}</div>
+          {children}
+        </>
+      )}
     </div>
   )
 }
@@ -618,8 +637,8 @@ async function abrirModalAlumnos() {
     label: { display: 'block', fontSize: 12, fontWeight: 600, color: C.gris, marginBottom: 4 } as React.CSSProperties,
     select: { padding: '9px 12px', fontSize: 16, borderRadius: 8, border: `1px solid ${C.borde}`, background: 'white', minWidth: 96, height: 44, lineHeight: '24px', boxSizing: 'border-box' as const } as React.CSSProperties,
     check: { fontSize: 12, color: C.cian, fontWeight: 700, marginLeft: 6 } as React.CSSProperties,
-    subir: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', boxSizing: 'border-box' as const, background: C.indigoClaro, color: C.indigo, border: `1.5px solid ${C.indigo}`, padding: '11px 14px', fontSize: 14, fontWeight: 600, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' } as React.CSSProperties,
-    nota: { margin: '6px 0 0', fontSize: 12, color: C.gris } as React.CSSProperties,
+    subir: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxSizing: 'border-box' as const, background: C.indigoClaro, color: C.indigo, border: `1.5px solid ${C.indigo}`, padding: '9px 16px', fontSize: 14, fontWeight: 600, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const } as React.CSSProperties,
+    nota: { margin: '4px 0 0', fontSize: 11, color: C.gris, textAlign: 'right' as const } as React.CSSProperties,
     aviso: { margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 } as React.CSSProperties,
     err: { margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 } as React.CSSProperties,
     dato: { margin: '4px 0 0', fontSize: 14, color: C.texto, lineHeight: 1.5 } as React.CSSProperties,
@@ -661,9 +680,10 @@ async function abrirModalAlumnos() {
             input[type=number] { -moz-appearance: textfield; }
           `}</style>
           {/* ENCABEZADO — institucional vive solo en la ficha del Sidebar */}
-          <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '14px 32px', marginBottom: 20, textAlign: 'center' }}>
-            <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI GRUPO</h2>
-          </div>
+          <EncabezadoPagina
+            titulo="Mi grupo"
+            subtitulo={grupoConfigurado ? `Grupo ${gradoGrupo} ${profile.grupo_letra}` : 'Configura tu grado y grupo para empezar.'}
+          />
 
           {/* [30 sep 2026] Rediseño: una sola columna, mismo lenguaje visual que
               "El alma de tu planeación". Solo cambia la presentación: handlers,
