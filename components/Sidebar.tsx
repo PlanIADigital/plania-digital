@@ -1,4 +1,16 @@
 'use client'
+// ============================================================
+//  PlanIA Digital — components/Sidebar.tsx
+//  [30 sep 2026] Menú adaptable a celular ("hamburguesa"):
+//  - Más de 768 px: idéntico a antes (menú fijo de 240 px a la izquierda).
+//  - 768 px o menos: el menú se oculta, el contenido usa todo el ancho y
+//    aparece una barra superior fija con ☰. Al tocarla, el menú se desliza
+//    desde la izquierda con fondo oscurecido; se cierra con ✕, tocando
+//    fuera, eligiendo una opción o al cambiar de página.
+//  El cambio de diseño se hace con CSS (@media), no con JS, para evitar
+//  parpadeos y diferencias entre servidor y navegador.
+// ============================================================
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { useTheme } from '@/components/ThemeProvider'
@@ -21,6 +33,31 @@ interface SidebarProps {
   profile: any
   children: React.ReactNode
 }
+
+// Reglas de diseño adaptable. Prefijo "plania-" para no chocar con otras clases.
+const ESTILOS_RESPONSIVOS = `
+  .plania-aside {
+    width: 240px; background: #3D3A8C; display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    overflow-y: auto; transition: transform 0.25s ease;
+  }
+  .plania-main { margin-left: 240px; flex: 1; min-width: 0; background: var(--plania-fondo); min-height: 100vh; }
+  .plania-topbar, .plania-overlay, .plania-cerrar { display: none; }
+
+  @media (max-width: 768px) {
+    .plania-aside { width: 280px; max-width: 85vw; transform: translateX(-100%); box-shadow: none; }
+    .plania-aside.abierto { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
+    .plania-main { margin-left: 0; }
+    .plania-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 90; height: 56px; padding: 0 8px;
+      background: #3D3A8C; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .plania-overlay.abierto { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(26,26,46,0.45); }
+    .plania-cerrar { display: flex; }
+    .plania-logo { padding-right: 56px !important; }
+  }
+`
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
@@ -45,6 +82,18 @@ function ThemeToggle() {
         {isDark ? '🌙' : '☀️'}
       </span>
     </button>
+  )
+}
+
+function Logo({ tamano }: { tamano: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }}>
+      <span style={{ color: '#00A896', fontWeight: 700, fontSize: tamano }}>✦</span>
+      <span style={{ color: 'white', fontWeight: 700, fontSize: tamano }}>Plan</span>
+      <span style={{ color: '#00A896', fontWeight: 900, fontSize: tamano }}>IA</span>
+      <span style={{ color: 'white', fontWeight: 700, fontSize: tamano }}> Digital</span>
+      <span style={{ color: '#00A896', fontWeight: 700, fontSize: tamano }}>✦</span>
+    </div>
   )
 }
 
@@ -85,8 +134,32 @@ function nombreJardinCorto(nombreCompleto?: string | null): string {
 export default function Sidebar({ profile, children }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [abierto, setAbierto] = useState(false)
+
+  // Al cambiar de página, el menú del celular se cierra solo.
+  useEffect(() => { setAbierto(false) }, [pathname])
+
+  // Con el menú abierto en el celular, la página de atrás no se desplaza.
+  useEffect(() => {
+    document.body.style.overflow = abierto ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [abierto])
+
+  // Tecla Esc cierra el menú (útil en tabletas con teclado).
+  useEffect(() => {
+    if (!abierto) return
+    const alPresionar = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false) }
+    window.addEventListener('keydown', alPresionar)
+    return () => window.removeEventListener('keydown', alPresionar)
+  }, [abierto])
+
+  function irA(path: string) {
+    setAbierto(false)
+    router.push(path)
+  }
 
   async function handleLogout() {
+    setAbierto(false)
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
@@ -96,24 +169,30 @@ export default function Sidebar({ profile, children }: SidebarProps) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <aside style={{
-        width: 240,
-        background: '#3D3A8C',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        top: 0, left: 0, bottom: 0,
-        zIndex: 100,
-      }}>
+      <style>{ESTILOS_RESPONSIVOS}</style>
+
+      {/* Fondo oscurecido (solo celular, con el menú abierto) */}
+      <div className={`plania-overlay${abierto ? ' abierto' : ''}`} onClick={() => setAbierto(false)} aria-hidden="true" />
+
+      <aside className={`plania-aside${abierto ? ' abierto' : ''}`} aria-label="Menú principal">
+        {/* Cerrar (solo celular) */}
+        <button
+          className="plania-cerrar"
+          onClick={() => setAbierto(false)}
+          aria-label="Cerrar menú"
+          style={{
+            position: 'absolute', top: 8, right: 8, width: 40, height: 40,
+            alignItems: 'center', justifyContent: 'center', borderRadius: 8,
+            background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+            fontSize: 20, cursor: 'pointer',
+          }}
+        >
+          ✕
+        </button>
+
         {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 4, justifyContent: 'center' }}>
-            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 18 }}>✦</span>
-            <span style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Plan</span>
-            <span style={{ color: '#00A896', fontWeight: 900, fontSize: 18 }}>IA</span>
-            <span style={{ color: 'white', fontWeight: 700, fontSize: 18 }}> Digital</span>
-            <span style={{ color: '#00A896', fontWeight: 700, fontSize: 18 }}>✦</span>
-          </div>
+        <div className="plania-logo" style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+          <div style={{ marginBottom: 4 }}><Logo tamano={18} /></div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
             Planea. Conecta. Transforma.
           </p>
@@ -122,7 +201,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             Sector/Región/Turno. Vive aquí una sola vez para no repetirla en
             cada encabezado; clic lleva a Configuración para corregirla. */}
         <button
-          onClick={() => router.push('/configuracion')}
+          onClick={() => irA('/configuracion')}
           style={{
             margin: '12px 12px 4px', padding: '10px 12px', borderRadius: 10,
             background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
@@ -149,7 +228,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             return (
               <div key={item.label} style={{ marginBottom: 4 }}>
                 <button
-                  onClick={() => { if (item.activo && item.path) router.push(item.path) }}
+                  onClick={() => { if (item.activo && item.path) irA(item.path) }}
                   style={{
                     width: '100%',
                     display: 'flex',
@@ -230,7 +309,24 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         </div>
       </aside>
 
-      <main style={{ marginLeft: 240, flex: 1, background: 'var(--plania-fondo)', minHeight: '100vh' }}>
+      <main className="plania-main">
+        {/* Barra superior (solo celular) */}
+        <div className="plania-topbar">
+          <button
+            onClick={() => setAbierto(true)}
+            aria-label="Abrir menú"
+            aria-expanded={abierto}
+            style={{
+              width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', color: 'white', fontSize: 24, cursor: 'pointer', borderRadius: 8,
+            }}
+          >
+            ☰
+          </button>
+          <Logo tamano={16} />
+          {/* Espacio del mismo ancho que ☰ para que el logo quede centrado */}
+          <div style={{ width: 44 }} />
+        </div>
         {children}
       </main>
     </div>
