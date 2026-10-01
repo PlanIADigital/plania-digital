@@ -635,7 +635,7 @@ async function abrirModalAlumnos() {
     titulo: { margin: 0, fontSize: 13, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.07em' } as React.CSSProperties,
     seccion: { margin: '24px 0 10px', fontSize: 12, fontWeight: 700, color: C.gris, textTransform: 'uppercase' as const, letterSpacing: '0.08em' } as React.CSSProperties,
     label: { display: 'block', fontSize: 12, fontWeight: 600, color: C.gris, marginBottom: 4 } as React.CSSProperties,
-    select: { padding: '9px 12px', fontSize: 16, borderRadius: 8, border: `1px solid ${C.borde}`, background: 'white', minWidth: 96, height: 44, lineHeight: '24px', boxSizing: 'border-box' as const } as React.CSSProperties,
+    select: { padding: '9px 10px', fontSize: 16, borderRadius: 8, border: `1px solid ${C.borde}`, background: 'white', width: 80, height: 44, lineHeight: '24px', boxSizing: 'border-box' as const } as React.CSSProperties,
     check: { fontSize: 12, color: C.cian, fontWeight: 700, marginLeft: 6 } as React.CSSProperties,
     subir: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxSizing: 'border-box' as const, background: C.indigoClaro, color: C.indigo, border: `1.5px solid ${C.indigo}`, padding: '9px 16px', fontSize: 14, fontWeight: 600, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const } as React.CSSProperties,
     nota: { margin: '4px 0 0', fontSize: 11, color: C.gris, textAlign: 'right' as const } as React.CSSProperties,
@@ -717,11 +717,11 @@ async function abrirModalAlumnos() {
             {/* Configura tu grupo */}
             <div style={s.card}>
               <p style={{ ...s.titulo, marginBottom: 12 }}>👥 Configura tu grupo</p>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const, alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
                 <div>
                   <label style={s.label}>Grado</label>
                   <select value={profile.grado || ''} onChange={(e) => actualizarGrado(e.target.value)} style={s.select}>
-                    <option value="" disabled>— Selecciona —</option>
+                    <option value="" disabled>—</option>
                     {GRADOS_OPCIONES.map(g => (
                       <option key={g} value={g}>{GRADO_MAP[g]}</option>
                     ))}
@@ -731,7 +731,7 @@ async function abrirModalAlumnos() {
                 <div>
                   <label style={s.label}>Grupo</label>
                   <select value={profile.grupo_letra || ''} onChange={(e) => actualizarGrupoLetra(e.target.value)} style={s.select}>
-                    <option value="" disabled>— Selecciona —</option>
+                    <option value="" disabled>—</option>
                     {['A', 'B', 'C', 'D', 'E'].map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
@@ -741,9 +741,9 @@ async function abrirModalAlumnos() {
                 <div>
                   <label style={s.label}>Alumnos</label>
                   {codigosActivos && codigosActivos > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ ...s.select, minWidth: 56, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
-                      <button type="button" onClick={abrirModalAlumnos} style={s.accionBtn}>Altas y bajas →</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                      <span style={{ ...s.select, width: 64, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
+                      <button type="button" onClick={abrirModalAlumnos} style={{ ...s.accionBtn, fontSize: 12 }}>Altas y bajas →</button>
                     </div>
                   ) : (
                     <input
