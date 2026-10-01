@@ -90,6 +90,7 @@ REGLAS:
 - Redacta en español de México, claro y profesional, sin tecnicismos innecesarios.
 - Nunca uses nombres de niños, códigos de alumno (AL-XX) ni etiquetas diagnósticas, clínicas o de discapacidad; la legislación vigente prohíbe etiquetar. Habla del grupo y de necesidades, nunca de diagnósticos.
 - No inventes datos que no estén en la información recibida. No atribuyas causas ni afirmes nada sobre el entorno, las familias o el jardín que no esté en esa información o en lo que escribió la educadora.
+- Usa lenguaje de la NEM: habla de barreras para el aprendizaje o de áreas de oportunidad. Evita palabras de déficit como "rezago" o "retraso", y evita "académico" (es preescolar).
 - Responde SOLO con JSON válido, sin markdown ni explicaciones.`
 
 // ------------------------------------------------------------------
@@ -119,6 +120,12 @@ async function reunirFuentes(u: any): Promise<Record<Origen, string>> {
     .limit(1)
     .maybeSingle()
   const problematicasPA = pa?.pda_ponderacion?.problematicas_institucionales
+  // [1 oct 2026] Si el PA no trae problemáticas explícitas (muchos PA no tienen
+  // ese apartado), se usa su contexto comunitario y su resumen como respaldo.
+  const pp = pa?.pda_ponderacion || {}
+  const paTexto = Array.isArray(problematicasPA) && problematicasPA.length > 0
+    ? aTexto(problematicasPA)
+    : aTexto([pp.contexto_comunitario ?? '', pp.resumen_pa ?? ''])
 
   // Evaluación individual: SOLO resumen y PDA prioritarios del grupo.
   const ind = u.evaluacion_individual && !Array.isArray(u.evaluacion_individual) ? u.evaluacion_individual : null
@@ -138,7 +145,7 @@ async function reunirFuentes(u: any): Promise<Record<Origen, string>> {
 
   return {
     PMC: aTexto(u.diagnostico_escolar),
-    PA: Array.isArray(problematicasPA) ? aTexto(problematicasPA) : '',
+    PA: paTexto,
     Grupo: aTexto([
       u.diagnostico_texto || '',
       ind?.resumen_general ?? '',
@@ -174,6 +181,7 @@ TAREA: A partir de la información de Mi Grupo, detecta de 3 a 4 problemáticas 
 - Prioriza en este orden: necesidades del grupo (Grupo), contexto del jardín y la comunidad (PMC y PA), observaciones de Dirección. Usa Jardín solo como apoyo.
 - Si dos fuentes dicen lo mismo, júntalas en una sola y usa la etiqueta de la fuente más cercana al grupo.
 - Cada problemática: una o dos frases, máximo 220 caracteres, describiendo lo que se observa en las niñas y los niños o en su entorno. No propongas soluciones ni actividades.
+- Cada problemática debe tener UN SOLO foco (por ejemplo, solo regulación emocional). No juntes varios temas en una misma problemática.
 
 FORMATO: {"problematicas":[{"texto":"...","origen":"Grupo"}]}`,
     `GRADO DEL GRUPO: ${usuario.grado || 'sin dato'}\n\nINFORMACIÓN DE MI GRUPO:\n\n${bloques}`,
