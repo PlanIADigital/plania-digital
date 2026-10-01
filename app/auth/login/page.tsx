@@ -86,8 +86,13 @@ export default function LoginPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 24, outline: 'none', fontFamily: 'sans-serif' }}
+            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 8, outline: 'none', fontFamily: 'sans-serif' }}
           />
+          <p style={{ textAlign: 'right', margin: '0 0 20px' }}>
+            <a href="/auth/recuperar" style={{ color: '#3D3A8C', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+              ¿Olvidaste tu contraseña?
+            </a>
+          </p>
 
           {error && (
             <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
