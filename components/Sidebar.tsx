@@ -2,31 +2,34 @@
 // ============================================================
 //  PlanIA Digital — components/Sidebar.tsx
 //  [30 sep 2026] Menú adaptable a celular ("hamburguesa"):
-//  - Más de 768 px: idéntico a antes (menú fijo de 240 px a la izquierda).
-//  - 768 px o menos: el menú se oculta, el contenido usa todo el ancho y
-//    aparece una barra superior fija con ☰. Al tocarla, el menú se desliza
-//    desde la izquierda con fondo oscurecido; se cierra con ✕, tocando
-//    fuera, eligiendo una opción o al cambiar de página.
-//  El cambio de diseño se hace con CSS (@media), no con JS, para evitar
-//  parpadeos y diferencias entre servidor y navegador.
+//  - Más de 768 px: menú fijo de 240 px a la izquierda.
+//  - 768 px o menos: el menú se oculta y aparece una barra superior con ☰.
+//    Al tocarla, el menú se desliza desde la izquierda con fondo oscurecido;
+//    se cierra con ✕, tocando fuera, eligiendo una opción o al cambiar de página.
+//  El cambio de diseño se hace con CSS (@media), no con JS.
+//  [oct 2026] Iconografía "línea en recuadro" (opción B): cada sección con
+//  su ícono de línea en un recuadro suave; la activa con recuadro verde.
+//  Ficha del jardín en verde PlanIA, solo con el nombre.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { useTheme } from '@/components/ThemeProvider'
+import Icono from '@/components/Icono'
 
 const supabase = createClient()
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',        path: '/dashboard',        icon: '🏠', activo: true },
-  { label: 'Mi grupo',         path: '/mi-grupo',         icon: '👥', activo: true },
-  { label: 'Nueva planeación', path: '/planeacion/nueva', icon: '✨', activo: true },
-  { label: 'Mis planeaciones', path: '/mis-planeaciones', icon: '📋', activo: true },
-  { label: 'Mi avance',        path: '/mi-avance',        icon: '📊', activo: true },
-  { label: 'Misiones',         path: '/misiones',         icon: '🎓', activo: false },
-  { label: 'Calendario',       path: null,                icon: '📅', activo: false },
-  { label: 'Estadísticas',     path: null,                icon: '📈', activo: false },
-  { label: 'Configuración',    path: '/configuracion',    icon: '⚙️', activo: true },
+  { label: 'Dashboard',        path: '/dashboard',        icono: 'house',         activo: true },
+  { label: 'Mi grupo',         path: '/mi-grupo',         icono: 'users',         activo: true },
+  { label: 'Mi diario',        path: null,                icono: 'mi-diario',     activo: false },
+  { label: 'Nueva planeación', path: '/planeacion/nueva', icono: 'sparkles',      activo: true },
+  { label: 'Mis planeaciones', path: '/mis-planeaciones', icono: 'folder-open',   activo: true },
+  { label: 'Mi avance',        path: '/mi-avance',        icono: 'chart-column',  activo: true },
+  { label: 'Misiones',         path: '/misiones',         icono: 'flag',          activo: false },
+  { label: 'Calendario',       path: null,                icono: 'calendar-days', activo: false },
+  { label: 'Estadísticas',     path: null,                icono: 'chart-pie',     activo: false },
+  { label: 'Configuración',    path: '/configuracion',    icono: 'settings',      activo: true },
 ]
 
 interface SidebarProps {
@@ -44,6 +47,10 @@ const ESTILOS_RESPONSIVOS = `
   .plania-main { margin-left: 240px; flex: 1; min-width: 0; background: var(--plania-fondo); min-height: 100vh; }
   .plania-topbar, .plania-overlay, .plania-cerrar { display: none; }
 
+  .plania-item { transition: background 0.15s ease; }
+  .plania-item.habilitado:hover { background: rgba(255,255,255,0.08); }
+  .plania-item:focus-visible, .plania-ficha:focus-visible { outline: 2px solid #00A896; outline-offset: 2px; }
+
   @media (max-width: 768px) {
     .plania-aside { width: 280px; max-width: 85vw; transform: translateX(-100%); box-shadow: none; }
     .plania-aside.abierto { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
@@ -55,26 +62,10 @@ const ESTILOS_RESPONSIVOS = `
     }
     .plania-overlay.abierto { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(26,26,46,0.45); }
     .plania-cerrar { display: flex; }
-    .plania-logo { padding-right: 56px !important; }
-    /* Safari en iPhone hace zoom al tocar campos con letra < 16 px y el zoom
-       se queda al cambiar de página. 16 px lo evita sin bloquear el pellizco. */
+    .plania-logo { padding-left: 52px !important; padding-right: 52px !important; }
+    /* Safari en iPhone hace zoom al tocar campos con letra < 16 px. */
     input, select, textarea { font-size: 16px !important; }
-
-    /* [oct 2026] Menú compacto en celular: todo cabe de una vista,
-       incluido Cerrar sesión. En escritorio no cambia nada. */
-    .plania-logo { padding: 16px 56px 12px 16px !important; }
-    .plania-lema { display: none !important; }
-    .plania-ficha { margin: 8px 12px 0 !important; padding: 8px 10px !important; }
-    .plania-ficha-detalle { display: none !important; }
-    .plania-ficha-nombre { margin: 0 !important; }
-    .plania-nav { padding: 8px 12px !important; }
-    .plania-item { margin-bottom: 2px !important; }
-    .plania-pronto { display: none !important; }
-    .plania-pronto-linea { display: block !important; }
-    .plania-perfil-escritorio { display: none !important; }
-    .plania-perfil-movil { display: block !important; }
   }
-  .plania-pronto-linea, .plania-perfil-movil { display: none; }
 `
 
 function ThemeToggle() {
@@ -115,13 +106,9 @@ function Logo({ tamano }: { tamano: number }) {
   )
 }
 
-// [sep 2026] Abrevia el nombre del jardín por PRESUPUESTO DE CARACTERES,
-// no por número de palabras — antes cortaba la última palabra a una sola
-// inicial ("Juan De Dios P.") aunque el nombre completo cupiera bien, lo
-// cual parece afirmar un apellido que en realidad no sabemos ("¿P. de
-// Peza? ¿de Pérez?"). Ahora muestra tantas palabras COMPLETAS quepan
-// dentro del límite, y si hace falta cortar, usa "..." — que se lee
-// claramente como "hay más texto", no como un dato real truncado.
+// [sep 2026] Abrevia el nombre del jardín por PRESUPUESTO DE CARACTERES:
+// muestra tantas palabras COMPLETAS quepan y, si hace falta cortar, usa
+// "..." (se lee como "hay más texto", no como un dato inventado).
 function nombreJardinCorto(nombreCompleto?: string | null): string {
   if (!nombreCompleto) return 'Jardín de Niños'
   let base = nombreCompleto
@@ -138,8 +125,6 @@ function nombreJardinCorto(nombreCompleto?: string | null): string {
     const candidato = resultado ? `${resultado} ${palabra}` : palabra
     if (candidato.length > MAX_CHARS) {
       if (!resultado) {
-        // ni siquiera la primera palabra cabe completa — caso raro, se
-        // corta esa sola palabra en vez de dejar la ficha vacía
         resultado = palabra.slice(0, Math.max(1, MAX_CHARS - 3))
       }
       return `JN ${resultado}...`
@@ -215,35 +200,33 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           ✕
         </button>
 
-        {/* Logo */}
-        <div className="plania-logo" style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+        {/* Logo y lema */}
+        <div className="plania-logo" style={{ padding: '22px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.12)', textAlign: 'center' }}>
           <div style={{ marginBottom: 4 }}><Logo tamano={18} /></div>
-          <p className="plania-lema" style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
             Planea. Conecta. Transforma.
           </p>
         </div>
-        {/* Ficha institucional — fuente única de verdad para Jardín/CCT/Zona/
-            Sector/Región/Turno. Vive aquí una sola vez para no repetirla en
-            cada encabezado; clic lleva a Configuración para corregirla. */}
+
+        {/* Ficha del jardín — en verde para que la educadora vea de entrada
+            en qué jardín está. Los datos (CCT, zona, etc.) viven en Configuración. */}
         <button
           className="plania-ficha"
           onClick={() => irA('/configuracion')}
+          title={profile?.school_name || ''}
           style={{
-            margin: '12px 12px 4px', padding: '10px 12px', borderRadius: 10,
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
-            cursor: 'pointer', textAlign: 'left', display: 'block', width: 'calc(100% - 24px)',
+            margin: '14px 12px 6px', padding: '10px 10px', borderRadius: 10,
+            background: '#00A896', border: 'none', cursor: 'pointer',
+            display: 'block', width: 'calc(100% - 24px)',
+            color: 'white', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.03em',
+            textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}
         >
-          <p className="plania-ficha-nombre" style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3, textAlign: 'center' }}>
-            {nombreJardinCorto(profile?.school_name)}
-          </p>
-          <p className="plania-ficha-detalle" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6, textAlign: 'center' }}>
-            CCT {profile?.cct_primary || '—'} · {profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '—'}<br/>
-            Zona {profile?.zona || '—'} · Sector {profile?.sector || '—'} · Región {profile?.region || '—'}
-          </p>
+          {nombreJardinCorto(profile?.school_name).toUpperCase()}
         </button>
-        {/* Nav */}
-        <nav className="plania-nav" style={{ padding: '16px 12px', flex: 1 }}>
+
+        {/* Navegación */}
+        <nav style={{ padding: '8px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map((item) => {
             const isActive = item.path !== null && (
               pathname === item.path ||
@@ -252,117 +235,83 @@ export default function Sidebar({ profile, children }: SidebarProps) {
               ))
             )
             return (
-              <div key={item.label} className={item.activo ? 'plania-item' : 'plania-item plania-pronto'} style={{ marginBottom: 4 }}>
-                <button
-                  onClick={() => { if (item.activo && item.path) irA(item.path) }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: 'none',
-                    cursor: item.activo ? 'pointer' : 'default',
-                    background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
-                    color: item.activo ? 'white' : 'rgba(255,255,255,0.35)',
-                    fontSize: 14,
-                    fontWeight: isActive ? 600 : 400,
-                    textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{item.icon}</span>
-                  <span style={{ flex: 1 }}>{item.label}</span>
-                  {!item.activo && (
-                    <span style={{
-                      fontSize: 9, fontWeight: 700,
-                      background: 'rgba(255,255,255,0.12)',
-                      color: 'rgba(255,255,255,0.4)',
-                      padding: '2px 6px', borderRadius: 10,
-                      letterSpacing: '0.04em'
-                    }}>
-                      PRONTO
-                    </span>
-                  )}
-                </button>
-              </div>
+              <button
+                key={item.label}
+                className={`plania-item${item.activo ? ' habilitado' : ''}`}
+                onClick={() => { if (item.activo && item.path) irA(item.path) }}
+                aria-current={isActive ? 'page' : undefined}
+                aria-disabled={!item.activo || undefined}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '6px 8px', borderRadius: 10, border: 'none',
+                  cursor: item.activo ? 'pointer' : 'default',
+                  background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  color: item.activo ? 'white' : 'rgba(255,255,255,0.38)',
+                  fontSize: 14, fontWeight: isActive ? 600 : 400, textAlign: 'left',
+                }}
+              >
+                <span style={{
+                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: isActive ? '#00A896' : (item.activo ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)'),
+                }}>
+                  <Icono nombre={item.icono} tamano={18} />
+                </span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {!item.activo && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700,
+                    background: 'rgba(255,255,255,0.12)',
+                    color: 'rgba(255,255,255,0.45)',
+                    padding: '2px 6px', borderRadius: 10,
+                    letterSpacing: '0.04em',
+                  }}>
+                    PRONTO
+                  </span>
+                )}
+              </button>
             )
           })}
-          {/* Celular: las secciones "Pronto" en una sola línea discreta */}
-          <p className="plania-pronto-linea" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '8px 12px 0', lineHeight: 1.5 }}>
-            Próximamente: {NAV_ITEMS.filter(i => !i.activo).map(i => i.label).join(' · ')}
-          </p>
         </nav>
 
-        {/* Perfil — celular: compacto en fila, con Cerrar sesión siempre visible */}
-        <div className="plania-perfil-movil" style={{ padding: '12px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        {/* Perfil */}
+        <div style={{ padding: '12px 14px 16px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="foto"
                 style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', background: '#EEEDF8', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#3D3A8C', fontSize: 14, fontWeight: 800,
+              }}>
                 {iniciales}
               </div>
             )}
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ color: 'white', fontSize: 14, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name}</p>
-              {profile?.es_fundadora && <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>}
+              <p style={{ color: 'white', fontSize: 13.5, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {profile?.full_name}
+              </p>
+              {profile?.es_fundadora && (
+                <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>
+              )}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Modo oscuro</span>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5 }}>Modo oscuro</span>
               <ThemeToggle />
             </div>
-            <button onClick={handleLogout} style={{ background: '#00A896', border: 'none', color: 'white', padding: '9px 14px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}>
-              Cerrar sesión
+            <button onClick={handleLogout} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#00A896', border: 'none', color: 'white',
+              padding: '8px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13,
+            }}>
+              <Icono nombre="log-out" tamano={16} />
+              Salir
             </button>
           </div>
-        </div>
-
-        {/* Perfil — escritorio (sin cambios) */}
-        <div className="plania-perfil-escritorio" style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="foto"
-                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid white' }} />
-            ) : (
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%',
-                background: '#00A896',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white', fontSize: 18, fontWeight: 700
-              }}>
-                {iniciales}
-              </div>
-            )}
-            <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: 0 }}>
-              {profile?.full_name}
-            </p>
-            {profile?.es_fundadora && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                background: 'rgba(255,255,255,0.15)', color: '#FCD34D',
-                fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
-                letterSpacing: '0.03em',
-              }}>
-                ⭐ Fundadora
-              </span>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Modo oscuro</span>
-              <ThemeToggle />
-            </div>
-          </div>
-          <button onClick={handleLogout} style={{
-            width: '100%', background: '#00A896',
-            border: 'none',
-            color: 'white', padding: '7px 12px', borderRadius: 8, fontWeight: 600,
-            cursor: 'pointer', fontSize: 12,
-          }}>
-            Cerrar sesión
-          </button>
         </div>
       </aside>
 
