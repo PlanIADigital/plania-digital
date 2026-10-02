@@ -20,6 +20,22 @@ const LIMITES_CARACTERES: Partial<Record<keyof DiaGenerado, number>> = {
 }
 const LIMITE_AJUSTE = 400
 
+// [2 oct 2026] Si el recorte deja abierta una comilla o un paréntesis, se
+// cierra. Regla del español: el punto final va DESPUÉS de la comilla
+// ("Hola niños".); los signos ? ! y los puntos suspensivos se quedan dentro.
+function cerrarAbiertos(t: string): string {
+  const cuenta = (c: string) => t.split(c).length - 1
+  let cierres = ''
+  if (cuenta('(') > cuenta(')')) cierres = ')' + cierres
+  if (cuenta('\u201C') > cuenta('\u201D')) cierres = '\u201D' + cierres
+  if (cuenta('\u00AB') > cuenta('\u00BB')) cierres = '\u00BB' + cierres
+  if (cuenta('"') % 2 === 1) cierres = '"' + cierres
+  if (!cierres) return t
+  if (t.endsWith('...') || /[!?\u2026]$/.test(t)) return t + cierres
+  if (t.endsWith('.')) return t.slice(0, -1) + cierres + '.'
+  return t + cierres
+}
+
 // Recorta al punto/exclamación/pregunta más cercano ANTES del límite, nunca
 // a media palabra. Si no hay un cierre de oración razonable cerca (más de
 // la mitad del límite), recorta a la última palabra completa en su lugar.
@@ -32,7 +48,7 @@ export function recortarAlLimite(texto: string, limite: number): string {
     cortado.lastIndexOf('?')
   )
   if (ultimoCierre > limite * 0.5) {
-    return cortado.slice(0, ultimoCierre + 1)
+    return cerrarAbiertos(cortado.slice(0, ultimoCierre + 1))
   }
   // [Saneado 27 sep 2026 — Fase 2] Si no hay fin de oración cerca, se corta en
   // la última pausa natural (coma, punto y coma, dos puntos o guion largo) y se
@@ -44,11 +60,11 @@ export function recortarAlLimite(texto: string, limite: number): string {
     cortado.lastIndexOf(' — ')
   )
   if (ultimaPausa > limite * 0.5) {
-    return cortado.slice(0, ultimaPausa).trim() + '.'
+    return cerrarAbiertos(cortado.slice(0, ultimaPausa).trim() + '.')
   }
   const ultimoEspacio = cortado.lastIndexOf(' ')
   const base = ultimoEspacio > 0 ? cortado.slice(0, ultimoEspacio) : cortado
-  return base.trim() + '...'
+  return cerrarAbiertos(base.trim() + '...')
 }
 
 export function validarDiaCompleto(dia: DiaGenerado): DiaGenerado {
