@@ -3,6 +3,7 @@
 //  [oct 2026] Iconografía oficial: íconos de línea (trazo de Lucide,
 //  licencia ISC) incrustados aquí para no depender de otra librería.
 //  'mi-diario' es propio de PlanIA: cuaderno con micrófono.
+//  'semaforo' es propio de PlanIA [2 oct 2026]: semáforo vertical con 3 luces.
 //  Uso: <Icono nombre="house" tamano={18} />
 // ============================================================
 import React from 'react'
@@ -31,6 +32,7 @@ const ICONOS: Record<string, Nodo[]> = {
   'plus': [['path', {"d": "M5 12h14"}], ['path', {"d": "M12 5v14"}]],
   'school': [['path', {"d": "M14 22v-4a2 2 0 1 0-4 0v4"}], ['path', {"d": "m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"}], ['path', {"d": "M18 5v17"}], ['path', {"d": "m4 6 8-4 8 4"}], ['path', {"d": "M6 5v17"}], ['circle', {"cx": "12", "cy": "9", "r": "2"}]],
   'mi-diario': [['rect', {"x": "4", "y": "2", "width": "16", "height": "20", "rx": "2"}], ['path', {"d": "M2 6h4M2 10h4M2 14h4M2 18h4"}], ['path', {"d": "M12 6.5a2.5 2.5 0 0 0-2.5 2.5v3a2.5 2.5 0 0 0 5 0V9a2.5 2.5 0 0 0-2.5-2.5z"}], ['path', {"d": "M16 11.5a4 4 0 0 1-8 0"}], ['path', {"d": "M12 15.5v2"}]],
+  'semaforo': [['rect', {"x": "8", "y": "2", "width": "8", "height": "20", "rx": "3"}], ['circle', {"cx": "12", "cy": "7", "r": "1.6"}], ['circle', {"cx": "12", "cy": "12", "r": "1.6"}], ['circle', {"cx": "12", "cy": "17", "r": "1.6"}], ['path', {"d": "M8 6H5.5l2.5 2.5M16 6h2.5L16 8.5M8 11H5.5l2.5 2.5M16 11h2.5L16 13.5"}]],
 }
 
 export type NombreIcono = keyof typeof ICONOS
