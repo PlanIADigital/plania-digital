@@ -208,7 +208,6 @@ function TarjetaDoc({ numero, titulo, descripcion, origen, opcional, guardado, c
 export default function MiGrupoPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
-  const [alumnosGuardado, setAlumnosGuardado] = useState(false)
   const [gradoGuardado, setGradoGuardado] = useState(false)
   const [grupoLetraGuardado, setGrupoLetraGuardado] = useState(false)
   const [discrepanciaAlumnos, setDiscrepanciaAlumnos] = useState<DiscrepanciaAlumnos | null>(null)
@@ -367,13 +366,6 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
     setDiscrepanciaAlumnos({ detectado, origen })
   }
 
-  async function actualizarTotalAlumnos(nuevoTotal: number) {
-    setProfile((prev: any) => ({ ...prev, total_alumnos: nuevoTotal }))
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      await supabase.from('users').update({ total_alumnos: nuevoTotal }).eq('auth_uid', session.user.id)
-    }
-  }
   async function actualizarGrado(nuevoGrado: string) {
     setProfile((prev: any) => ({ ...prev, grado: nuevoGrado }))
     const { data: { session } } = await supabase.auth.getSession()
@@ -394,11 +386,6 @@ const [errorAlumnos, setErrorAlumnos] = useState('')
     setTimeout(() => setGrupoLetraGuardado(false), 2000)
   }
 
-  async function confirmarActualizarAlumnos() {
-    if (!discrepanciaAlumnos) return
-    await actualizarTotalAlumnos(discrepanciaAlumnos.detectado)
-    setDiscrepanciaAlumnos(null)
-  }
 
   function descartarDiscrepanciaAlumnos() {
     setDiscrepanciaAlumnos(null)
@@ -770,7 +757,6 @@ async function abrirModalAlumnos() {
                       </button>
                     </span>
                   )}
-                  {alumnosGuardado && <span style={s.check}>✓</span>}
                 </div>
               </div>
             </div>
