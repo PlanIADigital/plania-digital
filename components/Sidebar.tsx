@@ -15,6 +15,9 @@
 //  [2 oct 2026] UN SOLO MENÚ PARA TODOS LOS ROLES: las opciones se eligen
 //  según profile.role (educadora o directivo). Reemplaza a SidebarDirectivo,
 //  para que cada mejora del menú llegue a todos los roles a la vez.
+//  [2 oct 2026] MENÚ SIN "PRONTO" PARA EL LANZAMIENTO: solo se dibujan las
+//  secciones con activo: true. Las demás siguen en los arreglos como mapa
+//  de lo que viene. Regla: una sección aparece el día que funciona, nunca antes.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -32,6 +35,7 @@ interface ItemMenu {
   prefijoActivo?: string | string[]
 }
 
+// Las opciones con activo: false NO se muestran (ver filtro en Sidebar).
 const NAV_EDUCADORA: ItemMenu[] = [
   { label: 'Dashboard',        path: '/dashboard',        icono: 'house',         activo: true },
   { label: 'Mi grupo',         path: '/mi-grupo',         icono: 'users',         activo: true },
@@ -71,7 +75,7 @@ const ESTILOS_RESPONSIVOS = `
   .plania-topbar, .plania-overlay, .plania-cerrar { display: none; }
 
   .plania-item { transition: background 0.15s ease; }
-  .plania-item.habilitado:hover { background: rgba(255,255,255,0.08); }
+  .plania-item:hover { background: rgba(255,255,255,0.08); }
   .plania-item:focus-visible, .plania-ficha:focus-visible { outline: 2px solid #00A896; outline-offset: 2px; }
 
   @media (max-width: 768px) {
@@ -137,7 +141,9 @@ export default function Sidebar({ profile, children }: SidebarProps) {
   const [abierto, setAbierto] = useState(false)
 
   const esDirectivo = profile?.role === 'directivo'
-  const NAV_ITEMS = esDirectivo ? NAV_DIRECTIVO : NAV_EDUCADORA
+  // [2 oct 2026] Solo se dibujan las secciones que ya funcionan.
+  const NAV_ITEMS = (esDirectivo ? NAV_DIRECTIVO : NAV_EDUCADORA)
+    .filter(item => item.activo && item.path)
 
   // Al cambiar de página, el menú del celular se cierra solo.
   useEffect(() => { setAbierto(false) }, [pathname])
@@ -234,45 +240,33 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           {nombreJardinCorto(profile?.school_name).toUpperCase()}
         </button>
 
-        {/* Navegación */}
+        {/* Navegación — solo secciones que ya funcionan */}
         <nav style={{ padding: '8px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map((item) => {
             const isActive = estaActivo(item)
             return (
               <button
                 key={item.label}
-                className={`plania-item${item.activo ? ' habilitado' : ''}`}
-                onClick={() => { if (item.activo && item.path) irA(item.path) }}
+                className="plania-item"
+                onClick={() => { if (item.path) irA(item.path) }}
                 aria-current={isActive ? 'page' : undefined}
-                aria-disabled={!item.activo || undefined}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                   padding: '6px 8px', borderRadius: 10, border: 'none',
-                  cursor: item.activo ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
-                  color: item.activo ? 'white' : 'rgba(255,255,255,0.38)',
+                  color: 'white',
                   fontSize: 14, fontWeight: isActive ? 600 : 400, textAlign: 'left',
                 }}
               >
                 <span style={{
                   width: 32, height: 32, borderRadius: 9, flexShrink: 0,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: isActive ? '#00A896' : (item.activo ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)'),
+                  background: isActive ? '#00A896' : 'rgba(255,255,255,0.10)',
                 }}>
                   <Icono nombre={item.icono} tamano={18} />
                 </span>
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {!item.activo && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 700,
-                    background: 'rgba(255,255,255,0.12)',
-                    color: 'rgba(255,255,255,0.45)',
-                    padding: '2px 6px', borderRadius: 10,
-                    letterSpacing: '0.04em',
-                  }}>
-                    PRONTO
-                  </span>
-                )}
               </button>
             )
           })}
