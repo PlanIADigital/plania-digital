@@ -81,7 +81,13 @@ export default function DashboardPage() {
         '\nbody ' + Math.round(document.body.scrollTop) +
         '\nmain ' + (main ? Math.round(main.scrollTop) : '-') +
         '\nvv.top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' vv.page ' + (vv ? Math.round(vv.pageTop) : '-') +
-        '\nzoom ' + (vv ? vv.scale.toFixed(2) : '-')
+        '\nzoom ' + (vv ? vv.scale.toFixed(2) : '-') +
+        '\nmainTop ' + (main ? Math.round(main.getBoundingClientRect().top) : '-') +
+        '\notros ' + ((Array.from(document.querySelectorAll('*')) as HTMLElement[])
+          .filter(e => e.scrollTop > 0 && e !== document.documentElement)
+          .slice(0, 3)
+          .map(e => e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '') + ':' + Math.round(e.scrollTop))
+          .join(' ') || 'ninguno')
     }
     pintar()
     const id = window.setInterval(pintar, 300)
