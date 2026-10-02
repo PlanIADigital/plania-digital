@@ -10,12 +10,15 @@
 //      "Registrada" la pone el servidor al guardar.
 //  El audio no se guarda: se transcribe en /api/diario/transcribir
 //  y se descarta. Niños solo por código AL-XX.
+//  [2 oct 2026] Sin señal: la grabación se guarda solo en este teléfono
+//  (lib/diarioPendientes) y se convierte en texto al volver la conexión.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
+import { listarPendientes, guardarPendiente, borrarPendiente, MAX_PENDIENTES, type Pendiente } from '@/lib/diarioPendientes'
 
 const supabase = createClient()
 
@@ -84,6 +87,15 @@ export default function MiDiarioPage() {
   const [agregando, setAgregando] = useState(false)
   const [avisoNombres, setAvisoNombres] = useState('')
 
+  // Sin señal
+  const [pendientes, setPendientes] = useState<Pendiente[]>([])
+  const [pendienteId, setPendienteId] = useState<string | null>(null)
+  const [convirtiendo, setConvirtiendo] = useState(false)
+  const [sinConexion, setSinConexion] = useState(false)
+  const uid = useRef('')
+  const convirtiendoRef = useRef(false)
+  const sucedidoRef = useRef('')
+
   const grabador = useRef<MediaRecorder | null>(null)
   const pedazos = useRef<Blob[]>([])
   const inicioGrabacion = useRef<number>(0)
@@ -100,9 +112,70 @@ export default function MiDiarioPage() {
       const dn = await rn.json(); const du = await ru.json()
       if (!rn.ok) { setError(dn?.error || 'No se pudo cargar tu diario.'); return }
       setAlumnos(dn.alumnos || []); setNotas(dn.notas || [])
+      try { localStorage.setItem(`plania-diario-codigos-${uid.current}`, JSON.stringify(dn.alumnos || [])) } catch {}
       if (ru.ok) setUso(du)
-    } catch { setError('No se pudo conectar con el servidor.') }
+      setSinConexion(false)
+    } catch {
+      let guardados: string[] | null = null
+      try { guardados = JSON.parse(localStorage.getItem(`plania-diario-codigos-${uid.current}`) || 'null') } catch {}
+      if (guardados) { setAlumnos(guardados); setSinConexion(true) }
+      else setError('No se pudo conectar con el servidor.')
+    }
   }
+
+  async function refrescarPendientes() {
+    if (uid.current) setPendientes(await listarPendientes(uid.current))
+  }
+
+  // Convierte en texto las grabaciones guardadas sin señal. El audio se borra
+  // del teléfono en cuanto el servidor devuelve el texto.
+  async function procesarPendientes() {
+    if (convirtiendoRef.current || !uid.current) return
+    convirtiendoRef.current = true; setConvirtiendo(true)
+    try {
+      const t = await token(); if (!t) return
+      for (const p of await listarPendientes(uid.current)) {
+        if (!p.audio || p.texto || p.error) continue
+        const form = new FormData()
+        form.append('audio', p.audio, 'nota'); form.append('tipo', p.tipo)
+        form.append('segundos', String(p.segundos)); form.append('destinatario', p.destino)
+        let res: Response
+        try { res = await fetch('/api/diario/transcribir', { method: 'POST', headers: { Authorization: `Bearer ${t}` }, body: form }) }
+        catch { setSinConexion(true); break }
+        const d: any = await res.json().catch(() => ({}))
+        if (d?.usadosMin != null) setUso({ usadosMin: d.usadosMin, topeMin: d.topeMin })
+        if (res.ok) {
+          const avisoN = d.revisionNombres === 'fallo' ? 'MÍA no pudo revisar nombres esta vez. Revisa que el texto no tenga ninguno antes de guardar.'
+            : d.nombresQuitados > 0 ? `✦ MÍA quitó ${d.nombresQuitados} ${d.nombresQuitados === 1 ? 'nombre que se dictó' : 'nombres que se dictaron'} por error.` : ''
+          await guardarPendiente({ ...p, audio: undefined, texto: d.texto, avisoNombres: avisoN })
+        } else if (res.status < 500) {
+          await guardarPendiente({ ...p, audio: undefined, error: d?.error || 'No se pudo convertir esta grabación.' })
+        } else break
+      }
+    } finally {
+      convirtiendoRef.current = false; setConvirtiendo(false)
+      await refrescarPendientes()
+    }
+  }
+
+  function abrirPendiente(p: Pendiente) {
+    setDestino(p.destino); setTipo(p.tipo); setTexto(p.texto || ''); setSucedido(p.sucedido)
+    setAvisoNombres(p.avisoNombres || ''); setErrorHoja(''); setAgregando(false); setAviso('')
+    setPendienteId(p.id); setFase('validar')
+  }
+  async function descartarPendiente(id: string) {
+    await borrarPendiente(id); await refrescarPendientes()
+  }
+
+  // Al volver la señal, convierte lo pendiente sin que la educadora haga nada.
+  useEffect(() => {
+    const enLinea = () => { setSinConexion(false); procesarPendientes() }
+    const fueraDeLinea = () => setSinConexion(true)
+    window.addEventListener('online', enLinea)
+    window.addEventListener('offline', fueraDeLinea)
+    return () => { window.removeEventListener('online', enLinea); window.removeEventListener('offline', fueraDeLinea) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     async function inicio() {
@@ -111,7 +184,10 @@ export default function MiDiarioPage() {
       const { data: user } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (user?.role === 'directivo') { router.push('/directivo/dashboard'); return }
       setProfile(user)
+      uid.current = user?.id || session.user.id
       await cargar()
+      await refrescarPendientes()
+      if (navigator.onLine) procesarPendientes()
     }
     inicio()
     return () => detenerTodo()
@@ -127,7 +203,7 @@ export default function MiDiarioPage() {
 
   function abrirHoja(d: string) {
     setDestino(d); setTipo('observacion'); setFase('listo'); setSegundos(0)
-    setTexto(''); setErrorHoja(''); setAgregando(false); setAviso(''); setAvisoNombres('')
+    setTexto(''); setErrorHoja(''); setAgregando(false); setAviso(''); setAvisoNombres(''); setPendienteId(null)
   }
   function cerrarHoja() {
     if (fase === 'grabando') grabador.current?.stop()
@@ -168,7 +244,7 @@ export default function MiDiarioPage() {
       }
       grabador.current = rec
       inicioGrabacion.current = Date.now()
-      if (!esAgregado) setSucedido(aLocalInput(new Date()))
+      if (!esAgregado) { const ahora = aLocalInput(new Date()); setSucedido(ahora); sucedidoRef.current = ahora }
       setAgregando(esAgregado)
       setSegundos(0); setFase('grabando')
       rec.start()
@@ -186,8 +262,31 @@ export default function MiDiarioPage() {
     if (grabador.current?.state === 'recording') grabador.current.stop()
   }
 
+  async function guardarSinSenal(audio: Blob, dur: number) {
+    try {
+      const actuales = await listarPendientes(uid.current)
+      if (actuales.length >= MAX_PENDIENTES) {
+        setErrorHoja(`Ya tienes ${MAX_PENDIENTES} grabaciones esperando señal. Conéctate para convertirlas antes de grabar más.`)
+        setFase('listo'); return
+      }
+      await guardarPendiente({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        userId: uid.current, destino: destino || 'grupo', tipo, segundos: dur,
+        sucedido: sucedidoRef.current || aLocalInput(new Date()), creado: Date.now(), audio,
+      })
+      await refrescarPendientes()
+      setSinConexion(true)
+      setAviso('📥 Sin señal: tu grabación quedó guardada en este teléfono. Se convertirá en texto cuando vuelva la conexión.')
+      setDestino(null); setFase('listo')
+    } catch {
+      setErrorHoja('No hay señal y este teléfono no permitió guardar la grabación. Intenta de nuevo con conexión.')
+      setFase('listo')
+    }
+  }
+
   async function transcribir(audio: Blob, dur: number, esAgregado: boolean) {
     setFase('transcribiendo')
+    if (!esAgregado && typeof navigator !== 'undefined' && navigator.onLine === false) { await guardarSinSenal(audio, dur); return }
     const t = await token(); if (!t) return
     const form = new FormData()
     form.append('audio', audio, 'nota')
@@ -205,8 +304,9 @@ export default function MiDiarioPage() {
       setTexto(prev => esAgregado && prev.trim() ? `${prev.trim()}\n\n(${hora(new Date().toISOString())}) ${d.texto}` : d.texto)
       setFase('validar')
     } catch {
-      setErrorHoja('Se perdió la conexión al transcribir. Intenta de nuevo.')
-      setFase(esAgregado ? 'validar' : 'listo')
+      if (!esAgregado) { await guardarSinSenal(audio, dur); return }
+      setErrorHoja('Se perdió la conexión. Guarda esta nota como está o intenta agregar más cuando vuelva la señal.')
+      setFase('validar')
     }
   }
 
@@ -223,6 +323,7 @@ export default function MiDiarioPage() {
       const d = await res.json()
       if (!res.ok) { setErrorHoja(d?.error || 'No se pudo guardar.'); setFase('validar'); return }
       setNotas(prev => [d.nota, ...prev])
+      if (pendienteId) { await borrarPendiente(pendienteId); setPendienteId(null); await refrescarPendientes() }
       setAviso(`✓ Guardada en tu diario · ${destino === 'grupo' ? 'Todo el grupo' : destino}`)
       setDestino(null); setFase('listo')
     } catch {
@@ -247,6 +348,11 @@ export default function MiDiarioPage() {
 
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ ...card, background: C.ambarFondo, borderColor: '#F0DFA6', color: C.ambar, fontSize: 14 }}>{error}</div>}
+          {sinConexion && (
+            <div style={{ ...card, background: C.ambarFondo, borderColor: '#F0DFA6', color: C.ambar, fontSize: 13.5 }}>
+              Sin conexión. Puedes seguir grabando: tus notas se guardan en este teléfono y se convierten en texto cuando vuelva la señal.
+            </div>
+          )}
           {aviso && <div role="status" style={{ ...card, background: '#E9F6F1', borderColor: '#BFE3D6', color: C.cianOscuro, fontSize: 14, fontWeight: 700 }}>{aviso}</div>}
 
           {alumnos === null ? null : alumnos.length === 0 ? (
@@ -287,6 +393,42 @@ export default function MiDiarioPage() {
                   </p>
                 )}
               </section>
+
+              {pendientes.length > 0 && (
+                <section style={{ ...card, borderColor: '#F0DFA6', background: '#FFFDF5' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <h2 style={h2}>En este teléfono ({pendientes.length})</h2>
+                    {pendientes.some(p => p.audio && !p.texto && !p.error) && (
+                      <button onClick={procesarPendientes} disabled={convirtiendo}
+                        style={{ background: 'none', border: 'none', padding: 0, color: C.indigo, fontWeight: 700, fontSize: 13.5, cursor: 'pointer', minHeight: 40, fontFamily: 'inherit' }}>
+                        {convirtiendo ? 'Convirtiendo…' : 'Convertir ahora'}
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ margin: '0 0 6px', fontSize: 12.5, color: C.suave }}>Se grabaron sin señal. El audio se borra del teléfono en cuanto se convierte en texto.</p>
+                  {pendientes.map(p => (
+                    <div key={p.id} style={{ padding: '10px 0', borderTop: `1px solid ${C.indigoClaro}` }}>
+                      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: p.tipo === 'incidente' ? C.ambar : C.indigo }}>
+                        {p.destino === 'grupo' ? 'Todo el grupo' : p.destino} · {p.tipo === 'incidente' ? 'Incidente' : 'Observación'} · grabada {hora(new Date(p.sucedido).toISOString())}
+                      </p>
+                      {p.texto ? (
+                        <button onClick={() => abrirPendiente(p)}
+                          style={{ marginTop: 8, minHeight: 44, padding: '0 16px', borderRadius: 10, border: 'none', background: C.cianOscuro, color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Revisar y guardar
+                        </button>
+                      ) : p.error ? (
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+                          <span style={{ fontSize: 13, color: C.ambar }}>{p.error}</span>
+                          <button onClick={() => descartarPendiente(p.id)}
+                            style={{ background: 'none', border: 'none', padding: 0, color: C.suave, fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 40, fontFamily: 'inherit' }}>Descartar</button>
+                        </div>
+                      ) : (
+                        <p style={{ margin: '4px 0 0', fontSize: 13, color: C.suave }}>Esperando señal para convertirla en texto…</p>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              )}
 
               <section style={card}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -391,7 +533,7 @@ export default function MiDiarioPage() {
                     style={{ minHeight: 46, borderRadius: 10, border: `1.5px solid ${C.indigo}`, background: 'white', color: C.indigo, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                     + Agregar más a esta nota
                   </button>
-                  <button onClick={() => { setTexto(''); setAgregando(false); setFase('listo') }} disabled={fase === 'guardando'}
+                  <button onClick={async () => { if (pendienteId) { await borrarPendiente(pendienteId); setPendienteId(null); await refrescarPendientes() } setTexto(''); setAgregando(false); setFase('listo') }} disabled={fase === 'guardando'}
                     style={{ minHeight: 46, borderRadius: 10, border: `1.5px solid ${C.borde}`, background: 'white', color: C.suave, fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                     Descartar y volver a grabar
                   </button>
