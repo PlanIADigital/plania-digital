@@ -46,9 +46,9 @@ export default function LoginPage() {
       // Solo se aceptan regresos a páginas internas (nunca a otro sitio ni a /auth o /admin).
       const interno = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth') && !next.startsWith('/admin') ? next : null
       if (userData?.role === 'directivo') {
-        router.push(interno && interno.startsWith('/directivo') ? interno : '/directivo/dashboard')
+        window.location.assign(interno && interno.startsWith('/directivo') ? interno : '/directivo/dashboard')
       } else {
-        router.push(interno && !interno.startsWith('/directivo') ? interno : '/dashboard')
+        window.location.assign(interno && !interno.startsWith('/directivo') ? interno : '/dashboard')
       }
     }
   }
