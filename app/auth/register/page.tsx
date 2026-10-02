@@ -149,7 +149,7 @@ export default function RegisterPage() {
           <select
             value={role}
             onChange={e => setRole(e.target.value)}
-            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, marginBottom: 24, outline: 'none', fontFamily: 'sans-serif', background: 'white', color: role ? '#1A1A2E' : '#888', cursor: 'pointer' }}
+            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 16, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box' as const, marginBottom: 24, outline: 'none', fontFamily: 'sans-serif', background: 'white', color: role ? '#1A1A2E' : '#888', cursor: 'pointer' }}
           >
             <option value="" disabled>Selecciona tu rol...</option>
             {ROLES_ACTIVOS.map(r => (

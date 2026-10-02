@@ -84,7 +84,7 @@ export default function LoginPage() {
             placeholder="tu@correo.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 18, outline: 'none', fontFamily: 'sans-serif' }}
+            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 16, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 18, outline: 'none', fontFamily: 'sans-serif' }}
           />
 
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>
@@ -96,7 +96,7 @@ export default function LoginPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 14, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 8, outline: 'none', fontFamily: 'sans-serif' }}
+            style={{ display: 'block', width: '100%', padding: '11px 14px', fontSize: 16, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 8, outline: 'none', fontFamily: 'sans-serif' }}
           />
           <p style={{ textAlign: 'right', margin: '0 0 20px' }}>
             <a href="/auth/recuperar" style={{ color: '#3D3A8C', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
