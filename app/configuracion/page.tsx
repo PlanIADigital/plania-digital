@@ -329,7 +329,13 @@ export default function ConfiguracionPage() {
           {/* DATOS DE CUENTA */}
           <div style={st.card}>
             <div style={st.filaTitulo}><p style={st.titulo}>Datos de cuenta</p></div>
-            <Fila etiqueta="Correo" valor={profile?.email} />
+            {/* Correo en una sola línea: la letra se reduce sola si el correo es largo */}
+            <div style={{ padding: '10px 0', borderBottom: '1px solid #F0EFF8' }}>
+              <span style={{ fontSize: 14, color: C.gris, display: 'block', marginBottom: 4 }}>Correo</span>
+              <span style={{ display: 'block', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600, color: C.texto, fontSize: `min(15px, calc((100vw - 76px) / ${Math.max(1, (profile?.email || '').length * 0.6).toFixed(1)}))` }}>
+                {profile?.email || '—'}
+              </span>
+            </div>
             <Fila etiqueta="Membresía" valor={membresiaLabel[profile?.membership_status] ?? profile?.membership_status} />
             {!editandoWhatsapp ? (
               <Fila etiqueta="WhatsApp" ultima>
