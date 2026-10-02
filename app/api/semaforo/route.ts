@@ -13,7 +13,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verificarUsuario } from '@/lib/verificarUsuario'
 import { zonaHorariaPorCCT } from '@/lib/fechaMexico'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
-import { AREAS_PREDETERMINADAS, MOMENTOS, esMomento, esNivel, momentoSugerido } from '@/lib/semaforo'
+import { MOMENTOS, esMomento, esNivel, momentoSugerido } from '@/lib/semaforo'
+import { areasDelMomento } from '@/lib/semaforoServidor'
 
 function hoyEn(tz: string): string {
   try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date()) }
@@ -28,13 +29,8 @@ async function contexto(supabaseAdmin: any, usuarioId: string) {
     .from('alumnos_codigo').select('codigo')
     .eq('user_id', usuarioId).eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO).eq('activo', true)
   const codigos: string[] = (alumnos || []).map((a: any) => a.codigo).filter(Boolean).sort((a: string, b: string) => numero(a) - numero(b))
-  let areas = AREAS_PREDETERMINADAS
-  if (u?.cct_primary) {
-    const { data: conf } = await supabaseAdmin.from('semaforo_areas_jardin').select('areas').eq('cct', u.cct_primary).maybeSingle()
-    if (Array.isArray(conf?.areas) && conf.areas.length > 0) areas = conf.areas
-  }
   const hoy = hoyEn(zonaHorariaPorCCT(u?.cct_primary) || 'America/Mexico_City')
-  return { u, codigos, areas, hoy }
+  return { u, codigos, hoy }
 }
 
 function rechazo(usuario: any) {
@@ -48,9 +44,10 @@ export async function GET(request: NextRequest) {
   const r = rechazo(usuario); if (r) return r
 
   try {
-    const { u, codigos, areas, hoy } = await contexto(supabaseAdmin, usuario.id)
+    const { u, codigos, hoy } = await contexto(supabaseAdmin, usuario.id)
     const pedido = new URL(request.url).searchParams.get('momento')
     const momento = esMomento(pedido) ? pedido : momentoSugerido(hoy)
+    const areas = await areasDelMomento(supabaseAdmin, u?.cct_primary, CICLO_ESCOLAR_ACTIVO, momento)
 
     const { data: regs } = await supabaseAdmin
       .from('semaforo_registros').select('area, alumno_codigo, nivel')
@@ -92,7 +89,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}))
     const momento = body?.momento
     if (!esMomento(momento)) return NextResponse.json({ error: 'Momento inválido.' }, { status: 400 })
-    const { u, codigos, areas } = await contexto(supabaseAdmin, usuario.id)
+    const { u, codigos } = await contexto(supabaseAdmin, usuario.id)
+    const areas = await areasDelMomento(supabaseAdmin, u?.cct_primary, CICLO_ESCOLAR_ACTIVO, momento)
     if (!u?.grado) return NextResponse.json({ error: 'Configura tu grupo en Mi grupo antes de llenar el semáforo.' }, { status: 400 })
     if (codigos.length === 0) return NextResponse.json({ error: 'Registra tu lista de alumnos en Mi grupo antes de llenar el semáforo.' }, { status: 400 })
 

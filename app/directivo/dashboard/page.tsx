@@ -25,6 +25,7 @@ import { zonaHorariaPorCCT } from '@/lib/fechaMexico'
 import { nombreJardin } from '@/lib/useDocentesDirectivo'
 import { nombrePila } from '@/lib/nombrePila'
 import AsistenciaJardin from '@/components/AsistenciaJardin'
+import SemaforoJardin from '@/components/SemaforoJardin'
 
 const supabase = createClient()
 
@@ -458,13 +459,8 @@ export default function DirectivoDashboardPage() {
                 </section>
               </div>
 
-              {/* Semáforo (ancho completo) */}
-                <section style={{ ...st.card, border: `1px dashed ${C.indigoSuave}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                    <h2 style={{ ...st.h2, margin: 0 }}>Semáforo de avance</h2><span style={st.pronto}>PRONTO</span>
-                  </div>
-                  <p style={st.vacio}>Niños en Logrado, En proceso y Requiere apoyo por grado. Se activará cuando la educadora registre el nivel de sus alumnos.</p>
-                </section>
+              {/* Semáforo de avance (ancho completo) */}
+              <SemaforoJardin />
             </>
           )}
         </div>
