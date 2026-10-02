@@ -8,6 +8,11 @@ import EncabezadoPagina from '@/components/EncabezadoPagina'
 
 const supabase = createClient()
 
+// [2 oct 2026] WhatsApp de PlanIA Digital para renovar membresías (cobro manual).
+// Formato: 52 + 10 dígitos, sin espacios ni signos. Ej: '528112345678'.
+// Si está vacío, el aviso de renovación se muestra sin botón.
+const WHATSAPP_PAGOS = ''
+
 // Paleta PlanIA
 const C = {
   indigo: '#3D3A8C',
@@ -31,6 +36,17 @@ const st = {
   linkGris: { background: 'none', border: 'none', padding: 0, color: C.gris, fontSize: 14, textDecoration: 'underline', cursor: 'pointer' },
   aviso: { background: C.indigoClaro, borderLeft: `3px solid ${C.indigo}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: C.texto, lineHeight: 1.5, margin: '10px 0 0' },
   exito: { background: '#E0F5F3', borderLeft: `3px solid ${C.cian}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#0F6E56', lineHeight: 1.5, margin: '10px 0 0' },
+}
+
+// [2 oct 2026] Colores de la etiqueta de membresía. Sin rojo ni naranja
+// saturado (paleta PlanIA): lo que requiere atención usa ámbar suave.
+const ESTILO_MEMBRESIA: Record<string, { fondo: string; texto: string }> = {
+  active:    { fondo: '#E0F5F3', texto: '#0F6E56' },
+  trial:     { fondo: '#EEEDF8', texto: '#3D3A8C' },
+  founder:   { fondo: '#EEEDF8', texto: '#3D3A8C' },
+  expired:   { fondo: '#FFF3CD', texto: '#8A6D1D' },
+  suspended: { fondo: '#FFF3CD', texto: '#8A6D1D' },
+  cancelled: { fondo: '#FFF3CD', texto: '#8A6D1D' },
 }
 
 function ajustarAlturaTextarea(e: React.FormEvent<HTMLTextAreaElement>) {
@@ -74,6 +90,16 @@ function TextoAjustable({ texto }: { texto: string }) {
       {texto}
     </span>
   )
+}
+
+// [2 oct 2026] Días que faltan para que termine el ciclo de membresía,
+// contados con la fecha de hoy en México. 0 = vence hoy; negativo = ya venció.
+function diasParaVencer(fin: string): number {
+  const dia = 86400000
+  const b = new Date(String(fin).slice(0, 10) + 'T12:00:00Z').getTime()
+  const hoyMx = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date())
+  const hoy = new Date(hoyMx + 'T12:00:00Z').getTime()
+  return Math.round((b - hoy) / dia)
 }
 
 export default function ConfiguracionPage() {
@@ -227,7 +253,7 @@ export default function ConfiguracionPage() {
   // [2 oct 2026] Directivo: días transcurridos de su ciclo de membresía
   // (el directivo no genera planeaciones, así que "días hábiles" no aplica).
   // [2 oct 2026] Minutos de Mi diario del periodo (tope 300). Solo se muestra
-  // a quien ya lo usó (el menú sigue en PRONTO) y nunca al directivo.
+  // a quien ya lo usó (cuentas piloto; el menú no lo muestra) y nunca al directivo.
   const [minutosDiario, setMinutosDiario] = useState<{ usadosMin: number; topeMin: number } | null>(null)
   useEffect(() => {
     if (!profile || profile.role === 'directivo') return
@@ -373,6 +399,29 @@ export default function ConfiguracionPage() {
   const turnoTexto = profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''
   const fotoError = saveMsg && !saveMsg.startsWith('✓')
 
+  // [2 oct 2026] Situación de la membresía para la tarjeta "Estado de cuenta".
+  const estatus: string = profile?.membership_status || ''
+  const esFundadora = estatus === 'founder'
+  const restantes = estadoCuenta ? diasParaVencer(estadoCuenta.ciclo_fin) : null
+  const yaVencio = !esFundadora && restantes !== null && restantes < 0
+  const enModoLectura = ['expired', 'suspended', 'cancelled'].includes(estatus) || yaVencio
+  const porVencer = !esFundadora && !enModoLectura && restantes !== null && restantes <= 5
+  const estiloEtiqueta = ESTILO_MEMBRESIA[estatus] ?? { fondo: C.indigoClaro, texto: C.indigo }
+
+  function textoVencimiento(): string {
+    if (!estadoCuenta || restantes === null) return ''
+    if (esFundadora) return 'Sin vencimiento'
+    const fecha = fechaCorta(estadoCuenta.ciclo_fin)
+    if (enModoLectura) return `Venció el ${fecha}`
+    if (restantes === 0) return 'Vence hoy'
+    if (restantes === 1) return `Vence mañana, ${fecha}`
+    return `Vence el ${fecha} · faltan ${restantes} días`
+  }
+
+  const enlaceRenovar = WHATSAPP_PAGOS
+    ? `https://wa.me/${WHATSAPP_PAGOS}?text=${encodeURIComponent(`Hola, quiero renovar mi membresía de PlanIA Digital. Mi correo es ${profile?.email || ''}`)}`
+    : ''
+
   return (
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 16px' }}>
@@ -456,7 +505,11 @@ export default function ConfiguracionPage() {
               <span style={{ fontSize: 14, color: C.gris, flexShrink: 0 }}>Correo</span>
               <TextoAjustable texto={profile?.email || '—'} />
             </div>
-            <Fila etiqueta="Membresía" valor={membresiaLabel[profile?.membership_status] ?? profile?.membership_status} />
+            {/* [2 oct 2026] La membresía se muestra en "Estado de cuenta"; aquí solo
+                como respaldo si esa tarjeta no cargó. */}
+            {!cargandoEstadoCuenta && !estadoCuenta && (
+              <Fila etiqueta="Membresía" valor={membresiaLabel[estatus] ?? estatus} />
+            )}
             {!editandoWhatsapp ? (
               <Fila etiqueta="WhatsApp" ultima>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -564,6 +617,21 @@ export default function ConfiguracionPage() {
           {!cargandoEstadoCuenta && estadoCuenta && (
             <div style={st.card}>
               <div style={st.filaTitulo}><p style={st.titulo}>Estado de cuenta</p></div>
+
+              {/* [2 oct 2026] Membresía y vencimiento: lo primero que quiere confirmar quien pagó */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 8, marginBottom: 10 }}>
+                <span style={{
+                  display: 'inline-block', padding: '5px 12px', borderRadius: 20,
+                  background: estiloEtiqueta.fondo, color: estiloEtiqueta.texto,
+                  fontSize: 13, fontWeight: 700,
+                }}>
+                  {esFundadora ? '⭐ ' : ''}{membresiaLabel[estatus] ?? estatus}
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: enModoLectura || porVencer ? '#8A6D1D' : C.texto }}>
+                  {textoVencimiento()}
+                </span>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
                 <div style={{ background: C.indigoClaro, borderRadius: 10, padding: '12px 10px', textAlign: 'center' as const }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Ciclo actual</p>
@@ -602,6 +670,27 @@ export default function ConfiguracionPage() {
                     <div style={{ height: '100%', width: `${Math.min(100, (minutosDiario.usadosMin / minutosDiario.topeMin) * 100)}%`, background: '#00A896', borderRadius: 8 }} />
                   </div>
                   <p style={{ fontSize: 12, color: C.gris, margin: '6px 0 0' }}>Se renuevan el {fechaCorta(estadoCuenta.ciclo_fin)}</p>
+                </div>
+              )}
+
+              {/* [2 oct 2026] Aviso de renovación: solo cuando vence pronto o ya venció */}
+              {(porVencer || enModoLectura) && (
+                <div style={{ background: '#FFF3CD', borderLeft: '3px solid #8A6D1D', borderRadius: 8, padding: '12px 14px', marginTop: 10 }}>
+                  <p style={{ fontSize: 14, color: C.texto, margin: 0, lineHeight: 1.55 }}>
+                    {enModoLectura
+                      ? 'Tu membresía no está activa. Puedes seguir consultando y descargando lo que ya tienes. Para reactivarla, escríbenos.'
+                      : 'Tu membresía vence pronto. Renueva para seguir usando PlanIA Digital sin interrupciones.'}
+                  </p>
+                  {enlaceRenovar && (
+                    <a
+                      href={enlaceRenovar}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'inline-block', marginTop: 10, background: C.cian, color: 'white', padding: '9px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
+                    >
+                      {enModoLectura ? 'Reactivar por WhatsApp' : 'Renovar por WhatsApp'}
+                    </a>
+                  )}
                 </div>
               )}
             </div>
