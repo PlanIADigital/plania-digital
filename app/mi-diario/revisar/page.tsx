@@ -132,6 +132,29 @@ export default function RevisarDiarioPage() {
     setAnulando(null)
   }
 
+  const [descargando, setDescargando] = useState('')
+  async function descargarWord(consulta: string, clave: string) {
+    setDescargando(clave); setError('')
+    const t = await token(); if (!t) { setDescargando(''); return }
+    try {
+      const res = await fetch(`/api/diario/word?${consulta}`, { headers: { Authorization: `Bearer ${t}` } })
+      if (!res.ok) {
+        let msg = 'No se pudo generar el Word.'
+        try { const j = await res.json(); if (j?.error) msg = j.error } catch {}
+        setError(msg); return
+      }
+      const blob = await res.blob()
+      const m = (res.headers.get('Content-Disposition') || '').match(/filename="?([^";]+)"?/i)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = m ? m[1] : 'Mi_diario.docx'
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      setError('No se pudo descargar. Revisa tu conexión e inténtalo de nuevo.')
+    } finally { setDescargando('') }
+  }
+
   // ── Filtrado y agrupación por día ──
   const desde = inicioPeriodo(periodo)
   const visibles = (notas || []).filter(n => {
@@ -177,6 +200,11 @@ export default function RevisarDiarioPage() {
                 {alumnos.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
+            <button onClick={() => descargarWord(`periodo=${periodo}&filtro=${encodeURIComponent(filtro)}`, 'diario')}
+              disabled={!!descargando || visibles.length === 0}
+              style={{ minHeight: 44, borderRadius: 10, border: `1.5px solid ${visibles.length ? C.indigo : C.borde}`, background: 'white', color: visibles.length ? C.indigo : C.suave, fontSize: 14, fontWeight: 700, cursor: visibles.length ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              {descargando === 'diario' ? 'Generando…' : 'Descargar Word de estas notas'}
+            </button>
           </section>
 
           {notas !== null && dias.length === 0 && (
@@ -256,6 +284,11 @@ export default function RevisarDiarioPage() {
                           <button onClick={() => { setAnulando(null); setMensaje(null); setEditando({ id: n.id, texto: n.texto }) }} style={linkBtn}>Editar</button>
                           <button onClick={() => { setEditando(null); setMensaje(null); setAnulando({ id: n.id, motivo: '' }) }} style={{ ...linkBtn, color: C.ambar }}>Anular</button>
                         </>
+                      )}
+                      {n.tipo === 'incidente' && editando?.id !== n.id && anulando?.id !== n.id && (
+                        <button onClick={() => descargarWord(`nota=${n.id}`, n.id)} disabled={!!descargando} style={{ ...linkBtn, color: C.ambar }}>
+                          {descargando === n.id ? 'Generando…' : 'Reporte en Word'}
+                        </button>
                       )}
                     </div>
 
