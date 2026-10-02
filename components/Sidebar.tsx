@@ -59,7 +59,22 @@ const ESTILOS_RESPONSIVOS = `
     /* Safari en iPhone hace zoom al tocar campos con letra < 16 px y el zoom
        se queda al cambiar de página. 16 px lo evita sin bloquear el pellizco. */
     input, select, textarea { font-size: 16px !important; }
+
+    /* [oct 2026] Menú compacto en celular: todo cabe de una vista,
+       incluido Cerrar sesión. En escritorio no cambia nada. */
+    .plania-logo { padding: 16px 56px 12px 16px !important; }
+    .plania-lema { display: none !important; }
+    .plania-ficha { margin: 8px 12px 0 !important; padding: 8px 10px !important; }
+    .plania-ficha-detalle { display: none !important; }
+    .plania-ficha-nombre { margin: 0 !important; }
+    .plania-nav { padding: 8px 12px !important; }
+    .plania-item { margin-bottom: 2px !important; }
+    .plania-pronto { display: none !important; }
+    .plania-pronto-linea { display: block !important; }
+    .plania-perfil-escritorio { display: none !important; }
+    .plania-perfil-movil { display: block !important; }
   }
+  .plania-pronto-linea, .plania-perfil-movil { display: none; }
 `
 
 function ThemeToggle() {
@@ -203,7 +218,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         {/* Logo */}
         <div className="plania-logo" style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
           <div style={{ marginBottom: 4 }}><Logo tamano={18} /></div>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
+          <p className="plania-lema" style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, margin: 0, letterSpacing: '0.06em' }}>
             Planea. Conecta. Transforma.
           </p>
         </div>
@@ -211,6 +226,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             Sector/Región/Turno. Vive aquí una sola vez para no repetirla en
             cada encabezado; clic lleva a Configuración para corregirla. */}
         <button
+          className="plania-ficha"
           onClick={() => irA('/configuracion')}
           style={{
             margin: '12px 12px 4px', padding: '10px 12px', borderRadius: 10,
@@ -218,16 +234,16 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             cursor: 'pointer', textAlign: 'left', display: 'block', width: 'calc(100% - 24px)',
           }}
         >
-          <p style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3, textAlign: 'center' }}>
+          <p className="plania-ficha-nombre" style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3, textAlign: 'center' }}>
             {nombreJardinCorto(profile?.school_name)}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6, textAlign: 'center' }}>
+          <p className="plania-ficha-detalle" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0, lineHeight: 1.6, textAlign: 'center' }}>
             CCT {profile?.cct_primary || '—'} · {profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '—'}<br/>
             Zona {profile?.zona || '—'} · Sector {profile?.sector || '—'} · Región {profile?.region || '—'}
           </p>
         </button>
         {/* Nav */}
-        <nav style={{ padding: '16px 12px', flex: 1 }}>
+        <nav className="plania-nav" style={{ padding: '16px 12px', flex: 1 }}>
           {NAV_ITEMS.map((item) => {
             const isActive = item.path !== null && (
               pathname === item.path ||
@@ -236,7 +252,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
               ))
             )
             return (
-              <div key={item.label} style={{ marginBottom: 4 }}>
+              <div key={item.label} className={item.activo ? 'plania-item' : 'plania-item plania-pronto'} style={{ marginBottom: 4 }}>
                 <button
                   onClick={() => { if (item.activo && item.path) irA(item.path) }}
                   style={{
@@ -272,10 +288,41 @@ export default function Sidebar({ profile, children }: SidebarProps) {
               </div>
             )
           })}
+          {/* Celular: las secciones "Pronto" en una sola línea discreta */}
+          <p className="plania-pronto-linea" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '8px 12px 0', lineHeight: 1.5 }}>
+            Próximamente: {NAV_ITEMS.filter(i => !i.activo).map(i => i.label).join(' · ')}
+          </p>
         </nav>
 
-        {/* Perfil */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+        {/* Perfil — celular: compacto en fila, con Cerrar sesión siempre visible */}
+        <div className="plania-perfil-movil" style={{ padding: '12px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="foto"
+                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                {iniciales}
+              </div>
+            )}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ color: 'white', fontSize: 14, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name}</p>
+              {profile?.es_fundadora && <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Modo oscuro</span>
+              <ThemeToggle />
+            </div>
+            <button onClick={handleLogout} style={{ background: '#00A896', border: 'none', color: 'white', padding: '9px 14px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' }}>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+
+        {/* Perfil — escritorio (sin cambios) */}
+        <div className="plania-perfil-escritorio" style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="foto"

@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PlanIA Digital — Planea. Conecta. Transforma.",
   description: "Planeaciones didácticas con IA para educadoras de preescolar en México, alineadas al Programa NEM 2022.",
+  // [oct 2026] Evita que Safari/Chrome en iPhone conviertan correos y números en enlaces subrayados
+  formatDetection: { email: false, telephone: false, address: false },
 };
 
 export default function RootLayout({
