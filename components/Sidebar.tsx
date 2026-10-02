@@ -35,6 +35,7 @@ interface ItemMenu {
 const NAV_EDUCADORA: ItemMenu[] = [
   { label: 'Dashboard',        path: '/dashboard',        icono: 'house',         activo: true },
   { label: 'Mi grupo',         path: '/mi-grupo',         icono: 'users',         activo: true },
+  { label: 'Semáforo',         path: '/semaforo',         icono: 'chart-pie',     activo: true },
   { label: 'Mi diario',        path: null,                icono: 'mi-diario',     activo: false },
   { label: 'Nueva planeación', path: '/planeacion/nueva', icono: 'sparkles',      activo: true },
   { label: 'Mis planeaciones', path: '/mis-planeaciones', icono: 'folder-open',   activo: true, prefijoActivo: '/planeacion/' },
