@@ -7,6 +7,7 @@
 //  Requiere apoyo / No evaluado. Envía a dirección cuando está completo.
 //  Datos vía /api/semaforo (servidor). Mobile-first.
 // ============================================================
+import BotonWordSemaforo from '@/components/BotonWordSemaforo'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
@@ -284,6 +285,7 @@ export default function SemaforoPage() {
                 {!todoCompleto && (
                   <p style={{ margin: '8px 0 0', fontSize: 13, color: C.suave, textAlign: 'center' }}>Se activa cuando las {datos.areas.length} áreas estén completas.</p>
                 )}
+                <BotonWordSemaforo momento={datos.momento} hayCapturas={datos.areas.some(a => Object.keys(datos.marcas[a] || {}).length > 0)} />
               </section>
             </>
           )}
