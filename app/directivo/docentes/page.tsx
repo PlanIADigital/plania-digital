@@ -90,6 +90,12 @@ export default function MisDocentesPage() {
                   >
                     {/* Nombre */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {docente.avatar_url ? (
+                        <img src={docente.avatar_url} alt="" style={{
+                          width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
+                          border: `2px solid ${C.indigoClaro}`,
+                        }} />
+                      ) : (
                       <div style={{
                         width: 40, height: 40, borderRadius: '50%', background: C.indigoClaro, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -97,6 +103,7 @@ export default function MisDocentesPage() {
                       }}>
                         {iniciales(docente.full_name)}
                       </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontWeight: 700, color: C.texto, fontSize: 15, overflowWrap: 'anywhere' }}>
                           {docente.full_name}

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     const { data: docentes, error } = await supabaseAdmin
       .from('users')
-      .select('id, full_name, role, grado, grupo_letra, total_alumnos, cct_primary, cct_secondary, evaluacion_individual, pdas_prioritarios, pdas_jardin')
+      .select('id, full_name, avatar_url, role, grado, grupo_letra, total_alumnos, cct_primary, cct_secondary, evaluacion_individual, pdas_prioritarios, pdas_jardin')
       .or(`cct_primary.in.(${lista}),cct_secondary.in.(${lista})`)
       .neq('role', 'directivo')
       .eq('profile_completed', true)
@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       resultado.push({
         id: d.id,
         full_name: d.full_name,
+        avatar_url: d.avatar_url ?? null,
         role: d.role,
         grado: d.grado ?? null,
         grupo_letra: d.grupo_letra ?? null,

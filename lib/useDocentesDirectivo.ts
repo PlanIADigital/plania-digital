@@ -17,6 +17,7 @@ const supabase = createClient()
 export interface DocenteResumen {
   id: string
   full_name: string | null
+  avatar_url?: string | null
   role: string
   grado: string | null
   grupo_letra: string | null
