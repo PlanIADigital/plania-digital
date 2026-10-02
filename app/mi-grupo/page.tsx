@@ -716,7 +716,12 @@ async function abrirModalAlumnos() {
 
             {/* Configura tu grupo */}
             <div style={s.card}>
-              <p style={{ ...s.titulo, marginBottom: 12 }}>👥 Configura tu grupo</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
+                <p style={s.titulo}>👥 Configura tu grupo</p>
+                {(codigosActivos ?? 0) > 0 ? (
+                  <button type="button" onClick={abrirModalAlumnos} style={s.accionBtn}>Altas y bajas →</button>
+                ) : null}
+              </div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, alignItems: 'flex-start' }}>
                 <div>
                   <label style={s.label}>Grado</label>
@@ -759,9 +764,6 @@ async function abrirModalAlumnos() {
                   {alumnosGuardado && <span style={s.check}>✓</span>}
                 </div>
               </div>
-              {(codigosActivos ?? 0) > 0 ? (
-                <button type="button" onClick={abrirModalAlumnos} style={{ ...s.accionBtn, marginTop: 12 }}>👥 Altas y bajas de alumnos →</button>
-              ) : null}
             </div>
 
             {discrepanciaAlumnos && (

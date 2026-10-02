@@ -56,6 +56,9 @@ const ESTILOS_RESPONSIVOS = `
     .plania-overlay.abierto { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(26,26,46,0.45); }
     .plania-cerrar { display: flex; }
     .plania-logo { padding-right: 56px !important; }
+    /* Safari en iPhone hace zoom al tocar campos con letra < 16 px y el zoom
+       se queda al cambiar de página. 16 px lo evita sin bloquear el pellizco. */
+    input, select, textarea { font-size: 16px !important; }
   }
 `
 

@@ -158,7 +158,7 @@ export default function DashboardPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 16px' }}>
 
-        <EncabezadoPagina titulo={`¡${saludo}, ${primerNombre}!`} subtitulo={subtitulo} />
+        <EncabezadoPagina antetitulo={`¡${saludo},`} titulo={`${primerNombre}!`} subtitulo={subtitulo} />
 
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
