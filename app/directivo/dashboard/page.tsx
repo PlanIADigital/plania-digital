@@ -135,6 +135,9 @@ function Radar({ valores }: { valores: Array<{ corto: string; pct: number }> }) 
       aria-label={`Ejes articuladores: ${valores.map(v => `${v.corto} ${v.pct}%`).join(', ')}`}>
       <polygon points={poligono(() => R)} fill="none" stroke={C.linea} />
       <polygon points={poligono(() => R / 2)} fill="none" stroke={C.linea} />
+      {/* Marcas de escala: centro 0%, anillo medio 50%, borde 100% */}
+      <text x={cx + 5} y={cy - R / 2 + 11} fontSize="9.5" fontWeight="600" fill="#9CA3AF">50%</text>
+      <text x={cx + 5} y={cy - R + 11} fontSize="9.5" fontWeight="600" fill="#9CA3AF">100%</text>
       {valores.map((_, i) => { const [x, y] = punto(i, R); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={C.linea} /> })}
       <polygon points={poligono(i => (R * valores[i].pct) / 100)} fill={C.indigo} fillOpacity={0.16} stroke={C.indigo} strokeWidth={2} strokeLinejoin="round" />
       {valores.map((v, i) => {

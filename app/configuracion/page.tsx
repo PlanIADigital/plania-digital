@@ -86,6 +86,11 @@ export default function ConfiguracionPage() {
   const [whatsappValor, setWhatsappValor] = useState('')
   const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
   const [errorWhatsapp, setErrorWhatsapp] = useState('')
+  // [2 oct 2026] Editar nombre completo (aparece en menú, saludo y planeaciones).
+  const [editandoNombre, setEditandoNombre] = useState(false)
+  const [nombreValor, setNombreValor] = useState('')
+  const [guardandoNombre, setGuardandoNombre] = useState(false)
+  const [errorNombre, setErrorNombre] = useState('')
 
   // [sep 2026] Estado de cuenta — viene de la vista v_estado_cuenta vía /api/estado-cuenta.
   const [estadoCuenta, setEstadoCuenta] = useState<{
@@ -219,6 +224,28 @@ export default function ConfiguracionPage() {
     setConfirmandoInstitucional(false)
   }
 
+  async function guardarNombre() {
+    if (!profile) return
+    const limpio = nombreValor.replace(/\s+/g, ' ').trim()
+    if (limpio.split(' ').length < 2 || limpio.length < 5) {
+      setErrorNombre('Escribe tu nombre y al menos un apellido.')
+      return
+    }
+    setErrorNombre('')
+    setGuardandoNombre(true)
+    const { error } = await supabase
+      .from('users')
+      .update({ full_name: limpio })
+      .eq('auth_uid', profile.auth_uid)
+    if (error) {
+      setErrorNombre('No se pudo guardar. Intenta de nuevo.')
+    } else {
+      setProfile((prev: any) => ({ ...prev, full_name: limpio }))
+      setEditandoNombre(false)
+    }
+    setGuardandoNombre(false)
+  }
+
   async function guardarWhatsapp() {
     if (!profile || !whatsappValor.trim()) return
     setErrorWhatsapp('')
@@ -341,11 +368,54 @@ export default function ConfiguracionPage() {
                 </div>
               )}
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.texto, overflowWrap: 'anywhere' as const }}>{profile?.full_name}</p>
-                <p style={{ margin: '2px 0 8px', fontSize: 14, color: C.gris }}>{rolLabel[profile?.role] ?? profile?.role}</p>
-                <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ ...st.link, opacity: uploading ? 0.6 : 1 }}>
-                  {uploading ? 'Subiendo…' : 'Cambiar foto'}
-                </button>
+                {!editandoNombre ? (
+                  <>
+                    <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.texto, overflowWrap: 'anywhere' as const }}>{profile?.full_name}</p>
+                    <p style={{ margin: '2px 0 8px', fontSize: 14, color: C.gris }}>{rolLabel[profile?.role] ?? profile?.role}</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }}>
+                      <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ ...st.link, opacity: uploading ? 0.6 : 1 }}>
+                        {uploading ? 'Subiendo…' : 'Cambiar foto'}
+                      </button>
+                      <button
+                        onClick={() => { setNombreValor(profile?.full_name || ''); setEditandoNombre(true); setErrorNombre('') }}
+                        style={st.link}
+                      >
+                        Editar nombre
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label style={st.etiqueta}>Nombre completo</label>
+                    <input
+                      value={nombreValor}
+                      onChange={e => setNombreValor(e.target.value)}
+                      autoComplete="name"
+                      maxLength={120}
+                      style={st.input}
+                    />
+                    <p style={{ margin: '6px 0 0', fontSize: 12.5, color: C.gris, lineHeight: 1.5 }}>
+                      Escribe tu nombre y tus dos apellidos. Así aparecerá en el menú, el saludo y tus planeaciones.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10 }}>
+                      <button
+                        onClick={guardarNombre}
+                        disabled={guardandoNombre || !nombreValor.trim()}
+                        style={{ ...st.btnPrimario, opacity: guardandoNombre || !nombreValor.trim() ? 0.6 : 1 }}
+                      >
+                        {guardandoNombre ? 'Guardando…' : 'Guardar'}
+                      </button>
+                      <button
+                        onClick={() => { setEditandoNombre(false); setErrorNombre('') }}
+                        disabled={guardandoNombre}
+                        style={st.linkGris}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                    {errorNombre && <p style={st.aviso}>{errorNombre}</p>}
+                  </div>
+                )}
                 <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={handleFoto} style={{ display: 'none' }} />
               </div>
             </div>
