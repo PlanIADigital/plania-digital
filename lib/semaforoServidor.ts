@@ -64,15 +64,29 @@ export async function resumenSemaforoGrupo(
   const areas: string[] = []
   for (const r of delMomento) if (!areas.includes(String(r.area))) areas.push(String(r.area))
   const total = codigos.size
-  const pct = (n: number) => Math.round((100 * n) / total)
+  // Sin porcentajes: MÍA recibe proporciones en palabras para que las
+  // problemáticas suenen a observación de la maestra, no a estadística.
+  const cuanto = (n: number) => {
+    const p = n / total
+    if (p > 0.8) return 'casi todo el grupo'
+    if (p > 0.6) return 'la mayoría'
+    if (p >= 0.4) return 'cerca de la mitad'
+    if (p > 0.2) return 'una parte del grupo'
+    return 'pocos'
+  }
   const partes = areas.map(area => {
     const deArea = delMomento.filter((r: any) => r.area === area)
     const s = deArea.filter((r: any) => r.nivel === 'suficiente').length
     const ed = deArea.filter((r: any) => r.nivel === 'en_desarrollo').length
     const ra = deArea.filter((r: any) => r.nivel === 'requiere_apoyo').length
     const sinEvaluar = total - s - ed - ra
-    return `${area}: ${pct(s)}% suficiente, ${pct(ed)}% en desarrollo, ${pct(ra)}% requiere apoyo` +
-      (sinEvaluar > 0 ? `, ${pct(sinEvaluar)}% sin evaluar` : '')
+    const frases = [
+      s > 0 ? `${cuanto(s)} con nivel suficiente` : '',
+      ed > 0 ? `${cuanto(ed)} en desarrollo` : '',
+      ra > 0 ? `${cuanto(ra)} requiere apoyo` : '',
+      sinEvaluar > 0 ? `${cuanto(sinEvaluar)} aún sin evaluar` : '',
+    ].filter(Boolean)
+    return `${area}: ${frases.join('; ')}`
   })
   const nombre = MOMENTOS.find(m => m.clave === momento)?.nombre || momento
   const estado = enviados.includes(momento) ? 'enviado a dirección' : 'en captura'
