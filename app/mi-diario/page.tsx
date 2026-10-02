@@ -67,6 +67,30 @@ function tipoDeAudio(): string {
   return ''
 }
 
+// [2 oct 2026] El permiso del micrófono lo controla el navegador: se explica
+// UNA vez cómo dejarlo permitido (pasos según el teléfono y navegador).
+function claveTip(uid: string) { return `plania-diario-tip-microfono-${uid}` }
+function pasosMicrofono(): { titulo: string; pasos: string } {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  const ios = /iPhone|iPad|iPod/.test(ua)
+  if (ios && /CriOS/.test(ua)) return {
+    titulo: 'En Chrome para iPhone el permiso puede volver a pedirse.',
+    pasos: 'Para que no te pregunte cada vez, abre Mi diario desde Safari y déjalo permitido ahí: toca «aA» → Configuración del sitio web → Micrófono → Permitir.',
+  }
+  if (ios) return {
+    titulo: '¿No quieres que te pregunte por el micrófono cada vez?',
+    pasos: 'En la barra de direcciones toca «aA» → Configuración del sitio web → Micrófono → Permitir. Solo se hace una vez.',
+  }
+  if (/Android/.test(ua)) return {
+    titulo: '¿No quieres que te pregunte por el micrófono cada vez?',
+    pasos: 'Toca el ícono a la izquierda de la dirección → Permisos → Micrófono → Permitir. Solo se hace una vez.',
+  }
+  return {
+    titulo: '¿No quieres que te pregunte por el micrófono cada vez?',
+    pasos: 'Haz clic en el ícono a la izquierda de la dirección y deja el Micrófono en Permitir.',
+  }
+}
+
 export default function MiDiarioPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -95,6 +119,7 @@ export default function MiDiarioPage() {
   const uid = useRef('')
   const convirtiendoRef = useRef(false)
   const sucedidoRef = useRef('')
+  const [tipMicro, setTipMicro] = useState(false)
 
   const grabador = useRef<MediaRecorder | null>(null)
   const pedazos = useRef<Blob[]>([])
@@ -234,6 +259,7 @@ export default function MiDiarioPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       flujo.current = stream
+      mostrarTipSiPrimeraVez()
       const rec = new MediaRecorder(stream, { mimeType: mime })
       pedazos.current = []
       rec.ondataavailable = e => { if (e.data.size > 0) pedazos.current.push(e.data) }
@@ -260,6 +286,14 @@ export default function MiDiarioPage() {
 
   function detener() {
     if (grabador.current?.state === 'recording') grabador.current.stop()
+  }
+
+  function mostrarTipSiPrimeraVez() {
+    try { if (!localStorage.getItem(claveTip(uid.current))) setTipMicro(true) } catch {}
+  }
+  function cerrarTip() {
+    setTipMicro(false)
+    try { localStorage.setItem(claveTip(uid.current), '1') } catch {}
   }
 
   async function guardarSinSenal(audio: Blob, dur: number) {
@@ -348,6 +382,19 @@ export default function MiDiarioPage() {
 
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ ...card, background: C.ambarFondo, borderColor: '#F0DFA6', color: C.ambar, fontSize: 14 }}>{error}</div>}
+          {tipMicro && (() => {
+            const t = pasosMicrofono()
+            return (
+              <div style={{ ...card, background: C.indigoClaro, borderColor: C.borde }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: C.indigo }}>🎙 {t.titulo}</p>
+                <p style={{ margin: '6px 0 10px', fontSize: 13.5, color: C.texto, lineHeight: 1.5 }}>{t.pasos}</p>
+                <button onClick={cerrarTip}
+                  style={{ minHeight: 40, padding: '0 16px', borderRadius: 10, border: 'none', background: C.indigo, color: 'white', fontWeight: 700, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Entendido
+                </button>
+              </div>
+            )
+          })()}
           {sinConexion && (
             <div style={{ ...card, background: C.ambarFondo, borderColor: '#F0DFA6', color: C.ambar, fontSize: 13.5 }}>
               Sin conexión. Puedes seguir grabando: tus notas se guardan en este teléfono y se convierten en texto cuando vuelva la señal.
@@ -391,6 +438,12 @@ export default function MiDiarioPage() {
                   <p style={{ margin: '6px 0 0', fontSize: 12.5, color: C.suave }}>
                     Minutos de diario usados: {uso.usadosMin} de {uso.topeMin}
                   </p>
+                )}
+                {!tipMicro && (
+                  <button onClick={() => { setTipMicro(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                    style={{ background: 'none', border: 'none', padding: 0, marginTop: 6, minHeight: 36, color: C.indigo, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                    ¿El micrófono te pide permiso cada vez?
+                  </button>
                 )}
               </section>
 
