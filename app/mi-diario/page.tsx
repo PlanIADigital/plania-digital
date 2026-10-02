@@ -135,6 +135,20 @@ export default function MiDiarioPage() {
     setDestino(null); setFase('listo')
   }
 
+  // Mientras la hoja está abierta, el fondo queda fijo (iPhone incluido):
+  // el deslizamiento solo mueve la hoja y al cerrar se regresa al mismo lugar.
+  useEffect(() => {
+    if (!destino) return
+    const y = window.scrollY
+    const b = document.body.style
+    const previo = { position: b.position, top: b.top, width: b.width, overflow: b.overflow }
+    b.position = 'fixed'; b.top = `-${y}px`; b.width = '100%'; b.overflow = 'hidden'
+    return () => {
+      b.position = previo.position; b.top = previo.top; b.width = previo.width; b.overflow = previo.overflow
+      window.scrollTo(0, y)
+    }
+  }, [destino])
+
   async function iniciar(esAgregado = false) {
     setErrorHoja('')
     const mime = tipoDeAudio()
@@ -303,7 +317,7 @@ export default function MiDiarioPage() {
         <div onClick={fase === 'listo' || fase === 'validar' ? cerrarHoja : undefined}
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.45)', zIndex: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div onClick={e => e.stopPropagation()} role="dialog" aria-label="Grabar nota"
-            style={{ width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', background: 'white', borderRadius: '18px 18px 0 0', padding: '18px 18px 28px', boxShadow: '0 -8px 30px rgba(0,0,0,0.15)' }}>
+            style={{ width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto', overscrollBehavior: 'contain', background: 'white', borderRadius: '18px 18px 0 0', padding: '18px 18px 28px', boxShadow: '0 -8px 30px rgba(0,0,0,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ ...h2, margin: 0 }}>Nota para {destino === 'grupo' ? 'todo el grupo' : destino}</h2>
               {(fase === 'listo' || fase === 'validar') && (
