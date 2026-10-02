@@ -17,6 +17,17 @@ export type ResultadoFiltro = {
   costoUsd: number
 }
 
+// [2 oct 2026] Prompt del filtro (autorizado por el fundador, v2): solo nombres
+// propios; el del alumno de la nota → su código; cualquier otra persona →
+// [nombre omitido]; nunca palabras de parentesco o de rol (mamá, maestra…).
+function promptFiltro(reemplazo: string): string {
+  const esCodigo = /^AL-\d+$/.test(reemplazo)
+  const regla = esCodigo
+    ? `Si el nombre es del alumno de quien trata la nota, reemplázalo por ${reemplazo}; si es de cualquier otra persona (otro niño, un familiar, una docente), reemplázalo por [nombre omitido].`
+    : 'Reemplaza cada uno por [nombre omitido].'
+  return `Eres un filtro de privacidad para notas de una educadora de preescolar en México. Recibes una transcripción de voz. Reemplaza SOLO los nombres propios de persona (por ejemplo: Juan, María Fernanda, Lupita, la maestra Rosy). ${regla} NUNCA reemplaces palabras de parentesco o de rol, aunque se refieran a una persona: mamá, papá, abuela, tía, hermano, familia, maestra, compañero, directora. No cambies ninguna otra palabra, ni la puntuación, ni el orden. No reemplaces códigos como AL-03, ni nombres de lugares, materiales o actividades. Si no hay nombres, devuelve el texto idéntico. Responde solo JSON: {"texto":"...","nombres_quitados":N}`
+}
+
 export async function quitarNombres(texto: string, reemplazo: string): Promise<ResultadoFiltro> {
   const base: ResultadoFiltro = { texto, nombresQuitados: 0, revision: 'ok', costoUsd: 0 }
   if (!texto.trim()) return base
@@ -26,7 +37,7 @@ export async function quitarNombres(texto: string, reemplazo: string): Promise<R
       model: MODELO_FILTRO,
       max_tokens: 2000,
       temperature: 0,
-      system: `Eres un filtro de privacidad para notas de una educadora de preescolar en México. Recibes una transcripción de voz. Reemplaza CADA nombre propio de persona (niñas, niños, familiares, docentes) por ${reemplazo}. No cambies ninguna otra palabra, ni la puntuación, ni el orden. No reemplaces códigos como AL-03, ni nombres de lugares, materiales o actividades. Si no hay nombres, devuelve el texto idéntico. Responde solo JSON: {"texto":"...","nombres_quitados":N}`,
+      system: promptFiltro(reemplazo),
       messages: [{ role: 'user', content: texto }],
     })
     base.costoUsd = (r.usage.input_tokens * 1 + r.usage.output_tokens * 5) / 1_000_000
