@@ -5,6 +5,7 @@
 //  momento, estado por grupo (con la educadora) y concentrado por área
 //  (por grado y jardín). Solo cuenta grupos que ENVIARON. SOLO LECTURA.
 // ============================================================
+import BotonExcelSemaforo from '@/components/BotonExcelSemaforo'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { NIVELES, type Momento } from '@/lib/semaforo'
@@ -222,6 +223,7 @@ export default function SemaforoJardin() {
                 </div>
               </>
             )}
+            <BotonExcelSemaforo momento={datos.momento} enviados={enviados} />
           </div>
         </div>
       )}
