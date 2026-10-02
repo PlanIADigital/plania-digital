@@ -76,11 +76,13 @@ function numeroDeReferencia(referencia: string): number {
 export default function GrupoAlumnosApoyos({
   evaluacionIndividual,
   totalAlumnos,
+  totalDetectado,
   onEvaluacionActualizada,
   onTotalActualizado,
 }: {
   evaluacionIndividual: any
   totalAlumnos: number
+  totalDetectado?: number
   onEvaluacionActualizada: (evaluacion: any) => void
   // [Saneado 27 sep 2026] Avisa a Mi Grupo cuántos códigos activos hay (fuente única del total).
   onTotalActualizado?: (total: number) => void
@@ -200,8 +202,11 @@ export default function GrupoAlumnosApoyos({
     setAviso(`Apoyos retirados de ${json.alumno.codigo}.`)
   }
 
+  // [2 oct 2026] La lista inicial se confirma aquí (ya no se escribe el número en Configura tu grupo).
+  const [totalInicial, setTotalInicial] = useState<number>(() => (totalDetectado && totalDetectado > 0 ? totalDetectado : totalAlumnos) || 0)
   async function generarInicial() {
-    const json = await enviar({ accion: 'bootstrap', total: totalAlumnos })
+    if (!totalInicial || totalInicial < 1 || totalInicial > 60) return
+    const json = await enviar({ accion: 'bootstrap', total: totalInicial })
     if (json) await cargar()
   }
 
@@ -300,19 +305,26 @@ export default function GrupoAlumnosApoyos({
 
         {alumnos.length === 0 ? (
           <div style={{ textAlign: 'center' as const }}>
-            {totalAlumnos > 0 ? (
-              <>
-                <p style={{ fontSize: 13, color: '#444', marginBottom: 12 }}>
-                  Aún no tienes alumnos registrados. Genera la lista inicial con tu total actual ({totalAlumnos} alumnos),
-                  en el mismo orden de tu lista.
-                </p>
-                <button type="button" disabled={ocupado} onClick={generarInicial} style={estilos.btnMarca}>Generar códigos iniciales</button>
-              </>
-            ) : (
-              <p style={{ fontSize: 13, color: '#444', margin: 0 }}>
-                Primero escribe cuántos alumnos tiene tu grupo en <strong>Configura tu grupo</strong>; con ese número se generan los códigos.
-              </p>
-            )}
+            <p style={{ fontSize: 14, fontWeight: 700, color: c.texto, margin: '0 0 6px' }}>Crea la lista de tu grupo</p>
+            <p style={{ fontSize: 13, color: '#444', margin: '0 0 12px', lineHeight: 1.5 }}>
+              {totalDetectado && totalDetectado > 0
+                ? <>MÍA detectó <strong>{totalDetectado} alumnos</strong> en tu Diagnóstico individual. Confirma el número (o corrígelo si tu documento no incluye a todo el grupo)</>
+                : <>Escribe cuántos alumnos tiene tu grupo</>}
+              {' '}y se crearán los códigos {totalInicial > 0 ? `AL-01 a AL-${String(totalInicial).padStart(2, '0')}` : ''} en el orden de tu lista.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+              <button type="button" aria-label="Uno menos" disabled={ocupado || totalInicial <= 1}
+                onClick={() => setTotalInicial(n => Math.max(1, (n || 1) - 1))}
+                style={{ width: 44, height: 44, borderRadius: 10, border: `1.5px solid ${c.texto}`, background: 'white', fontSize: 20, fontWeight: 700, cursor: 'pointer', opacity: totalInicial <= 1 ? 0.35 : 1 }}>–</button>
+              <input type="number" min={1} max={60} inputMode="numeric" aria-label="Número de alumnos"
+                value={totalInicial || ''} onChange={e => setTotalInicial(Math.min(60, Math.max(0, parseInt(e.target.value) || 0)))}
+                style={{ width: 72, height: 44, textAlign: 'center' as const, fontSize: 18, fontWeight: 800, borderRadius: 10, border: `1.5px solid ${c.marcaClaro}` }} />
+              <button type="button" aria-label="Uno más" disabled={ocupado || totalInicial >= 60}
+                onClick={() => setTotalInicial(n => Math.min(60, (n || 0) + 1))}
+                style={{ width: 44, height: 44, borderRadius: 10, border: `1.5px solid ${c.texto}`, background: 'white', fontSize: 20, fontWeight: 700, cursor: 'pointer' }}>+</button>
+              <button type="button" disabled={ocupado || !totalInicial} onClick={generarInicial}
+                style={{ ...estilos.btnMarca, minHeight: 44, opacity: !totalInicial ? 0.5 : 1 }}>Crear mi lista</button>
+            </div>
           </div>
         ) : (
           <>

@@ -672,7 +672,8 @@ async function abrirModalAlumnos() {
     </div>
   )
 
-  const totalAlumnos = profile.total_alumnos || 0
+  // [2 oct 2026] Una sola fuente: los códigos AL-XX activos (no el número escrito a mano).
+  const totalAlumnos = codigosActivos && codigosActivos > 0 ? codigosActivos : 0
   const evalCompleta = evaluacionIndividual && typeof evaluacionIndividual === 'object' && !Array.isArray(evaluacionIndividual) && (evaluacionIndividual as any).resumen_general
   const cargandoAnimacionCompleta = analizando
 
@@ -693,7 +694,7 @@ async function abrirModalAlumnos() {
             antetitulo="Configurar"
             titulo="Mi grupo"
             subtitulo={grupoConfigurado
-              ? `${gradoGrupo} ${profile.grupo_letra} · ${codigosActivos || totalAlumnos} alumnos · Ciclo ${CICLO_ESCOLAR_ACTIVO}`
+              ? `${gradoGrupo} ${profile.grupo_letra}${totalAlumnos > 0 ? ` · ${totalAlumnos} alumnos` : ''} · Ciclo ${CICLO_ESCOLAR_ACTIVO}`
               : 'Elige tu grado y grupo para empezar.'}
           />
 
@@ -787,7 +788,7 @@ async function abrirModalAlumnos() {
                     {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : '👥 Registrar mi lista'}
                   </button>
                   <button onClick={descartarDiscrepanciaAlumnos} style={s.btnSecundario}>
-                    Mantener {codigosActivos && codigosActivos > 0 ? codigosActivos : (profile.total_alumnos || 'sin cambio')}
+                    {codigosActivos && codigosActivos > 0 ? `Mantener ${codigosActivos}` : 'Ahora no'}
                   </button>
                 </div>
               </div>
@@ -1183,6 +1184,7 @@ async function abrirModalAlumnos() {
               <GrupoAlumnosApoyos
                 evaluacionIndividual={evaluacionIndividual}
                 totalAlumnos={profile?.total_alumnos || 0}
+                totalDetectado={(evaluacionIndividual as any)?.total_alumnos_detectados || 0}
                 onEvaluacionActualizada={setEvaluacionIndividual}
                 onTotalActualizado={(n: number) => {
                   setCodigosActivos(n)
