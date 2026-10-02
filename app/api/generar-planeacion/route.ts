@@ -10,6 +10,7 @@ import type { DiaConMomento, DiaGenerado } from '@/lib/planeacion/tipos'
 import {
   obtenerEstiloNarrativo,
   obtenerGrupoAlumnos,
+  obtenerSemaforoGrupo,
   obtenerPrioridadesPedagogicas,
   obtenerRetroalimentacionDireccion,
   obtenerTrayectoriaPDA,
@@ -151,6 +152,8 @@ export async function POST(request: NextRequest) {
 
     const trayectoriaPDA = await obtenerTrayectoriaPDA(supabaseAdmin, profile?.id, estadoCodigo)
     const prioridadesPedagogicas = obtenerPrioridadesPedagogicas(profile)
+    // [2 oct 2026] Semáforo de desempeño (solo códigos) para calibrar actividades.
+    const semaforoGrupo = await obtenerSemaforoGrupo(supabaseAdmin, profile.id)
     const retroalimentacionDireccion = obtenerRetroalimentacionDireccion(profile)
     const estiloNarrativo = obtenerEstiloNarrativo(profile)
 
@@ -263,6 +266,7 @@ export async function POST(request: NextRequest) {
         materialesUsados,
         trayectoriaPDA,
         prioridadesPedagogicas,
+        semaforoGrupo,
         retroalimentacionDireccion,
         estiloNarrativo,
         esUltimoLote,

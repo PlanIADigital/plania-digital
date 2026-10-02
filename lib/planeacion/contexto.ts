@@ -155,3 +155,60 @@ export function obtenerEstiloNarrativo(profile: any): string {
   }
   return partes.join(' | ')
 }
+
+// ============================================================
+// [2 oct 2026] Semáforo de desempeño → resumen para MÍA (solo códigos).
+// Toma el último momento ENVIADO a dirección; si no hay, el último con
+// marcas. Solo alumnos activos. Lista "requieren apoyo" y "en desarrollo"
+// por área. Vacío si no hay semáforo (MÍA genera como siempre).
+// ============================================================
+import { MOMENTOS as MOMENTOS_SEMAFORO } from '@/lib/semaforo'
+
+export async function obtenerSemaforoGrupo(supabaseAdmin: any, userId: string): Promise<string> {
+  if (!userId) return ''
+  try {
+    const indice = (m: string) => MOMENTOS_SEMAFORO.findIndex(x => x.clave === m)
+    const { data: envios } = await supabaseAdmin
+      .from('semaforo_envios').select('momento')
+      .eq('user_id', userId).eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
+    let momento: string | null = (envios || []).map((e: any) => e.momento).sort((a: string, b: string) => indice(b) - indice(a))[0] || null
+    const enviado = !!momento
+    if (!momento) {
+      const { data: conMarcas } = await supabaseAdmin
+        .from('semaforo_registros').select('momento')
+        .eq('user_id', userId).eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO).limit(500)
+      momento = Array.from(new Set<string>((conMarcas || []).map((r: any) => String(r.momento)))).sort((a: string, b: string) => indice(b) - indice(a))[0] || null
+    }
+    if (!momento) return ''
+
+    const { data: activos } = await supabaseAdmin
+      .from('alumnos_codigo').select('codigo')
+      .eq('user_id', userId).eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO).eq('activo', true)
+    const vigentes = new Set((activos || []).map((a: any) => a.codigo))
+
+    const { data: regs } = await supabaseAdmin
+      .from('semaforo_registros').select('area, alumno_codigo, nivel')
+      .eq('user_id', userId).eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO).eq('momento', momento)
+      .in('nivel', ['requiere_apoyo', 'en_desarrollo'])
+
+    const porArea: Record<string, { ra: string[]; ed: string[] }> = {}
+    for (const r of regs || []) {
+      if (!vigentes.has(r.alumno_codigo)) continue
+      porArea[r.area] ||= { ra: [], ed: [] }
+      ;(r.nivel === 'requiere_apoyo' ? porArea[r.area].ra : porArea[r.area].ed).push(r.alumno_codigo)
+    }
+    const orden = (a: string, b: string) => numeroCodigoAlumno(a) - numeroCodigoAlumno(b)
+    const lineas = Object.entries(porArea).map(([area, v]) => {
+      const partes = []
+      if (v.ra.length) partes.push(`requieren apoyo ${v.ra.sort(orden).join(', ')}`)
+      if (v.ed.length) partes.push(`en desarrollo ${v.ed.sort(orden).join(', ')}`)
+      return `- ${area}: ${partes.join('; ')}`
+    })
+    if (lineas.length === 0) return ''
+    const nombre = MOMENTOS_SEMAFORO.find(m => m.clave === momento)?.nombre || momento
+    return `Momento: ${nombre}${enviado ? ' (enviado a dirección)' : ' (en captura)'}\n${lineas.join('\n')}`
+  } catch (e) {
+    console.error('No se pudo obtener el semáforo del grupo (no crítico):', e)
+    return ''
+  }
+}

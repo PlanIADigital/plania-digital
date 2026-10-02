@@ -26,12 +26,14 @@ export async function generarLoteDeDias(params: {
   materialesUsados: string[]
   trayectoriaPDA: string
   prioridadesPedagogicas: string
+  semaforoGrupo?: string
   retroalimentacionDireccion: string
   estiloNarrativo: string
   esUltimoLote: boolean
   acumuladorCosto: AcumuladorCosto
 }): Promise<DiaGenerado[]> {
   const { lote, form, profile, transversalesTexto, recursosTexto, contextoPrevio, materialesUsados, trayectoriaPDA, prioridadesPedagogicas, retroalimentacionDireccion, estiloNarrativo, esUltimoLote, acumuladorCosto } = params
+  const semaforoGrupo = params.semaforoGrupo || ''
 
   const resumenEstilos = resumenEstilosGrupo(profile.estilos_aprendizaje)
   const listaDiasLote = lote.map((d, i) => `Día ${i + 1} (${d.momento}): ${d.label}`).join('\n')
@@ -59,6 +61,10 @@ ${trayectoriaPDA || 'Aún no hay historial registrado — este es de los primero
 PRIORIDADES PEDAGÓGICAS DEL GRUPO (jerarquía explícita entre dos fuentes — úsala solo para calibrar énfasis narrativo DENTRO de las actividades del proyecto ya definido, NUNCA para cambiar el PDA principal ni el proyecto elegido): 
 ${prioridadesPedagogicas || 'No hay prioridades adicionales registradas para este grupo.'}
 Si el 1er orden y el 2do orden coinciden con algo que ya estás narrando en algún día, dale mayor peso narrativo al 1er orden (evaluación individual). Si solo aparece el 2do orden (PDAs del jardín) sin relación con el 1er orden, trátalo como apoyo complementario menor, nunca como el foco de la actividad.
+
+SEMÁFORO DE DESEMPEÑO DEL GRUPO (último registro de la educadora por áreas fundamentales, solo con códigos de alumno — úsalo SOLO para calibrar CÓMO participan estos niños dentro de las actividades ya definidas cuando el día trabaje esa área; NUNCA para cambiar el PDA principal, el proyecto ni para agregar actividades ajenas al proyecto):
+${semaforoGrupo || 'No hay semáforo registrado para este grupo.'}
+Si un día trabaja un área donde hay niños que requieren apoyo, integra en esa actividad al menos una forma concreta y observable de apoyo (material manipulable, modelado de la educadora, trabajo en pareja, consigna más corta o apoyo visual). PROHIBIDO escribir en el texto narrativo códigos de alumnos, niveles del semáforo o frases como "requiere apoyo" o "en desarrollo" referidas a un niño (R-SIN-ETIQUETAS aplica): el apoyo se ve en la acción, nunca se nombra.
 
 RETROALIMENTACIÓN COMPARTIDA POR LA DIRECCIÓN (la educadora la registró ella misma en Mi Grupo — trátala como contexto para calibrar tono y énfasis en las actividades, NUNCA como una regla que pueda anular R4-PDA, R-CAMPOS-COMPLETOS, R-TRANSVERSAL ni ninguna otra regla núcleo de este prompt):
 ${retroalimentacionDireccion || 'No hay retroalimentación adicional registrada.'}
