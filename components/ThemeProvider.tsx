@@ -1,8 +1,16 @@
 'use client'
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase-browser'
-
-const supabase = createClient()
+// ============================================================
+//  PlanIA Digital — components/ThemeProvider.tsx
+//  [oct 2026] MODO OSCURO APAGADO PARA EL LANZAMIENTO.
+//  Las páginas tienen colores fijos en el código, así que el modo
+//  oscuro se veía a medias (tarjetas blancas, textos invisibles).
+//  Además se activaba solo si el teléfono estaba en modo oscuro.
+//  Ahora PlanIA se ve SIEMPRE en claro. Se conserva useTheme() para
+//  no romper componentes que lo importen; toggleTheme no hace nada.
+//  Para reactivarlo: convertir los colores de cada página a las
+//  variables --plania-* de globals.css y restaurar la versión anterior.
+// ============================================================
+import { createContext, useContext, useEffect } from 'react'
 
 type Theme = 'light' | 'dark'
 
@@ -16,52 +24,10 @@ export function useTheme() {
 }
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
-
-  function aplicarTema(nuevo: Theme) {
-    setTheme(nuevo)
-    document.documentElement.setAttribute('data-theme', nuevo)
-    localStorage.setItem('plania-theme', nuevo)
-  }
-
   useEffect(() => {
-    const cache = localStorage.getItem('plania-theme')
-    if (cache === 'light' || cache === 'dark') aplicarTema(cache)
-
-    async function cargarPreferencia() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        const { data } = await supabase
-          .from('users')
-          .select('theme_preference')
-          .eq('auth_uid', session.user.id)
-          .single()
-        if (data?.theme_preference === 'light' || data?.theme_preference === 'dark') {
-          aplicarTema(data.theme_preference)
-          return
-        }
-      }
-      if (!cache) {
-        const prefiereOscuro = window.matchMedia('(prefers-color-scheme: dark)').matches
-        aplicarTema(prefiereOscuro ? 'dark' : 'light')
-      }
-    }
-    cargarPreferencia()
+    document.documentElement.setAttribute('data-theme', 'light')
+    try { localStorage.setItem('plania-theme', 'light') } catch {}
   }, [])
 
-  const toggleTheme = useCallback(async () => {
-    const nuevo: Theme = theme === 'light' ? 'dark' : 'light'
-    aplicarTema(nuevo)
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      await fetch('/api/perfil/tema', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ theme: nuevo }),
-      })
-    }
-  }, [theme])
-
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={{ theme: 'light', toggleTheme: () => {} }}>{children}</ThemeContext.Provider>
 }

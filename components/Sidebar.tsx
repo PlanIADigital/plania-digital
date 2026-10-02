@@ -10,11 +10,12 @@
 //  [oct 2026] Iconografía "línea en recuadro" (opción B): cada sección con
 //  su ícono de línea en un recuadro suave; la activa con recuadro verde.
 //  Ficha del jardín en verde PlanIA, solo con el nombre.
+//  [oct 2026] Modo oscuro apagado para el lanzamiento (ver ThemeProvider):
+//  se quitó el interruptor; el pie queda con foto, nombre y Salir.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
-import { useTheme } from '@/components/ThemeProvider'
 import Icono from '@/components/Icono'
 
 const supabase = createClient()
@@ -67,32 +68,6 @@ const ESTILOS_RESPONSIVOS = `
     input, select, textarea { font-size: 16px !important; }
   }
 `
-
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
-  const isDark = theme === 'dark'
-  return (
-    <button
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      style={{
-        width: 44, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer',
-        position: 'relative', flexShrink: 0, padding: 0,
-        background: isDark ? '#00A896' : 'rgba(255,255,255,0.22)',
-        transition: 'background 0.2s ease',
-      }}
-    >
-      <span style={{
-        position: 'absolute', top: 2, left: isDark ? 22 : 2,
-        width: 20, height: 20, borderRadius: '50%', background: 'white',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, lineHeight: 1, transition: 'left 0.2s ease',
-      }}>
-        {isDark ? '🌙' : '☀️'}
-      </span>
-    </button>
-  )
-}
 
 function Logo({ tamano }: { tamano: number }) {
   return (
@@ -274,44 +249,36 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           })}
         </nav>
 
-        {/* Perfil */}
-        <div style={{ padding: '12px 14px 16px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="foto"
-                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0 }} />
-            ) : (
-              <div style={{
-                width: 40, height: 40, borderRadius: '50%', background: '#EEEDF8', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#3D3A8C', fontSize: 14, fontWeight: 800,
-              }}>
-                {iniciales}
-              </div>
-            )}
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ color: 'white', fontSize: 13.5, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {profile?.full_name}
-              </p>
-              {profile?.es_fundadora && (
-                <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5 }}>Modo oscuro</span>
-              <ThemeToggle />
-            </div>
-            <button onClick={handleLogout} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: '#00A896', border: 'none', color: 'white',
-              padding: '8px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13,
+        {/* Perfil: foto, nombre y Salir en una fila */}
+        <div style={{ padding: '12px 14px 16px', borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="foto"
+              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0 }} />
+          ) : (
+            <div style={{
+              width: 40, height: 40, borderRadius: '50%', background: '#EEEDF8', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#3D3A8C', fontSize: 14, fontWeight: 800,
             }}>
-              <Icono nombre="log-out" tamano={16} />
-              Salir
-            </button>
+              {iniciales}
+            </div>
+          )}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{ color: 'white', fontSize: 13.5, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {profile?.full_name}
+            </p>
+            {profile?.es_fundadora && (
+              <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>
+            )}
           </div>
+          <button onClick={handleLogout} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0,
+            background: '#00A896', border: 'none', color: 'white',
+            padding: '8px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13,
+          }}>
+            <Icono nombre="log-out" tamano={16} />
+            Salir
+          </button>
         </div>
       </aside>
 

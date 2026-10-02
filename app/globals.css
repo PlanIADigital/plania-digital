@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* [oct 2026] PlanIA se ve siempre en claro: también los controles del
+     navegador (campos, listas, barras de desplazamiento) aunque el
+     teléfono esté en modo oscuro. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -10,13 +14,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -50,6 +47,8 @@ body {
   --plania-borde:          #E0DFF5;
 }
 
+/* [oct 2026] Paleta oscura GUARDADA para el futuro. Hoy no se activa:
+   ThemeProvider fija siempre data-theme="light". */
 [data-theme="dark"] {
   --plania-fondo:          #1A1A2E;
   --plania-superficie:     #24243B;
