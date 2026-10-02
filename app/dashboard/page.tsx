@@ -65,6 +65,18 @@ export default function DashboardPage() {
   const [cobertura, setCobertura] = useState({ campos: 0, ejes: 0, pdas: 0, totalCampos: 4, totalEjes: 7, totalPdas: 371 })
   const [loading, setLoading] = useState(true)
 
+  // [oct 2026] En iPhone, al entrar desde el login el teclado se cierra
+  // mientras el Dashboard carga y Safari deja el scroll a media página.
+  // Al terminar de cargar se lleva arriba varias veces durante ~0.7 s;
+  // si la educadora toca la pantalla, se cancela para no estorbar.
+  useEffect(() => {
+    if (loading) return
+    const tiempos = [0, 120, 350, 700].map(ms => window.setTimeout(() => window.scrollTo(0, 0), ms))
+    const cancelar = () => tiempos.forEach(t => window.clearTimeout(t))
+    window.addEventListener('touchstart', cancelar, { once: true })
+    return () => { cancelar(); window.removeEventListener('touchstart', cancelar) }
+  }, [loading])
+
   useEffect(() => {
     async function loadUser() {
       const { data: { session } } = await supabase.auth.getSession()
