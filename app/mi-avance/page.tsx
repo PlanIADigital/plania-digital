@@ -8,19 +8,22 @@
 //      activo. Cuentan solo las no descartadas y con starts_on dentro
 //      de inicio_clases/fin_clases del calendario estatal.
 //    - Cobertura: calcularAvance() de lib/cobertura.ts — cuenta PDA
-//      DISTINTOS por pda_id (principal, pda_2 y transversales). Ya NO
-//      se lee la tabla pda_coverage (agrupaba por texto, mezclaba
-//      fechas fuera del ciclo y descartadas: 99 "PDAs" eran 33 reales).
+//      DISTINTOS por pda_id (principal, pda_2 y transversales).
 //    - Prioritarios: canasta de lib/cobertura.ts con tres etiquetas
-//      (Individual / NEE, Grupo, Jardín). Antes contaba is_primary
-//      (= PDA del campo principal) y siempre decía "diagnóstico
-//      atendido ✓" aunque no hubiera diagnóstico.
+//      (Individual / NEE, Grupo, Jardín).
 //  Principio: la educadora ve su avance REAL del grupo actual en el
 //  ciclo actual; lo anterior se conserva como historial sin mezclarse.
+//
+//  [Rediseño 1 oct 2026] Una columna (720 px), encabezado de tres
+//  renglones, indicadores 2×2, barra de progreso del ciclo, orientación
+//  de MÍA en tono de sugerencia (no punitivo), pestañas redondeadas y
+//  colores OFICIALES de campo (lib/coloresCampos.ts) con barras de rayas
+//  y degradado. Sin alturas fijas. Cálculos SIN cambios.
 // ============================================================
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import EncabezadoPagina from '@/components/EncabezadoPagina'
 import { createClient } from '@/lib/supabase-browser'
 import {
   SELECT_PLANNINGS_AVANCE,
@@ -36,39 +39,27 @@ import {
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { sugerenciasPendientes } from '@/components/GrupoAlumnosApoyos'
+import { colorCampo, fondoBarraCampo } from '@/lib/coloresCampos'
 
 const supabase = createClient()
 
 const MODO_PRUEBA_CICLO_ACTIVO = false
 
+const C = {
+  indigo: '#3D3A8C',
+  cian: '#00A896',
+  indigoClaro: '#EEEDF8',
+  texto: '#1A1A2E',
+  gris: '#6B7280',
+  borde: '#E0DFF5',
+}
+
 const CAMPOS_CONFIG = [
-  { nombre: 'Lenguajes',                          color: '#3D3A8C', bg: '#EEEDF8', total: 86  },
-  { nombre: 'Saberes y Pensamiento Científico',   color: '#00A896', bg: '#E0F5F3', total: 130 },
-  { nombre: 'Ética, Naturaleza y Sociedades',     color: '#059669', bg: '#D1FAE5', total: 70  },
-  { nombre: 'De lo Humano y lo Comunitario',      color: '#7C3AED', bg: '#EDE9FE', total: 85  },
+  { nombre: 'Lenguajes',                        total: 86  },
+  { nombre: 'Saberes y Pensamiento Científico', total: 130 },
+  { nombre: 'Ética, Naturaleza y Sociedades',   total: 70  },
+  { nombre: 'De lo Humano y lo Comunitario',    total: 85  },
 ]
-
-// [jul 2026] Colores oficiales SEP para el diagrama "Elementos
-// curriculares" (Lenguajes=rojo, Saberes y P. Científico=azul), que
-// las educadoras ya reconocen de memoria por capacitaciones y
-// materiales oficiales. Se usan ÚNICAMENTE dentro del tab "📊 Campos"
-// de Mi Avance (barras de progreso + conteo de PDAs) — NO reemplazan
-// CAMPOS_CONFIG.color, que sigue siendo el color de marca de PlanIA en
-// TODAS las demás pantallas (grid de PDAs en el tab "PDAs", iconos,
-// badges en Mis Planeaciones, etc.). Ética/Naturaleza y De lo
-// Humano/Comunitario no cambian aquí porque ya coinciden, o están muy
-// cerca, del color oficial — solo Lenguajes y Saberes se alejaban
-// bastante del estándar SEP. Se usa un rojo suave/terracota (no rojo
-// saturado puro) para evitar que una barra bien avanzada se lea como
-// "alerta/error" por asociación visual típica de interfaces.
-const COLOR_TAB_CAMPOS: Record<string, string> = {
-  'Lenguajes': '#C0504D',
-  'Saberes y Pensamiento Científico': '#2E6DA4',
-}
-
-function colorEnTabCampos(nombre: string, colorPorDefecto: string): string {
-  return COLOR_TAB_CAMPOS[nombre] || colorPorDefecto
-}
 
 // [jul 2026] Prefijo de 3 letras por campo formativo.
 const PREFIJO_POR_CAMPO: Record<string, string> = {
@@ -96,14 +87,11 @@ const EJES = [
   'Vida saludable',
 ]
 
-const MESES = ['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul']
+const MESES_LARGOS = ['Septiembre','Octubre','Noviembre','Diciembre','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio']
 
 const UMBRAL_EJE_BAJO = 0.2
 
 // [Saneado 27 sep 2026] Alerta de cobertura por campo según la ETAPA del ciclo.
-// META_CAMPO_FIN_CICLO es la referencia al cierre del ciclo (% de PDA de cada
-// campo); a la fecha se espera la parte proporcional al ciclo transcurrido.
-// Sin alerta mientras haya transcurrido menos de AVANCE_CICLO_MINIMO_PARA_ALERTA.
 const META_CAMPO_FIN_CICLO = 20
 const AVANCE_CICLO_MINIMO_PARA_ALERTA = 0.15
 
@@ -127,7 +115,7 @@ function hoyLocalISO(): string {
 function campoCorto(nombre: string): string {
   const mapa: Record<string, string> = {
     'Saberes y Pensamiento Científico': 'Saberes y P. Científico',
-    'Ética, Naturaleza y Sociedades':   'Ética, Naturaleza...',
+    'Ética, Naturaleza y Sociedades':   'Ética, Naturaleza y Sociedades',
     'De lo Humano y lo Comunitario':    'Lo Humano y Comunitario',
   }
   return mapa[nombre] || nombre
@@ -135,7 +123,7 @@ function campoCorto(nombre: string): string {
 
 function campoCompletoConCodigo(nombre: string): string {
   const codigo = PREFIJO_POR_CAMPO[nombre] || ''
-  return `${nombre.toUpperCase()} (${codigo})`
+  return `${nombre} (${codigo})`
 }
 
 function etiquetasDeOrigen(origenes: OrigenPrioritario[]): string {
@@ -151,75 +139,43 @@ function mesActualCiclo(): number {
   return -1
 }
 
-function IconoCampo({ nombre, size = 22, opacity = 1 }: { nombre: string; size?: number; opacity?: number }) {
-  if (nombre === 'Lenguajes') return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }}>
-      <rect x="7" y="5" width="20" height="28" rx="3" fill="#EEEDF8" stroke="#3D3A8C" strokeWidth="1.8"/>
-      <rect x="13" y="5" width="22" height="30" rx="3" fill="white" stroke="#3D3A8C" strokeWidth="1.8"/>
-      <line x1="18" y1="14" x2="30" y2="14" stroke="#3D3A8C" strokeWidth="1.8" strokeLinecap="round"/>
-      <line x1="18" y1="19" x2="30" y2="19" stroke="#00A896" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="18" y1="24" x2="26" y2="24" stroke="#00A896" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="35" cy="36" r="8" fill="#3D3A8C"/>
-      <text x="35" y="40" textAnchor="middle" fontSize="10" fill="white" fontWeight="bold">A</text>
-    </svg>
-  )
-  if (nombre === 'Saberes y Pensamiento Científico') return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }}>
-      <circle cx="24" cy="24" r="7" fill="#E0F5F3" stroke="#00A896" strokeWidth="1.8"/>
-      <ellipse cx="24" cy="24" rx="14" ry="7" stroke="#00A896" strokeWidth="1.5" strokeDasharray="3 2"/>
-      <ellipse cx="24" cy="24" rx="7" ry="14" stroke="#3D3A8C" strokeWidth="1.5" strokeDasharray="3 2"/>
-      <circle cx="24" cy="24" r="2.5" fill="#00A896"/>
-      <circle cx="24" cy="10" r="2" fill="#3D3A8C"/>
-      <circle cx="24" cy="38" r="2" fill="#3D3A8C"/>
-    </svg>
-  )
-  if (nombre === 'Ética, Naturaleza y Sociedades') return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }}>
-      <path d="M24 40 C24 40 10 28 10 18 C10 11 16 6 24 6 C32 6 38 11 38 18 C38 28 24 40 24 40Z" fill="#D1FAE5" stroke="#059669" strokeWidth="1.8"/>
-      <path d="M24 18 C24 18 18 13 20 8" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M24 18 C24 18 30 13 28 8" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="24" y1="18" x2="24" y2="36" stroke="#059669" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  )
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={{ opacity }}>
-      <circle cx="16" cy="14" r="5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
-      <circle cx="32" cy="14" r="5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
-      <circle cx="24" cy="12" r="5.5" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8"/>
-      <path d="M6 36 C6 28 11 24 16 24 C18 24 20 25 22 26" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M42 36 C42 28 37 24 32 24 C30 24 28 25 26 26" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M14 38 C14 30 18 26 24 26 C30 26 34 30 34 38" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round"/>
-    </svg>
-  )
+// Cuadrito con el color oficial del campo (reemplaza los iconos dibujados).
+function PuntoCampo({ nombre, size = 14, opacity = 1 }: { nombre: string; size?: number; opacity?: number }) {
+  return <span style={{ width: size, height: size, borderRadius: 4, background: fondoBarraCampo(nombre), display: 'inline-block', flexShrink: 0, opacity }} />
 }
 
-function KpiCard({ label, value, delta, deltaColor = '#0F6E56', icon }: {
-  label: string; value: string | number; delta: string; deltaColor?: string; icon: string
-}) {
+function KpiCard({ label, value, delta, icon }: { label: string; value: string | number; delta: string; icon: string }) {
   return (
-    <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 10, padding: '14px 16px', textAlign: 'center' as const }}>
-      <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        <span>{icon}</span>{label}
+    <div style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '12px 10px', textAlign: 'center' as const, minWidth: 0 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {icon} {label}
       </p>
-      <p style={{ fontSize: 28, fontWeight: 800, color: '#1A1A2E', margin: '0 0 4px' }}>{value}</p>
-      <p style={{ fontSize: 11, color: deltaColor, margin: 0 }}>{delta}</p>
+      <p style={{ fontSize: 26, fontWeight: 800, color: C.indigo, margin: '0 0 2px', lineHeight: 1.2 }}>{value}</p>
+      <p style={{ fontSize: 12, color: C.gris, margin: 0, lineHeight: 1.4 }}>{delta}</p>
     </div>
   )
 }
 
 function AlertaMia({ tipo, texto }: { tipo: 'warn' | 'info' | 'success'; texto: React.ReactNode }) {
+  // Tono de sugerencia: sin naranja ni "⚠️" (principio de no usar indicadores punitivos).
   const estilos = {
-    warn:    { bg: '#FFF7ED', border: '#F59E0B', icon: '⚠️' },
-    info:    { bg: '#EEEDF8', border: '#3D3A8C', icon: '💡' },
-    success: { bg: '#ECFDF5', border: '#059669', icon: '✨' },
+    warn:    { bg: C.indigoClaro, border: C.indigo, icon: '✦' },
+    info:    { bg: '#F4F3FB', border: C.cian, icon: '💡' },
+    success: { bg: '#E8F5F2', border: C.cian, icon: '✨' },
   }
   const e = estilos[tipo]
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: e.bg, borderRadius: 8, borderLeft: `3px solid ${e.border}`, marginBottom: 8 }}>
-      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{e.icon}</span>
-      <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: 1.6 }}>{texto}</p>
+      <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1, color: C.indigo }}>{e.icon}</span>
+      <p style={{ fontSize: 14, color: C.texto, margin: 0, lineHeight: 1.6 }}>{texto}</p>
     </div>
   )
+}
+
+const st = {
+  card: { background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: 16, marginBottom: 12 } as React.CSSProperties,
+  titulo: { margin: 0, fontSize: 13, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.07em' } as React.CSSProperties,
+  ayuda: { fontSize: 13, color: C.gris, margin: '0 0 12px', lineHeight: 1.6 } as React.CSSProperties,
 }
 
 export default function MiAvancePage() {
@@ -284,7 +240,7 @@ export default function MiAvancePage() {
     load()
   }, [])
 
-  // ── Cálculo único (lib/cobertura.ts) ────────────────────────
+  // ── Cálculo único (lib/cobertura.ts) — SIN cambios ──────────
   const periodo: PeriodoAvance = { ciclo: CICLO_ESCOLAR_ACTIVO, inicio: inicioClasesCiclo, fin: finClasesCiclo }
   const avance = calcularAvance(plannings, catalogoPDA, periodo)
   const planesContadas = clasificarPlaneaciones(plannings, periodo).contadas
@@ -350,12 +306,13 @@ export default function MiAvancePage() {
     : Math.max(1, Math.round(META_CAMPO_FIN_CICLO * fraccionCiclo))
   const cicloEscolarConcluido = !MODO_PRUEBA_CICLO_ACTIVO && !!finClasesCiclo && hoyISO > finClasesCiclo
 
+  // Orientación de MÍA — mismas condiciones que antes, redacción en tono de sugerencia.
   const alertas: Array<{ tipo: 'warn' | 'info' | 'success'; texto: React.ReactNode }> = []
   if (!cicloEscolarConcluido) {
     const camposBajos = umbralCampoHoy === null ? [] : pdaUnicosPorCampo.filter(c => c.porcentaje < umbralCampoHoy)
-    if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <><strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> {camposBajos.length === 1 ? 'va' : 'van'} por debajo de lo esperado para esta etapa del ciclo.</> })
-    if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <><strong>{ejesSinUsar.length} ejes articuladores</strong> sin abordar este ciclo — incluyendo <em>{ejesSinUsar[0]}</em>.</> })
-    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.{prioritarios.pendientes[0]?.id && <> <span onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${prioritarios.pendientes[0].id}`)} style={{ color: '#3D3A8C', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>Planear el primero con MÍA →</span></>}</> })
+    if (camposBajos.length > 0) alertas.push({ tipo: 'warn', texto: <>Puedes darle más espacio a <strong>{camposBajos.map(c => campoCorto(c.nombre)).join(' y ')}</strong> en tus próximos proyectos.</> })
+    if (ejesSinUsar.length >= 3) alertas.push({ tipo: 'warn', texto: <>Hay <strong>{ejesSinUsar.length} ejes articuladores</strong> que aún no abordas este ciclo, como <em>{ejesSinUsar[0]}</em>.</> })
+    if (pdasPrioritariosPendientes > 0) alertas.push({ tipo: 'info', texto: <><strong>{pdasPrioritariosPendientes} PDA prioritario{pdasPrioritariosPendientes !== 1 ? 's' : ''}</strong> de tu grupo aún por abordar este ciclo.{prioritarios.pendientes[0]?.id && <> <span onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${prioritarios.pendientes[0].id}`)} style={{ color: C.indigo, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>Planear el primero con MÍA →</span></>}</> })
     const campoDestacado = pdaUnicosPorCampo.find(c => c.porcentaje >= 50)
     if (campoDestacado) alertas.push({ tipo: 'success', texto: <><strong>¡Excelente!</strong> Llevas {campoDestacado.porcentaje}% en <em>{campoCorto(campoDestacado.nombre)}</em>.</> })
     if (alertas.length === 0 && totalPlanes > 0) alertas.push({ tipo: 'info', texto: <>Tu avance está equilibrado. MÍA estará aquí cuando la necesites.</> })
@@ -369,228 +326,250 @@ export default function MiAvancePage() {
 
   if (totalPlanes === 0) return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '32px 40px' }}>
-        <div style={{ background: 'white', borderRadius: 16, padding: '48px 32px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-          <div style={{ fontSize: 52, marginBottom: 20 }}>🗺️</div>
-          <h2 style={{ color: '#3D3A8C', fontSize: 20, fontWeight: 700, marginTop: 0, marginBottom: 12 }}>Tu centro de control está listo para crecer</h2>
-          <p style={{ color: '#666', fontSize: 14, lineHeight: 1.9, maxWidth: 440, margin: '0 auto 32px' }}>Cada planeación que generes construirá automáticamente tu mapa de cobertura curricular.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, maxWidth: 380, margin: '0 auto 32px' }}>
-            {CAMPOS_CONFIG.map(cf => (
-              <div key={cf.nombre} style={{ background: '#F8F8FE', border: '1.5px dashed #D8D6F0', borderRadius: 12, padding: '16px 12px', textAlign: 'center' }}>
-                <div style={{ marginBottom: 8 }}><IconoCampo nombre={cf.nombre} size={32} opacity={0.3} /></div>
-                <p style={{ fontSize: 10, fontWeight: 700, color: '#C4C2E8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>{campoCorto(cf.nombre)}</p>
-                <div style={{ background: '#EEE', borderRadius: 99, height: 5 }}><div style={{ width: '0%', height: '100%', background: '#D8D6F0', borderRadius: 99 }} /></div>
-              </div>
-            ))}
+      <div style={{ padding: '0 16px' }}>
+        <EncabezadoPagina antetitulo="Revisar" titulo="Mi avance" subtitulo={`Ciclo ${CICLO_ESCOLAR_ACTIVO}`} />
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div style={{ ...st.card, padding: '36px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: 44, marginBottom: 14 }}>🗺️</div>
+            <h2 style={{ color: C.indigo, fontSize: 19, fontWeight: 700, margin: '0 0 10px' }}>Tu avance está listo para crecer</h2>
+            <p style={{ color: C.gris, fontSize: 14, lineHeight: 1.7, maxWidth: 420, margin: '0 auto 24px' }}>Cada planeación que generes construirá automáticamente tu mapa de cobertura curricular.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, maxWidth: 380, margin: '0 auto 24px' }}>
+              {CAMPOS_CONFIG.map(cf => (
+                <div key={cf.nombre} style={{ background: '#F8F8FE', border: '1.5px dashed #D8D6F0', borderRadius: 12, padding: '12px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PuntoCampo nombre={cf.nombre} opacity={0.45} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.gris, textAlign: 'left' }}>{campoCorto(cf.nombre)}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => router.push('/planeacion/nueva')} style={{ background: C.cian, color: 'white', border: 'none', padding: '12px 24px', fontSize: 15, cursor: 'pointer', borderRadius: 8, fontWeight: 700 }}>
+              ✨ Crear mi primera planeación
+            </button>
           </div>
-          <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#00A896', color: 'white', border: 'none', padding: '12px 28px', fontSize: 15, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>
-            ✨ Crear mi primera planeación
-          </button>
         </div>
       </div>
     </SidebarWrapper>
   )
 
+  const progresoCiclo = mesActual >= 0 ? Math.round(((mesActual + 1) / MESES_LARGOS.length) * 100) : 100
+  const etiquetaProgreso = mesActual >= 0 ? `${MESES_LARGOS[mesActual]} · mes ${mesActual + 1} de ${MESES_LARGOS.length}` : 'Receso entre ciclos'
+  const pestañas: Array<{ clave: 'cobertura' | 'mapa' | 'ejes' | 'nee'; texto: string }> = [
+    { clave: 'cobertura', texto: '📊 Campos' },
+    { clave: 'mapa', texto: '🗺️ PDA' },
+    { clave: 'ejes', texto: '🔗 Ejes' },
+    { clave: 'nee', texto: '♿ Diversidad' },
+  ]
+
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '0 32px 60px' }}>
+      <div style={{ padding: '0 16px' }}>
 
-      {/* ENCABEZADO */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '16px 32px', marginBottom: 24, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: 0, letterSpacing: '0.05em' }}>CENTRO DE CONTROL PEDAGÓGICO</h1>
-        </div>
+        <EncabezadoPagina
+          antetitulo="Revisar"
+          titulo="Mi avance"
+          subtitulo={`Ciclo ${CICLO_ESCOLAR_ACTIVO} · ${totalPlanes} planeaci${totalPlanes !== 1 ? 'ones' : 'ón'}`}
+        />
 
-        {/* GRID 2 COLUMNAS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 24, alignItems: 'stretch' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-          {/* COLUMNA IZQUIERDA: KPIs + Progreso */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, height: '100%' }}>
+          {/* Indicadores 2×2 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+            <KpiCard icon="📋" label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'sin activas'} />
+            <KpiCard icon="📌" label="PDA trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} del programa`} />
+            <KpiCard
+              icon="⭐"
+              label="Prioritarios"
+              value={prioritarios.hayDiagnostico ? `${prioritarios.atendidos}/${prioritarios.total}` : '—'}
+              delta={prioritarios.hayDiagnostico ? desglosePrioritarios : 'Sin diagnóstico este ciclo'}
+            />
+            <KpiCard icon="🔗" label="Ejes" value={`${ejesCubiertos}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} por abordar` : 'todos abordados'} />
+          </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <KpiCard label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'todas cerradas'} icon="📋" />
-              <KpiCard label="PDAs trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} totales del ciclo`} icon="📌" />
-              <KpiCard
-                label="PDAs prioritarios"
-                value={prioritarios.hayDiagnostico ? `${prioritarios.atendidos}/${prioritarios.total}` : '—'}
-                delta={prioritarios.hayDiagnostico ? desglosePrioritarios : 'Sin diagnóstico este ciclo'}
-                deltaColor={prioritarios.hayDiagnostico ? '#0F6E56' : '#888'}
-                icon="⭐"
-              />
-              <KpiCard label="Ejes articuladores" value={`${ejesCubiertos}/${EJES.length}`} delta={ejesSinUsar.length > 0 ? `${ejesSinUsar.length} sin abordar` : 'todos cubiertos'} deltaColor={ejesSinUsar.length > 2 ? '#D97706' : '#0F6E56'} icon="🔗" />
+          {/* Progreso del ciclo */}
+          <div style={st.card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const, marginBottom: 10 }}>
+              <p style={st.titulo}>Progreso del ciclo escolar</p>
+              <span style={{ fontSize: 13, color: C.gris }}>{etiquetaProgreso}</span>
             </div>
-
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '16px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 10px' }}>Progreso del ciclo escolar {CICLO_ESCOLAR_ACTIVO}</p>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
-                {MESES.map((mes, i) => (
-                  <span key={mes} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, fontWeight: i === mesActual ? 700 : 400, background: i < mesActual ? '#E0F5F3' : i === mesActual ? '#3D3A8C' : '#F3F3F3', color: i < mesActual ? '#0F6E56' : i === mesActual ? 'white' : '#AAA', border: `1px solid ${i < mesActual ? '#9FE1CB' : i === mesActual ? '#3D3A8C' : '#E5E5E5'}` }}>
-                    {mes}{i === mesActual ? ' ▶' : ''}
-                  </span>
-                ))}
-              </div>
+            <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+              <div style={{ width: `${progresoCiclo}%`, height: '100%', borderRadius: 99, background: C.cian, transition: 'width 0.6s ease' }} />
             </div>
+          </div>
 
-            {alertas.length > 0 && <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '18px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 12px' }}>✦ Orientación de MÍA</p>
+          {/* Orientación de MÍA */}
+          {alertas.length > 0 && (
+            <div style={st.card}>
+              <p style={{ ...st.titulo, marginBottom: 12 }}>✦ Orientación de MÍA</p>
               {alertas.map((a, i) => <AlertaMia key={i} tipo={a.tipo} texto={a.texto} />)}
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button onClick={() => router.push('/planeacion/nueva')} style={{ background: '#00A896', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, flex: 1 }}>✨ Nueva planeación con MÍA</button>
-                <button onClick={() => router.push('/mis-planeaciones')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding:'10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, flex: 1 }}>📋 Mis planeaciones</button>
-              </div>
+            </div>
+          )}
+
+          {/* Pestañas */}
+          <div style={st.card}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto' as const, paddingBottom: 2, marginBottom: 16 }}>
+              {pestañas.map(t => {
+                const activo = tabActivo === t.clave
+                return (
+                  <button key={t.clave} onClick={() => setTabActivo(t.clave)}
+                    style={{
+                      flexShrink: 0, padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' as const,
+                      fontWeight: activo ? 700 : 500,
+                      border: `1.5px solid ${activo ? C.indigo : C.borde}`,
+                      background: activo ? C.indigoClaro : 'white',
+                      color: activo ? C.indigo : C.gris,
+                    }}>
+                    {t.texto}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* ── Campos ── */}
+            {tabActivo === 'cobertura' && <div>
+              {pdaUnicosPorCampo.map(cf => {
+                const color = colorCampo(cf.nombre)
+                return (
+                  <div key={cf.nombre} style={{ marginBottom: 18 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <PuntoCampo nombre={cf.nombre} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.texto }}>{campoCompletoConCodigo(cf.nombre)}</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: color.texto, whiteSpace: 'nowrap' as const }}>{cf.trabajados}/{cf.total}</span>
+                    </div>
+                    <div style={{ background: '#F0EFF8', borderRadius: 99, height: 12, overflow: 'hidden' }}>
+                      <div style={{ background: fondoBarraCampo(cf.nombre), height: '100%', borderRadius: 99, width: `${cf.trabajados > 0 ? Math.max(cf.porcentaje, 3) : 0}%`, transition: 'width 0.8s ease' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, gap: 8 }}>
+                      <span style={{ fontSize: 12, color: C.gris }}>{cf.porcentaje}% de los PDA del campo</span>
+                      {umbralCampoHoy !== null && cf.porcentaje < umbralCampoHoy && (
+                        <button onClick={() => router.push(`/planeacion/nueva?campo_sugerido=${encodeURIComponent(cf.nombre)}`)} style={{ fontSize: 12, color: C.indigo, background: C.indigoClaro, border: 'none', borderRadius: 20, padding: '3px 10px', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' as const }}>Equilibrar con MÍA →</button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>}
 
-          </div>
-
-          {/* COLUMNA DERECHA: Tabs + MÍA + Planeaciones */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, minHeight: '100%' }}>
-
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, overflow: 'hidden', minHeight: 520, flex: 1 }}>
-              <div style={{ display: 'flex', borderBottom: '1px solid #F0EFF8' }}>
-                {(['cobertura','mapa','ejes','nee'] as const).map((key, idx) => {
-                  const labels = ['📊 Campos','🗺️ PDAs','🔗 Ejes','♿ Diversidad']
-                  return <button key={key} onClick={() => setTabActivo(key)} style={{ flex: 1, padding: '12px 6px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tabActivo === key ? 700 : 400, background: tabActivo === key ? '#EEEDF8' : 'white', color: tabActivo === key ? '#3D3A8C' : '#888', borderBottom: tabActivo === key ? '2px solid #3D3A8C' : '2px solid transparent' }}>{labels[idx]}</button>
+            {/* ── Ejes ── */}
+            {tabActivo === 'ejes' && <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                {EJES.map(eje => {
+                  const count = ejesConteo[eje] || 0
+                  const sinUsar = count === 0
+                  return <div key={eje} style={{ padding: '10px 12px', borderRadius: 10, background: sinUsar ? 'white' : '#F8F8FE', border: sinUsar ? '1.5px dashed #B8B6DA' : '1px solid #EEEDF8' }}>
+                    <p style={{ fontSize: 12, color: sinUsar ? C.gris : C.texto, margin: '0 0 6px', lineHeight: 1.4 }}>{eje}</p>
+                    <div style={{ background: '#E8E8F8', borderRadius: 99, height: 4 }}><div style={{ background: C.indigo, height: '100%', borderRadius: 99, width: `${Math.round((count / maxEje) * 100)}%` }} /></div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? C.gris : C.indigo, margin: '4px 0 0' }}>{sinUsar ? 'Aún sin abordar' : `${count} ${count > 1 ? 'planeaciones' : 'planeación'}`}</p>
+                  </div>
                 })}
               </div>
-              <div style={{ padding: '20px 24px' }}>
-                {tabActivo === 'cobertura' && <div>{pdaUnicosPorCampo.map(cf => {
-                  const colorTab = colorEnTabCampos(cf.nombre, cf.color)
-                  return (
-                  <div key={cf.nombre} style={{ marginBottom: 20 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconoCampo nombre={cf.nombre} size={20} /><span style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', letterSpacing: '0.02em' }}>{campoCompletoConCodigo(cf.nombre)}</span></div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: colorTab }}>{cf.trabajados}/{cf.total} PDAs</span>
-                    </div>
-                    <div style={{ background: '#F0EFF8', borderRadius: 99, height: 8, overflow: 'hidden' }}><div style={{ background: colorTab, height: '100%', borderRadius: 99, width: `${cf.porcentaje}%`, transition: 'width 0.8s ease' }} /></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: '#888' }}>{cf.porcentaje}% del ciclo</span>
-                      {umbralCampoHoy !== null && cf.porcentaje < umbralCampoHoy && <button onClick={() => router.push(`/planeacion/nueva?campo_sugerido=${encodeURIComponent(cf.nombre)}`)} style={{ fontSize: 11, color: '#3D3A8C', background: '#EEEDF8', border: 'none', borderRadius: 20, padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>Equilibrar con MÍA →</button>}
-                    </div>
-                  </div>
-                  )
-                })}</div>}
-                {tabActivo === 'ejes' && <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {EJES.map(eje => {
-                      const count = ejesConteo[eje] || 0
-                      const sinUsar = count === 0
-                      return <div key={eje} style={{ padding: '10px 12px', borderRadius: 10, background: sinUsar ? '#FFF7ED' : '#F8F8FE', border: `1px solid ${sinUsar ? '#FDE68A' : '#EEEDF8'}` }}>
-                        <p style={{ fontSize: 11, color: sinUsar ? '#92400E' : '#888', margin: '0 0 6px', lineHeight: 1.4 }}>{eje.length > 42 ? eje.substring(0, 42) + '…' : eje}</p>
-                        <div style={{ background: sinUsar ? '#FDE68A' : '#E8E8F8', borderRadius: 99, height: 4 }}><div style={{ background: sinUsar ? '#F59E0B' : '#3D3A8C', height: '100%', borderRadius: 99, width: `${Math.round((count / maxEje) * 100)}%` }} /></div>
-                        <p style={{ fontSize: 12, fontWeight: 700, color: sinUsar ? '#92400E' : '#3D3A8C', margin: '4px 0 0' }}>{count === 0 ? '⚠️ Sin abordar' : `${count} ${count > 1 ? 'planeaciones' : 'planeación'}`}</p>
-                      </div>
-                    })}
-                  </div>
-                  {ejesBajos.length > 0 && <button onClick={() => router.push(`/planeacion/nueva?eje_sugerido=${encodeURIComponent(ejesBajos[0])}`)} style={{ background: '#3D3A8C', color: 'white', border:'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 16 }}>✨ Crear planeación y equilibrar ejes</button>}
-                </div>}
-                {tabActivo === 'mapa' && <div>
-                  <p style={{ fontSize: 12, color: '#666', margin: '0 0 10px', lineHeight: 1.6 }}>
-                    Cada cuadro es un PDA específico del catálogo Fase 2 — da clic en cualquiera para ver su código y contenido, trabajado o no.
-                  </p>
+              {ejesBajos.length > 0 && <button onClick={() => router.push(`/planeacion/nueva?eje_sugerido=${encodeURIComponent(ejesBajos[0])}`)} style={{ background: C.indigo, color: 'white', border: 'none', padding: '11px 20px', fontSize: 14, cursor: 'pointer', borderRadius: 8, fontWeight: 600, width: '100%', marginTop: 14 }}>✨ Crear planeación y equilibrar ejes</button>}
+            </div>}
 
-                  <div style={{
-                    background: '#0F6E56', borderRadius: 10, padding: '14px 16px', marginBottom: 18,
-                    height: 108, overflow: 'hidden',
-                    display: 'flex', flexDirection: 'column' as const, justifyContent: 'flex-start',
-                  }}>
-                    {pdaSeleccionado ? (
-                      <>
-                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: 'white', fontSize: 13, lineHeight: 1.3 }}>
-                          {pdaSeleccionado.codigo} {pdaSeleccionado.veces > 0 ? `— trabajado ${pdaSeleccionado.veces}x` : '— aún no trabajado'}
-                          {pdaSeleccionado.origenes.length > 0 && <span style={{ fontWeight: 600, color: '#FDE68A' }}> · Prioritario: {etiquetasDeOrigen(pdaSeleccionado.origenes)}</span>}
-                        </p>
-                        <p style={{ margin: 0, color: 'white', fontWeight: 400, fontSize: 13, lineHeight: 1.3 }}>
-                          {pdaSeleccionado.pda}
-                        </p>
-                      </>
-                    ) : (
-                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.3 }}>Da clic en un PDA para ver su detalle aquí.</p>
-                    )}
-                  </div>
+            {/* ── Mapa de PDA ── */}
+            {tabActivo === 'mapa' && <div>
+              <p style={st.ayuda}>Cada cuadro es un PDA del Programa Fase 2. Toca cualquiera para ver su código y contenido, trabajado o no.</p>
 
-                  {pdaSeleccionado && pdaSeleccionado.id && pdaSeleccionado.origenes.length > 0 && (
-                    <div style={{ marginTop: -8, marginBottom: 16 }}>
-                      <button onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${pdaSeleccionado.id}`)} style={{ fontSize: 12, color: '#3D3A8C', background: '#EEEDF8', border: '1px solid #3D3A8C', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontWeight: 700 }}>✦ Planear este PDA con MÍA →</button>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' as const, marginBottom: 18, fontSize: 11, color: '#888' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', display: 'inline-block' }} />Sin trabajar</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#8884' , display: 'inline-block' }} />1 vez</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#3D3A8C', display: 'inline-block' }} />3+ veces</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', border: '1.5px solid #F59E0B', display: 'inline-block' }} />PDA prioritario</span>
-                  </div>
-                  {CAMPOS_CONFIG.map(cf => {
-                    const catalogoCampo = catalogoPorCampoYPosicion[cf.nombre] || {}
-                    const vecesCampo = vecesPorCampoYPosicion[cf.nombre] || {}
-                    const prioritarioCampo = prioritarioPorCampoYPosicion[cf.nombre] || {}
-                    const cubiertos = Object.keys(vecesCampo).length
-                    const prefijo = PREFIJO_POR_CAMPO[cf.nombre]
-                    return (
-                      <div key={cf.nombre} style={{ marginBottom: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <IconoCampo nombre={cf.nombre} size={20} />
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', letterSpacing: '0.02em' }}>{campoCompletoConCodigo(cf.nombre)}</span>
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: cf.color }}>{cubiertos}/{cf.total} PDAs</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(26px, 1fr))', gap: 3 }}>
-                          {Array.from({ length: cf.total }, (_, idx) => idx + 1).map(n => {
-                            const veces = vecesCampo[n] || 0
-                            const origenes = prioritarioCampo[n] || []
-                            const pdaTexto = catalogoCampo[n] || ''
-                            const codigo = `${prefijo}-${n}`
-                            let bg = '#F0EFF8'
-                            if (veces >= 3) bg = cf.color
-                            else if (veces === 2) bg = `${cf.color}CC`
-                            else if (veces === 1) bg = `${cf.color}80`
-                            return (
-                              <div
-                                key={n}
-                                onClick={() => setPdaSeleccionado({ id: (idPorCampoYPosicion[cf.nombre] || {})[n] || '', codigo, veces, pda: pdaTexto, origenes })}
-                                style={{
-                                  aspectRatio: '1', borderRadius: 4, background: bg,
-                                  border: origenes.length > 0 ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 8, fontWeight: 700, color: veces > 0 ? 'white' : '#B8B6D6',
-                                  cursor: 'pointer', userSelect: 'none' as const,
-                                }}
-                              >
-                                {n}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>}
-                {tabActivo === 'nee' && <div>
-                  <p style={{ fontSize: 12, color: '#666', margin: '0 0 12px', lineHeight: 1.6 }}>
-                    Apoyos que confirmaste en Mi Grupo. Son los que llegan a tus planeaciones como ajustes razonables.
-                  </p>
-                  {sugerenciasPorRevisar > 0 && (
-                    <div onClick={() => router.push('/mi-grupo')} style={{ background: '#EEEDF8', borderLeft: '3px solid #3D3A8C', borderRadius: 8, padding: '8px 10px', marginBottom: 12, fontSize: 12, color: '#1A1A2E', lineHeight: 1.5, cursor: 'pointer' }}>
-                      ✦ MÍA tiene <strong>{sugerenciasPorRevisar}</strong> sugerencia{sugerenciasPorRevisar !== 1 ? 's' : ''} de apoyos por revisar en Mi Grupo →
-                    </div>
-                  )}
-                  {apoyosConfirmados.length === 0 ? <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                    <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
-                    <p style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>Aún no has confirmado apoyos para alumnos de tu grupo este ciclo.</p>
-                    <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 20px', fontSize: 13, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
-                  </div> : <div>{apoyosConfirmados.map((a, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
-                      <div style={{ minWidth: 48, height: 28, borderRadius: 14, background: '#EEEDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#3D3A8C', flexShrink: 0 }}>{a.codigo}</div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 12, color: '#1A1A2E', margin: '0 0 4px', lineHeight: 1.5 }}>{a.apoyos}</p>
-                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>{a.apoyos_origen === 'mia' ? 'Sugerido por MÍA · confirmado por ti' : 'Registrado por ti'}</span>
-                      </div>
-                    </div>
-                  ))}</div>}
-                </div>}
+              {/* Detalle: crece según el texto (sin altura fija) */}
+              <div style={{ background: C.indigo, borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                {pdaSeleccionado ? (
+                  <>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, color: 'white', fontSize: 13, lineHeight: 1.4 }}>
+                      {pdaSeleccionado.codigo} {pdaSeleccionado.veces > 0 ? `— trabajado ${pdaSeleccionado.veces}x` : '— aún no trabajado'}
+                      {pdaSeleccionado.origenes.length > 0 && <span style={{ fontWeight: 600, color: '#FDE68A' }}> · Prioritario: {etiquetasDeOrigen(pdaSeleccionado.origenes)}</span>}
+                    </p>
+                    <p style={{ margin: 0, color: 'white', fontSize: 13, lineHeight: 1.5 }}>{pdaSeleccionado.pda}</p>
+                  </>
+                ) : (
+                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.4 }}>Toca un PDA para ver su detalle aquí.</p>
+                )}
               </div>
-            </div>
 
+              {pdaSeleccionado && pdaSeleccionado.id && pdaSeleccionado.origenes.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <button onClick={() => router.push(`/planeacion/nueva?pda_sugerido=${pdaSeleccionado.id}`)} style={{ fontSize: 13, color: C.indigo, background: C.indigoClaro, border: `1px solid ${C.indigo}`, borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontWeight: 700 }}>✦ Planear este PDA con MÍA →</button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' as const, marginBottom: 16, fontSize: 12, color: C.gris }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', display: 'inline-block' }} />Sin trabajar</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: `${C.indigo}80`, display: 'inline-block' }} />1 vez</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: C.indigo, display: 'inline-block' }} />3+ veces</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 12, height: 12, borderRadius: 3, background: '#F0EFF8', border: '1.5px solid #F59E0B', display: 'inline-block' }} />Prioritario</span>
+              </div>
+
+              {CAMPOS_CONFIG.map(cf => {
+                const color = colorCampo(cf.nombre)
+                const catalogoCampo = catalogoPorCampoYPosicion[cf.nombre] || {}
+                const vecesCampo = vecesPorCampoYPosicion[cf.nombre] || {}
+                const prioritarioCampo = prioritarioPorCampoYPosicion[cf.nombre] || {}
+                const cubiertos = Object.keys(vecesCampo).length
+                const prefijo = PREFIJO_POR_CAMPO[cf.nombre]
+                return (
+                  <div key={cf.nombre} style={{ marginBottom: 22 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <PuntoCampo nombre={cf.nombre} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.texto }}>{campoCompletoConCodigo(cf.nombre)}</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: color.texto, whiteSpace: 'nowrap' as const }}>{cubiertos}/{cf.total}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(26px, 1fr))', gap: 3 }}>
+                      {Array.from({ length: cf.total }, (_, idx) => idx + 1).map(n => {
+                        const veces = vecesCampo[n] || 0
+                        const origenes = prioritarioCampo[n] || []
+                        const pdaTexto = catalogoCampo[n] || ''
+                        const codigo = `${prefijo}-${n}`
+                        let bg = '#F0EFF8'
+                        if (veces >= 3) bg = color.base
+                        else if (veces === 2) bg = `${color.base}CC`
+                        else if (veces === 1) bg = `${color.base}80`
+                        return (
+                          <div
+                            key={n}
+                            onClick={() => setPdaSeleccionado({ id: (idPorCampoYPosicion[cf.nombre] || {})[n] || '', codigo, veces, pda: pdaTexto, origenes })}
+                            style={{
+                              aspectRatio: '1', borderRadius: 4, background: bg,
+                              border: origenes.length > 0 ? '1.5px solid #F59E0B' : '1px solid rgba(0,0,0,0.04)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 8, fontWeight: 700, color: veces > 0 ? 'white' : '#B8B6D6',
+                              cursor: 'pointer', userSelect: 'none' as const,
+                            }}
+                          >
+                            {n}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>}
+
+            {/* ── Diversidad ── */}
+            {tabActivo === 'nee' && <div>
+              <p style={st.ayuda}>Apoyos que confirmaste en Mi Grupo. Son los que llegan a tus planeaciones como ajustes razonables.</p>
+              {sugerenciasPorRevisar > 0 && (
+                <div onClick={() => router.push('/mi-grupo')} style={{ background: C.indigoClaro, borderLeft: `3px solid ${C.indigo}`, borderRadius: 8, padding: '8px 10px', marginBottom: 12, fontSize: 13, color: C.texto, lineHeight: 1.5, cursor: 'pointer' }}>
+                  ✦ MÍA tiene <strong>{sugerenciasPorRevisar}</strong> sugerencia{sugerenciasPorRevisar !== 1 ? 's' : ''} de apoyos por revisar en Mi Grupo →
+                </div>
+              )}
+              {apoyosConfirmados.length === 0 ? <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <p style={{ fontSize: 32, margin: '0 0 10px' }}>👥</p>
+                <p style={{ fontSize: 14, color: C.gris, margin: '0 0 16px' }}>Aún no has confirmado apoyos para alumnos de tu grupo este ciclo.</p>
+                <button onClick={() => router.push('/mi-grupo')} style={{ background: C.indigo, color: 'white', border: 'none', padding: '10px 20px', fontSize: 14, cursor: 'pointer', borderRadius: 8, fontWeight: 600 }}>Ir a Mi Grupo →</button>
+              </div> : <div>{apoyosConfirmados.map((a, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F8F8FE', borderRadius: 10, marginBottom: 8 }}>
+                  <div style={{ minWidth: 48, height: 28, borderRadius: 14, background: C.indigoClaro, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: C.indigo, flexShrink: 0 }}>{a.codigo}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, color: C.texto, margin: '0 0 4px', lineHeight: 1.5 }}>{a.apoyos}</p>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#E0F5F3', color: '#0F6E56', fontWeight: 600 }}>{a.apoyos_origen === 'mia' ? 'Sugerido por MÍA · confirmado por ti' : 'Registrado por ti'}</span>
+                  </div>
+                </div>
+              ))}</div>}
+            </div>}
           </div>
+
         </div>
         <div style={{ height: 40 }} />
       </div>

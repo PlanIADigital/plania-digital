@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
+import { chipCampo } from '@/lib/coloresCampos'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
@@ -211,7 +212,7 @@ export default function MisPlaneacionesPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {filtradas.map(p => {
-                const campo = CAMPOS_COLORES[p.pda_campo] || { bg: C.indigoClaro, color: C.indigo }
+                const campo = chipCampo(p.pda_campo)
                 const estado = ESTADOS[p.status] || ESTADOS.closed
                 const puedeDescartar = p.status === 'active' && !p.word_descargado_en
                 return (

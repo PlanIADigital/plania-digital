@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
+import { chipCampo } from '@/lib/coloresCampos'
 import {
   SELECT_PLANNINGS_AVANCE,
   calcularAvance,
@@ -246,7 +247,7 @@ export default function DashboardPage() {
                         </p>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                           {p.pda_campo && (
-                            <span style={{ background: 'var(--plania-superficie-alt, #EEEDF8)', color: 'var(--plania-marca, #3D3A8C)', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                            <span style={{ background: chipCampo(p.pda_campo).bg, color: chipCampo(p.pda_campo).color, fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
                               {p.pda_campo}
                             </span>
                           )}
