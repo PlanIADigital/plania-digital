@@ -28,6 +28,15 @@ const MAX_CHARS_FUENTE = 2500
 type Origen = 'PMC' | 'PA' | 'Grupo' | 'Semáforo' | 'Dirección' | 'Jardín'
 const ORIGENES: Origen[] = ['PMC', 'PA', 'Grupo', 'Semáforo', 'Dirección', 'Jardín']
 
+// [2 oct 2026] Red de seguridad: una problemática describe, no resuelve.
+// Si MÍA agrega oraciones que proponen soluciones, se quitan; la primera
+// oración (la observación) siempre se conserva.
+const INICIOS_SOLUCION = /^(se (requiere|requieren|necesita|necesitan|sugiere|sugieren|recomienda|recomiendan|debe|deben)|es (necesario|importante|fundamental|conveniente)|conviene|hay que)\b/i
+function quitarSoluciones(texto: string): string {
+  const oraciones = (texto.match(/[^.!?]+[.!?]*/g) || [texto]).map(o => o.trim()).filter(Boolean)
+  return oraciones.filter((o, i) => i === 0 || !INICIOS_SOLUCION.test(o)).join(' ')
+}
+
 interface ProblematicaDetectada {
   id: string
   texto: string
@@ -184,7 +193,7 @@ TAREA: A partir de la información de Mi Grupo, detecta de 3 a 4 problemáticas 
 - Prioriza en este orden: necesidades del grupo (Grupo y Semáforo), contexto del jardín y la comunidad (PMC y PA), observaciones de Dirección. Usa Jardín solo como apoyo.
 - Semáforo trae, por área, qué parte del grupo está en suficiente, en desarrollo o requiere apoyo. Úsalo para detectar el área donde más niñas y niños necesitan acompañamiento. Habla del grupo en general, sin citar porcentajes ni referirte a niños en particular.
 - Si dos fuentes dicen lo mismo, júntalas en una sola y usa la etiqueta de la fuente más cercana al grupo.
-- Cada problemática: una o dos frases, máximo 220 caracteres, describiendo lo que se observa en las niñas y los niños o en su entorno. No propongas soluciones ni actividades.
+- Cada problemática: una o dos frases, máximo 220 caracteres, describiendo SOLO lo que se observa en las niñas y los niños o en su entorno. PROHIBIDO proponer soluciones, estrategias, actividades o decir lo que "se necesita", "se requiere" o "es necesario" hacer: eso se decide en los pasos siguientes. MAL: "Las familias tienen poco tiempo por sus jornadas laborales. Se requieren estrategias flexibles para fortalecer la participación." BIEN: "Las familias tienen poco tiempo para acompañar a sus hijas e hijos en casa por sus jornadas laborales completas."
 - Cada problemática debe tener UN SOLO foco (por ejemplo, solo regulación emocional). No juntes varios temas en una misma problemática.
 
 FORMATO: {"problematicas":[{"texto":"...","origen":"Grupo"}]}`,
@@ -195,7 +204,7 @@ FORMATO: {"problematicas":[{"texto":"...","origen":"Grupo"}]}`,
   const items: ProblematicaDetectada[] = (Array.isArray(resultado?.problematicas) ? resultado.problematicas : [])
     .filter((p: any) => typeof p?.texto === 'string' && p.texto.trim() && ORIGENES.includes(p.origen))
     .slice(0, 4)
-    .map((p: any, i: number) => ({ id: `p${i + 1}`, texto: p.texto.trim(), origen: p.origen }))
+    .map((p: any, i: number) => ({ id: `p${i + 1}`, texto: quitarSoluciones(p.texto.trim()), origen: p.origen }))
 
   if (items.length === 0) throw new Error('MÍA no pudo detectar problemáticas. Intenta de nuevo.')
 
