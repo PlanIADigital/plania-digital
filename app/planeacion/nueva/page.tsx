@@ -1070,7 +1070,7 @@ function NuevaPlaneacionInner() {
 
         {!generating && !result && (
           <>
-            <EncabezadoPagina titulo="Nueva planeación" subtitulo="Diseña tu proyecto paso a paso; MÍA te acompaña." />
+            <EncabezadoPagina antetitulo="Crear" titulo="Nueva planeación" subtitulo="Diseña tu proyecto paso a paso; MÍA te acompaña." />
 
             {avisoAvance && !avisoDescartado && (
               <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>

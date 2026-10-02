@@ -136,6 +136,7 @@ export default function MisPlaneacionesPage() {
       <div style={{ padding: '0 16px' }}>
 
         <EncabezadoPagina
+          antetitulo="Consultar"
           titulo="Mis planeaciones"
           subtitulo={`${planeacionesDelCiclo.length} en el ciclo ${cicloSeleccionado}`}
         />

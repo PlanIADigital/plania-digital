@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import DetalleModal from '@/components/DetalleModal'
 import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
@@ -681,8 +682,11 @@ async function abrirModalAlumnos() {
           `}</style>
           {/* ENCABEZADO — institucional vive solo en la ficha del Sidebar */}
           <EncabezadoPagina
+            antetitulo="Configurar"
             titulo="Mi grupo"
-            subtitulo={grupoConfigurado ? `Grupo ${gradoGrupo} ${profile.grupo_letra}` : 'Configura tu grado y grupo para empezar.'}
+            subtitulo={grupoConfigurado
+              ? `${gradoGrupo} ${profile.grupo_letra} · ${codigosActivos || totalAlumnos} alumnos · Ciclo ${CICLO_ESCOLAR_ACTIVO}`
+              : 'Elige tu grado y grupo para empezar.'}
           />
 
           {/* [30 sep 2026] Rediseño: una sola columna, mismo lenguaje visual que
