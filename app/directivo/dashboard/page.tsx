@@ -24,6 +24,7 @@ import { colorCampo } from '@/lib/coloresCampos'
 import { zonaHorariaPorCCT } from '@/lib/fechaMexico'
 import { nombreJardin } from '@/lib/useDocentesDirectivo'
 import { nombrePila } from '@/lib/nombrePila'
+import AsistenciaJardin from '@/components/AsistenciaJardin'
 
 const supabase = createClient()
 
@@ -305,21 +306,8 @@ export default function DirectivoDashboardPage() {
                   nota={d.prioritarios.total > 0 ? 'atendidos' : 'Sin diagnóstico capturado'} />
               </div>
 
-              {/* Asistencia (PRONTO) */}
-              <div style={st.rejilla(340)}>
-                <section style={st.card}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                    <h2 style={{ ...st.h2, margin: 0 }}>Asistencia de hoy</h2><span style={st.pronto}>PRONTO</span>
-                  </div>
-                  <p style={st.vacio}>Cada educadora enviará con un toque cuántos niños asistieron, y aquí verás el total del jardín y cada grupo, listo para copiar en el reporte del día.</p>
-                </section>
-                <section style={st.card}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                    <h2 style={{ ...st.h2, margin: 0 }}>Asistencia de la semana</h2><span style={st.pronto}>PRONTO</span>
-                  </div>
-                  <p style={st.vacio}>Porcentaje de asistencia del jardín por día de la semana.</p>
-                </section>
-              </div>
+              {/* Asistencia del jardín (hoy y semana) */}
+              <AsistenciaJardin jardin={nombreJardin(profile.school_name)} />
 
               {/* Avance por campo formativo */}
               <section style={st.card}>

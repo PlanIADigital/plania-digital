@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
 import { nombrePila } from '@/lib/nombrePila'
+import TarjetaAsistencia from '@/components/TarjetaAsistencia'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
 import { chipCampo } from '@/lib/coloresCampos'
 import {
@@ -164,6 +165,9 @@ export default function DashboardPage() {
         <EncabezadoPagina antetitulo={`¡${saludo},`} titulo={`${primerNombre}!`} subtitulo={subtitulo} />
 
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+          {/* [2 oct 2026] Asistencia diaria: lo primero de cada mañana */}
+          <TarjetaAsistencia />
 
           {/* Tu avance del ciclo — orden pedagógico: Campos → PDA → Ejes */}
           <div style={st.card}>
