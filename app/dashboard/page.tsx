@@ -65,6 +65,29 @@ export default function DashboardPage() {
   const [cobertura, setCobertura] = useState({ campos: 0, ejes: 0, pdas: 0, totalCampos: 4, totalEjes: 7, totalPdas: 371 })
   const [loading, setLoading] = useState(true)
 
+  // DIAGNÓSTICO TEMPORAL DE SCROLL — QUITAR DESPUÉS
+  useEffect(() => {
+    if (loading) return
+    const caja = document.createElement('div')
+    caja.style.cssText = 'position:fixed;left:8px;bottom:90px;z-index:9999;background:#1A1A2E;color:#fff;font:12px monospace;padding:6px 8px;border-radius:6px;white-space:pre;pointer-events:none'
+    document.body.appendChild(caja)
+    const pintar = () => {
+      const se = document.scrollingElement
+      const vv = window.visualViewport
+      const main = document.querySelector('.plania-main') as HTMLElement | null
+      caja.textContent =
+        'scrollY ' + Math.round(window.scrollY) +
+        '\nscrollingEl ' + (se ? se.tagName + ' ' + Math.round(se.scrollTop) : '-') +
+        '\nbody ' + Math.round(document.body.scrollTop) +
+        '\nmain ' + (main ? Math.round(main.scrollTop) : '-') +
+        '\nvv.top ' + (vv ? Math.round(vv.offsetTop) : '-') + ' vv.page ' + (vv ? Math.round(vv.pageTop) : '-') +
+        '\nzoom ' + (vv ? vv.scale.toFixed(2) : '-')
+    }
+    pintar()
+    const id = window.setInterval(pintar, 300)
+    return () => { window.clearInterval(id); caja.remove() }
+  }, [loading])
+
   // [oct 2026] En iPhone, al entrar desde el login el teclado se cierra
   // mientras el Dashboard carga y Safari deja el scroll a media página.
   // Al terminar de cargar se lleva arriba varias veces durante ~0.7 s;
