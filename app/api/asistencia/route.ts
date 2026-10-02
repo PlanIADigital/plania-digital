@@ -48,7 +48,8 @@ async function contexto(supabaseAdmin: any, usuarioId: string) {
     .eq('user_id', usuarioId)
     .eq('ciclo_escolar', CICLO_ESCOLAR_ACTIVO)
     .eq('activo', true)
-  const total = (count && count > 0) ? count : (u?.total_alumnos || 0)
+  // [2 oct 2026] Una sola fuente: la lista de códigos AL-XX activos (sin respaldo del perfil).
+  const total = count || 0
   const hoy = hoyEn(zonaHorariaPorCCT(u?.cct_primary) || 'America/Mexico_City')
   return { u, total, hoy, anterior: diaHabilAnterior(hoy) }
 }

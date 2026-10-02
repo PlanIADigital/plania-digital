@@ -760,18 +760,14 @@ async function abrirModalAlumnos() {
                   {codigosActivos && codigosActivos > 0 ? (
                     <span style={{ ...s.select, width: 64, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
                   ) : (
-                    <input
-                      type="number" min="1" max="50" placeholder="24"
-                      value={profile.total_alumnos || ''}
-                      onChange={async (e) => {
-                        const val = parseInt(e.target.value)
-                        if (!val || val < 1) return
-                        await actualizarTotalAlumnos(val)
-                        setAlumnosGuardado(true)
-                        setTimeout(() => setAlumnosGuardado(false), 2000)
-                      }}
-                      style={{ ...s.select, width: 80, minWidth: 0 }}
-                    />
+                    // [2 oct 2026] Una sola fuente: el número sale de la lista AL-XX.
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ ...s.select, width: 64, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const, color: '#9CA3AF' }}>—</span>
+                      <button onClick={abrirModalAlumnos}
+                        style={{ background: 'none', border: 'none', padding: 0, color: C.indigo, fontWeight: 700, fontSize: 14, textDecoration: 'underline', cursor: 'pointer', minHeight: 40, fontFamily: 'inherit' }}>
+                        Registrar mi lista
+                      </button>
+                    </span>
                   )}
                   {alumnosGuardado && <span style={s.check}>✓</span>}
                 </div>
@@ -787,8 +783,8 @@ async function abrirModalAlumnos() {
                     : <>. ¿Tu grupo tiene <strong>{discrepanciaAlumnos.detectado}</strong> alumnos?</>}
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                  <button onClick={codigosActivos && codigosActivos > 0 ? () => { setDiscrepanciaAlumnos(null); abrirModalAlumnos() } : confirmarActualizarAlumnos} style={s.btnPrimario}>
-                    {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : `Sí, usar ${discrepanciaAlumnos.detectado}`}
+                  <button onClick={() => { setDiscrepanciaAlumnos(null); abrirModalAlumnos() }} style={s.btnPrimario}>
+                    {codigosActivos && codigosActivos > 0 ? '👥 Revisar mi lista' : '👥 Registrar mi lista'}
                   </button>
                   <button onClick={descartarDiscrepanciaAlumnos} style={s.btnSecundario}>
                     Mantener {codigosActivos && codigosActivos > 0 ? codigosActivos : (profile.total_alumnos || 'sin cambio')}
