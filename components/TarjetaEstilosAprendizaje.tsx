@@ -11,6 +11,7 @@
 // ============================================================
 import { useState } from 'react'
 import { fetchConSesion } from '@/lib/fetchConSesion'
+import Icono from '@/components/Icono'
 
 export type EstilosAprendizaje = {
   kinestesico: number
@@ -32,9 +33,9 @@ const C = {
 
 // Paleta oficial: cian, índigo e índigo claro (sin naranja ni rojo).
 const ESTILOS: { clave: 'kinestesico' | 'visual' | 'auditivo'; etiqueta: string; icono: string; color: string }[] = [
-  { clave: 'kinestesico', etiqueta: 'Kinestésico', icono: '🏃', color: '#00A896' },
-  { clave: 'visual', etiqueta: 'Visual', icono: '👁️', color: '#3D3A8C' },
-  { clave: 'auditivo', etiqueta: 'Auditivo', icono: '👂', color: '#9C99DB' },
+  { clave: 'kinestesico', etiqueta: 'Kinestésico', icono: 'hand', color: '#00A896' },
+  { clave: 'visual', etiqueta: 'Visual', icono: 'eye', color: '#3D3A8C' },
+  { clave: 'auditivo', etiqueta: 'Auditivo', icono: 'ear', color: '#9C99DB' },
 ]
 
 function fechaCorta(iso?: string | null): string {
@@ -105,7 +106,7 @@ export default function TarjetaEstilosAprendizaje({
     <div style={{
       background: vistaGuardada ? '#FAFFFE' : 'white',
       border: `1px solid ${vistaGuardada ? C.cian : C.borde}`,
-      borderRadius: 12, padding: 16, marginBottom: 12,
+      borderRadius: 12, padding: vistaGuardada ? '12px 16px' : 16, marginBottom: vistaGuardada ? 10 : 12,
     }}>
       <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: vistaGuardada ? C.cian : C.indigo, textTransform: 'uppercase', letterSpacing: '0.07em', lineHeight: 1.4 }}>
         {vistaGuardada ? '✓ ' : ''}3.3 · Estilos de aprendizaje
@@ -117,10 +118,13 @@ export default function TarjetaEstilosAprendizaje({
         </p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
+      {editando && <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
         {ESTILOS.map((e, i) => (
           <div key={e.clave} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: 14, color: C.texto }}>{e.icono} {e.etiqueta}</span>
+            <span style={{ fontSize: 14, color: C.texto, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 28, height: 28, borderRadius: 8, background: C.indigoClaro, color: e.color === '#9C99DB' ? C.indigo : e.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Icono nombre={e.icono} tamano={16} /></span>
+              {e.etiqueta}
+            </span>
             {editando ? (
               <input
                 type="number" min="0" max="60" inputMode="numeric"
@@ -135,7 +139,37 @@ export default function TarjetaEstilosAprendizaje({
             )}
           </div>
         ))}
-      </div>
+      </div>}
+
+      {/* [oct 2026] Vista guardada compacta: fecha + Actualizar en una línea; luego predominante, barra y detalle */}
+      {vistaGuardada && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 16px', marginBottom: 6 }}>
+          <span style={{ fontSize: 13, color: C.gris }}>{guardado?.fecha ? `Guardado el ${fechaCorta(guardado.fecha)}` : 'Guardado'}</span>
+          <button type="button" onClick={() => setEditando(true)} style={{ ...enlace, fontSize: 14 }}>Actualizar</button>
+        </div>
+      )}
+      {/* [oct 2026] Los tres estilos en una fila: ícono, nombre en negrita, alumnos y %.
+          El que predomina lleva la etiqueta "Predomina". */}
+      {vistaGuardada && guardado && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 18px' }}>
+          {ESTILOS.map((e, i) => {
+            const n = [guardado.kinestesico, guardado.visual, guardado.auditivo][i] || 0
+            const esPred = !!predominante && predominante.n > 0 && predominante.e.clave === e.clave
+            const colorIcono = e.color === '#9C99DB' ? C.indigo : e.color
+            return (
+              <span key={e.clave} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, color: C.texto }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: esPred ? C.cian : 'white', border: esPred ? 'none' : `1.5px solid ${C.borde}`, boxShadow: esPred ? 'none' : '0 1px 3px rgba(61,58,140,0.10)', boxSizing: 'border-box', color: esPred ? 'white' : C.indigo }}>
+                  <Icono nombre={e.icono} tamano={17} />
+                </span>
+                <span>
+                  <strong>{e.etiqueta}</strong> <span style={{ color: C.gris }}>{n} ({pct(n)}%)</span>
+                  {esPred && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: '#0F6E56', background: '#E0F5F3', borderRadius: 10, padding: '1px 7px' }}>Predomina</span>}
+                </span>
+              </span>
+            )
+          })}
+        </div>
+      )}
 
       {total > 0 && mostrar && (
         <div style={{ display: 'flex', height: 10, borderRadius: 99, overflow: 'hidden', margin: '12px 0 6px', maxWidth: 360, background: C.indigoClaro }}>
@@ -164,17 +198,7 @@ export default function TarjetaEstilosAprendizaje({
           )}
         </>
       ) : (
-        <>
-          {guardado?.fecha && <p style={{ margin: '4px 0 0', fontSize: 12, color: C.gris }}>Guardado el {fechaCorta(guardado.fecha)}</p>}
-          {predominante && predominante.n > 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 14, color: C.texto }}>
-              Predomina: {predominante.e.icono} <strong>{predominante.e.etiqueta}</strong> ({pct(predominante.n)}%)
-            </p>
-          )}
-          <div style={{ marginTop: 10 }}>
-            <button type="button" onClick={() => setEditando(true)} style={enlace}>Actualizar</button>
-          </div>
-        </>
+        null
       )}
       {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: C.indigo, background: C.indigoClaro, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 }}>{error}</p>}
     </div>

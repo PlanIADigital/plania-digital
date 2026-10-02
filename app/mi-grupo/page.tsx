@@ -173,7 +173,7 @@ function TarjetaDoc({ numero, titulo, descripcion, origen, opcional, guardado, c
     <div style={{
       background: guardado ? '#FAFFFE' : 'white',
       border: `1px solid ${guardado ? C.cian : C.borde}`,
-      borderRadius: 12, padding: 16, marginBottom: 12,
+      borderRadius: 12, padding: guardado ? '12px 16px' : 16, marginBottom: guardado ? 10 : 12,
     }}>
       {!guardado ? (
         // Pendiente: título + descripción a la izquierda; acción compacta a la
@@ -189,8 +189,16 @@ function TarjetaDoc({ numero, titulo, descripcion, origen, opcional, guardado, c
         </div>
       ) : (
         <>
-          <div style={{ marginBottom: 4 }}>{encabezado}</div>
-          {children}
+          {/* [oct 2026] Guardada compacta: fecha y enlaces en una línea; datos y avisos debajo */}
+          <style>{`
+            .plania-doc-guardada { display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px; row-gap: 6px; }
+            .plania-doc-guardada > * { flex: 1 1 100%; order: 2; margin-top: 0 !important; margin-bottom: 0 !important; }
+            .plania-doc-guardada > :first-child { flex: 1 1 auto; order: 0; }
+            .plania-doc-guardada > :last-child { flex: 0 0 auto; order: 1; margin-left: auto; }
+            @media (max-width: 480px) { .plania-doc-guardada > :last-child { flex-basis: 100%; margin-left: 0; } }
+          `}</style>
+          <div style={{ marginBottom: 6 }}>{encabezado}</div>
+          <div className="plania-doc-guardada">{children}</div>
         </>
       )}
     </div>
