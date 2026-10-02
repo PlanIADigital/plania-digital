@@ -4,13 +4,49 @@ import { createClient } from '@/lib/supabase-browser'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import EncabezadoPagina from '@/components/EncabezadoPagina'
 
 const supabase = createClient()
+
+// Paleta PlanIA
+const C = {
+  indigo: '#3D3A8C',
+  cian: '#00A896',
+  menta: '#E8F5F2',
+  indigoClaro: '#EEEDF8',
+  texto: '#1A1A2E',
+  gris: '#6B7280',
+  borde: '#E0DFF5',
+}
+
+const st = {
+  card: { background: 'white', borderRadius: 12, border: `1px solid ${C.borde}`, padding: '16px 18px', marginBottom: 12 },
+  titulo: { fontSize: 13, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: 0 },
+  filaTitulo: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 14 },
+  etiqueta: { fontSize: 12, fontWeight: 600, color: C.gris, display: 'block', marginBottom: 4 },
+  input: { display: 'block', width: '100%', height: 44, padding: '0 12px', fontSize: 16, borderRadius: 10, border: `1.5px solid ${C.borde}`, boxSizing: 'border-box' as const, color: C.texto, background: 'white', outline: 'none' },
+  btnPrimario: { background: C.indigo, color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' },
+  btnSecundario: { background: 'white', color: C.indigo, border: `1.5px solid ${C.borde}`, padding: '10px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+  link: { background: 'none', border: 'none', padding: 0, color: C.indigo, fontSize: 14, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' },
+  linkGris: { background: 'none', border: 'none', padding: 0, color: C.gris, fontSize: 14, textDecoration: 'underline', cursor: 'pointer' },
+  aviso: { background: C.indigoClaro, borderLeft: `3px solid ${C.indigo}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: C.texto, lineHeight: 1.5, margin: '10px 0 0' },
+  exito: { background: '#E0F5F3', borderLeft: `3px solid ${C.cian}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#0F6E56', lineHeight: 1.5, margin: '10px 0 0' },
+}
 
 function ajustarAlturaTextarea(e: React.FormEvent<HTMLTextAreaElement>) {
   const el = e.currentTarget
   el.style.height = 'auto'
   el.style.height = `${el.scrollHeight}px`
+}
+
+// Fila etiqueta / valor de solo lectura. El valor se ajusta si es largo (correo).
+function Fila({ etiqueta, valor, children, ultima }: { etiqueta: string; valor?: string | null; children?: React.ReactNode; ultima?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: '4px 12px', padding: '10px 0', borderBottom: ultima ? 'none' : '1px solid #F0EFF8' }}>
+      <span style={{ fontSize: 14, color: C.gris }}>{etiqueta}</span>
+      {children ?? <span style={{ fontSize: 15, fontWeight: 600, color: C.texto, textAlign: 'right' as const, overflowWrap: 'anywhere' as const, minWidth: 0 }}>{valor || '—'}</span>}
+    </div>
+  )
 }
 
 export default function ConfiguracionPage() {
@@ -22,12 +58,9 @@ export default function ConfiguracionPage() {
   const [editandoWhatsapp, setEditandoWhatsapp] = useState(false)
   const [whatsappValor, setWhatsappValor] = useState('')
   const [guardandoWhatsapp, setGuardandoWhatsapp] = useState(false)
-    const [errorWhatsapp, setErrorWhatsapp] = useState('')
+  const [errorWhatsapp, setErrorWhatsapp] = useState('')
 
-  // [sep 2026] Estado de cuenta — fecha de pago, ciclo vigente y días
-  // hábiles generados dentro de ese ciclo. Viene de la vista
-  // v_estado_cuenta vía /api/estado-cuenta (fuente única de verdad,
-  // reusable por otras pantallas en el futuro).
+  // [sep 2026] Estado de cuenta — viene de la vista v_estado_cuenta vía /api/estado-cuenta.
   const [estadoCuenta, setEstadoCuenta] = useState<{
     fecha_pago: string
     ciclo_inicio: string
@@ -36,9 +69,8 @@ export default function ConfiguracionPage() {
   } | null>(null)
   const [cargandoEstadoCuenta, setCargandoEstadoCuenta] = useState(true)
 
-  // Datos institucionales — Zona/Sector/Región/Turno, sugeridos del
-  // catálogo oficial SEP y confirmables aquí (misma fuente única de
-  // verdad que usan Mi Grupo y el onboarding).
+  // Datos institucionales — Zona/Sector/Región/Turno, sugeridos del catálogo
+  // oficial SEP y confirmables aquí (misma fuente que Mi Grupo y el onboarding).
   const [datosCctSugeridos, setDatosCctSugeridos] = useState<any>(null)
   const [zonaEditable, setZonaEditable] = useState('')
   const [sectorEditable, setSectorEditable] = useState('')
@@ -49,10 +81,7 @@ export default function ConfiguracionPage() {
   const [editandoInstitucional, setEditandoInstitucional] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // [ago 2026] Trasladado desde app/mi-grupo/page.tsx (Sección 4) —
-  // el dato vive en users.estilo_narrativo, es un rasgo de la persona,
-  // no del grupo/ciclo que atiende ese año, así que corresponde vivir
-  // en configuración de cuenta.
+  // [ago 2026] Estilo narrativo — vive en users.estilo_narrativo (rasgo de la persona).
   const [estiloTexto, setEstiloTexto] = useState('')
   const [analizandoEstilo, setAnalizandoEstilo] = useState(false)
   const [estiloGuardado, setEstiloGuardado] = useState(false)
@@ -66,7 +95,7 @@ export default function ConfiguracionPage() {
       const { data } = await supabase
         .from('users').select('*')
         .eq('auth_uid', session.user.id).single()
-            if (!data) { router.push('/auth/login'); return }
+      if (!data) { router.push('/auth/login'); return }
       setProfile(data)
 
       setInstitucionalConfirmado(!!data.zona_confirmada && !!data.sector_confirmada && !!data.region_confirmada)
@@ -86,7 +115,7 @@ export default function ConfiguracionPage() {
         }
       }
 
-            if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
+      if (data.estilo_narrativo) { setResultadoEstilo(data.estilo_narrativo); setEstiloGuardado(true) }
       setLoading(false)
 
       try {
@@ -111,17 +140,18 @@ export default function ConfiguracionPage() {
     const { error: upErr } = await supabase.storage
       .from('avatars')
       .upload(path, file, { upsert: true })
-    if (upErr) { setSaveMsg('⚠️ Error al subir la foto: ' + upErr.message); setUploading(false); return }
+    if (upErr) { setSaveMsg('No se pudo subir la foto: ' + upErr.message); setUploading(false); return }
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
     const { error: updateErr } = await supabase
       .from('users')
       .update({ avatar_url: urlData.publicUrl + '?t=' + Date.now() })
       .eq('auth_uid', profile.auth_uid)
-    if (updateErr) { setSaveMsg('⚠️ Error al guardar: ' + updateErr.message); setUploading(false); return }
-        setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
-    setSaveMsg('✅ Foto actualizada correctamente')
+    if (updateErr) { setSaveMsg('No se pudo guardar: ' + updateErr.message); setUploading(false); return }
+    setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl + '?t=' + Date.now() }))
+    setSaveMsg('✓ Foto actualizada')
     setUploading(false)
   }
+
   async function confirmarDatosInstitucionales() {
     setConfirmandoInstitucional(true)
     try {
@@ -162,7 +192,7 @@ export default function ConfiguracionPage() {
     setConfirmandoInstitucional(false)
   }
 
-    async function guardarWhatsapp() {
+  async function guardarWhatsapp() {
     if (!profile || !whatsappValor.trim()) return
     setErrorWhatsapp('')
     setGuardandoWhatsapp(true)
@@ -194,8 +224,7 @@ export default function ConfiguracionPage() {
     setGuardandoWhatsapp(false)
   }
 
-  // [ago 2026] Trasladado desde app/mi-grupo/page.tsx tal cual — misma
-  // lógica, mismo endpoint /api/analizar-estilo-narrativo.
+  // [ago 2026] Misma lógica y endpoint /api/analizar-estilo-narrativo.
   async function analizarEstiloConTexto(texto: string): Promise<boolean> {
     if (!texto.trim()) { setErrorEstilo('Escribe o sube un texto.'); return false }
     setAnalizandoEstilo(true); setErrorEstilo('')
@@ -209,10 +238,10 @@ export default function ConfiguracionPage() {
       })
       const data = await res.json()
       if (data.ok) { setResultadoEstilo(data.resultado); setEstiloGuardado(true); return true }
-      setErrorEstilo('Error al analizar.')
+      setErrorEstilo('No se pudo analizar. Intenta de nuevo.')
       return false
     } catch {
-      setErrorEstilo('Error de conexión.')
+      setErrorEstilo('Error de conexión. Intenta de nuevo.')
       return false
     } finally {
       setAnalizandoEstilo(false)
@@ -237,8 +266,8 @@ export default function ConfiguracionPage() {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
-      <p style={{ color: '#3D3A8C' }}>Cargando...</p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: C.menta }}>
+      <p style={{ color: C.indigo, fontSize: 15 }}>Cargando...</p>
     </div>
   )
 
@@ -261,260 +290,219 @@ export default function ConfiguracionPage() {
   const iniciales = profile?.full_name
     ?.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase() || '?'
 
-  const cardTitleStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 20px', textAlign: 'center' }
-
-  // Fila label/valor de solo lectura — mismo patrón que ya usa "Datos de cuenta"
-  const filaLectura = (label: string, valor?: string | null) => (
-    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #F0EFF8' }}>
-      <span style={{ fontSize: 13, color: '#888' }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{valor || '—'}</span>
-    </div>
-  )
-
-  const campoEditable: React.CSSProperties = { display: 'block', width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 12 }
+  const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+  const turnoTexto = profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : ''
+  const fotoError = saveMsg && !saveMsg.startsWith('✓')
 
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '0 32px' }}>
+      <div style={{ padding: '0 16px' }}>
 
-        {/* ENCABEZADO */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '28px 32px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <h2 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MI CONFIGURACIÓN</h2>
-        </div>
+        <EncabezadoPagina antetitulo="Ajustar" titulo="Configuración" subtitulo="Tu perfil, tus datos y tu forma de escribir." />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'stretch' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-          {/* DATOS INSTITUCIONALES — fuente única de verdad para CCT/Zona/Sector/Región/Turno */}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS INSTITUCIONALES</p>
+          {/* PERFIL */}
+          <div style={st.card}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Foto de perfil"
+                  style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${C.indigoClaro}`, flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: C.cian, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                  {iniciales}
+                </div>
+              )}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.texto, overflowWrap: 'anywhere' as const }}>{profile?.full_name}</p>
+                <p style={{ margin: '2px 0 8px', fontSize: 14, color: C.gris }}>{rolLabel[profile?.role] ?? profile?.role}</p>
+                <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ ...st.link, opacity: uploading ? 0.6 : 1 }}>
+                  {uploading ? 'Subiendo…' : 'Cambiar foto'}
+                </button>
+                <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={handleFoto} style={{ display: 'none' }} />
+              </div>
+            </div>
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: C.gris }}>Tu foto aparece en el menú. JPG o PNG, máximo 2 MB.</p>
+            {saveMsg && <p style={fotoError ? st.aviso : st.exito}>{saveMsg}</p>}
+          </div>
 
-            {filaLectura('CCT', profile?.cct_primary)}
+          {/* DATOS DE CUENTA */}
+          <div style={st.card}>
+            <div style={st.filaTitulo}><p style={st.titulo}>Datos de cuenta</p></div>
+            <Fila etiqueta="Correo" valor={profile?.email} />
+            <Fila etiqueta="Membresía" valor={membresiaLabel[profile?.membership_status] ?? profile?.membership_status} />
+            {!editandoWhatsapp ? (
+              <Fila etiqueta="WhatsApp" ultima>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: C.texto }}>{profile?.whatsapp || '—'}</span>
+                  <button
+                    onClick={() => { setWhatsappValor(profile?.whatsapp || ''); setEditandoWhatsapp(true); setErrorWhatsapp('') }}
+                    style={st.link}
+                  >
+                    Editar
+                  </button>
+                </span>
+              </Fila>
+            ) : (
+              <div style={{ paddingTop: 10 }}>
+                <label style={st.etiqueta}>WhatsApp</label>
+                <input
+                  value={whatsappValor}
+                  onChange={e => setWhatsappValor(e.target.value)}
+                  placeholder="10 dígitos"
+                  inputMode="numeric"
+                  style={st.input}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10 }}>
+                  <button
+                    onClick={guardarWhatsapp}
+                    disabled={guardandoWhatsapp || !whatsappValor.trim()}
+                    style={{ ...st.btnPrimario, opacity: guardandoWhatsapp || !whatsappValor.trim() ? 0.6 : 1 }}
+                  >
+                    {guardandoWhatsapp ? 'Guardando…' : 'Guardar'}
+                  </button>
+                  <button
+                    onClick={() => { setEditandoWhatsapp(false); setErrorWhatsapp('') }}
+                    disabled={guardandoWhatsapp}
+                    style={st.linkGris}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+            {errorWhatsapp && <p style={st.aviso}>{errorWhatsapp}</p>}
+          </div>
+
+          {/* DATOS INSTITUCIONALES */}
+          <div style={st.card}>
+            <div style={st.filaTitulo}>
+              <p style={st.titulo}>Datos institucionales</p>
+              {institucionalConfirmado && !editandoInstitucional && (
+                <button onClick={() => setEditandoInstitucional(true)} style={st.link}>Editar</button>
+              )}
+            </div>
+
+            <Fila etiqueta="CCT" valor={profile?.cct_primary} />
 
             {institucionalConfirmado && !editandoInstitucional ? (
               <>
-                {filaLectura('Zona', profile?.zona)}
-                {filaLectura('Sector', profile?.sector)}
-                {filaLectura('Región', profile?.region)}
-                {filaLectura('Turno', profile?.shift_primary ? profile.shift_primary.charAt(0).toUpperCase() + profile.shift_primary.slice(1) : '')}
-                <button onClick={() => setEditandoInstitucional(true)}
-                  style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                  Editar
-                </button>
+                <Fila etiqueta="Zona" valor={profile?.zona} />
+                <Fila etiqueta="Sector" valor={profile?.sector} />
+                <Fila etiqueta="Región" valor={profile?.region} />
+                <Fila etiqueta="Turno" valor={turnoTexto} ultima />
               </>
             ) : (
-              <>
+              <div style={{ paddingTop: 12 }}>
                 {datosCctSugeridos && (
-                  <p style={{ fontSize: 11, color: '#0F6E56', margin: '0 0 12px' }}>
-                    📍 Sugerido del catálogo oficial SEP — revisa que sea correcto y corrígelo si hace falta.
+                  <p style={{ ...st.exito, margin: '0 0 12px' }}>
+                    Sugerido del catálogo oficial SEP. Revisa que sea correcto y corrígelo si hace falta.
                   </p>
                 )}
-                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Zona</label>
-                <input value={zonaEditable} onChange={e => setZonaEditable(e.target.value)} style={campoEditable} />
-
-                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Sector</label>
-                <input value={sectorEditable} onChange={e => setSectorEditable(e.target.value)} placeholder='o "No aplica"' style={campoEditable} />
-
-                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Región</label>
-                <input value={regionEditable} onChange={e => setRegionEditable(e.target.value)} style={campoEditable} />
-
-                <label style={{ fontSize: 11, color: '#888', fontWeight: 600, display: 'block', marginBottom: 4 }}>Turno</label>
-                <select value={turnoEditable} onChange={e => setTurnoEditable(e.target.value)}
-                  style={{ ...campoEditable, background: 'white', cursor: 'pointer' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
+                  <div>
+                    <label style={st.etiqueta}>Zona</label>
+                    <input value={zonaEditable} onChange={e => setZonaEditable(e.target.value)} style={st.input} />
+                  </div>
+                  <div>
+                    <label style={st.etiqueta}>Sector</label>
+                    <input value={sectorEditable} onChange={e => setSectorEditable(e.target.value)} placeholder="No aplica" style={st.input} />
+                  </div>
+                  <div>
+                    <label style={st.etiqueta}>Región</label>
+                    <input value={regionEditable} onChange={e => setRegionEditable(e.target.value)} style={st.input} />
+                  </div>
+                </div>
+                <label style={st.etiqueta}>Turno</label>
+                <select value={turnoEditable} onChange={e => setTurnoEditable(e.target.value)} style={{ ...st.input, cursor: 'pointer' }}>
                   <option value="" disabled>— Selecciona —</option>
                   <option value="matutino">Matutino</option>
                   <option value="vespertino">Vespertino</option>
                   <option value="discontinuo">Discontinuo</option>
                 </select>
 
-                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14 }}>
                   <button onClick={confirmarDatosInstitucionales} disabled={confirmandoInstitucional}
-                    style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: confirmandoInstitucional ? 'default' : 'pointer', opacity: confirmandoInstitucional ? 0.6 : 1 }}>
-                    {confirmandoInstitucional ? 'Guardando...' : '✅ Confirmar'}
+                    style={{ ...st.btnPrimario, opacity: confirmandoInstitucional ? 0.6 : 1 }}>
+                    {confirmandoInstitucional ? 'Guardando…' : 'Confirmar'}
                   </button>
                   {institucionalConfirmado && (
-                    <button onClick={() => setEditandoInstitucional(false)}
-                      style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    <button onClick={() => setEditandoInstitucional(false)} style={st.linkGris}>Cancelar</button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ESTADO DE CUENTA */}
+          {!cargandoEstadoCuenta && estadoCuenta && (
+            <div style={st.card}>
+              <div style={st.filaTitulo}><p style={st.titulo}>Estado de cuenta</p></div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                <div style={{ background: C.indigoClaro, borderRadius: 10, padding: '12px 10px', textAlign: 'center' as const }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Ciclo actual</p>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: C.texto, margin: 0 }}>
+                    {fechaCorta(estadoCuenta.ciclo_inicio)} – {fechaCorta(estadoCuenta.ciclo_fin)}
+                  </p>
+                </div>
+                <div style={{ background: C.indigoClaro, borderRadius: 10, padding: '12px 10px', textAlign: 'center' as const }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Días hábiles</p>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: C.indigo, margin: 0, lineHeight: 1.1 }}>{estadoCuenta.dias_habiles_generados_ciclo}</p>
+                  <p style={{ fontSize: 12, color: C.gris, margin: '2px 0 0' }}>generados</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MI ESTILO DE NARRACIÓN */}
+          <div style={st.card}>
+            <div style={st.filaTitulo}>
+              <p style={st.titulo}>Mi estilo de narración</p>
+              {estiloGuardado && (
+                <button onClick={() => setEstiloGuardado(false)} style={st.link}>Actualizar</button>
+              )}
+            </div>
+
+            {estiloGuardado ? (
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 700, color: C.cian, margin: '0 0 6px' }}>✓ Estilo de escritura guardado</p>
+                {resultadoEstilo?.tono && <p style={{ fontSize: 14, color: C.texto, margin: 0, lineHeight: 1.6 }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: 14, color: C.gris, margin: '0 0 12px', lineHeight: 1.6 }}>
+                  Comparte un texto tuyo: una carta, unas notas o lo que escribas a las familias. MÍA aprende tu tono para que tus planeaciones suenen a ti.
+                </p>
+                <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
+                  placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
+                  style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 16, borderRadius: 10, border: `1.5px solid ${C.borde}`, boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'inherit', lineHeight: 1.6, marginBottom: 10, color: C.texto } as React.CSSProperties}
+                />
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+                  <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
+                    style={{ ...st.btnPrimario, opacity: analizandoEstilo || !estiloTexto.trim() ? 0.6 : 1 }}>
+                    {analizandoEstilo ? 'Analizando…' : '✨ Analizar'}
+                  </button>
+                  <label style={{ ...st.btnSecundario, display: 'inline-flex', alignItems: 'center', gap: 4, opacity: analizandoEstilo ? 0.6 : 1 }}>
+                    {analizandoEstilo ? 'Analizando…' : 'Subir documento'}
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
+                  </label>
+                  {resultadoEstilo && (
+                    <button
+                      type="button"
+                      disabled={analizandoEstilo}
+                      onClick={() => { setEstiloGuardado(true); setEstiloTexto(''); setErrorEstilo('') }}
+                      style={st.linkGris}>
                       Cancelar
                     </button>
                   )}
                 </div>
-              </>
-            )}
-          </div>
-
-          {/* FOTO DE PERFIL */}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, textAlign: 'center' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>FOTO DE PERFIL</p>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16 }}>
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Foto de perfil"
-                  style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEEDF8' }} />
-              ) : (
-                <div style={{ width: 120, height: 120, borderRadius: '50%', background: '#00A896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40,fontWeight: 700, color: 'white' }}>
-                  {iniciales}
-                </div>
-              )}
-              <div>
-                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
-                  Tu foto aparece en el menú lateral.<br/>
-                  Formatos: JPG, PNG. Máximo 2MB.
-                </p>
-                <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '9px 18px', borderRadius: 8, cursor: uploading ? 'default' : 'pointer', fontSize: 13, fontWeight: 600, opacity: uploading ? 0.7 : 1 }}>
-                  {uploading ? 'Subiendo...' : '📷 Cambiar foto'}
-                </button>
-                <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={handleFoto} style={{ display: 'none' }} />
+                {errorEstilo && <p style={st.aviso}>{errorEstilo}</p>}
+                <p style={{ fontSize: 12, color: C.gris, margin: '10px 0 0' }}>Al subir un documento (PDF o Word) se analiza automáticamente.</p>
               </div>
-            </div>
-            {saveMsg && (
-              <p style={{ margin: '16px 0 0', fontSize: 13, padding: '8px 12px', borderRadius: 6,
-                background: saveMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2',
-                color: saveMsg.startsWith('✅') ? '#065f46' : '#991b1b' }}>
-                {saveMsg}
-              </p>
-            )}
-          </div>
-
-          {/* DATOS DE CUENTA */}
-          <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: 24, height: '100%', boxSizing: 'border-box' as const }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.07em', margin: '0 0 20px' }}>DATOS DE CUENTA</p>
-            {[
-              { label: 'Nombre completo', value: profile?.full_name },
-              { label: 'Correo electrónico', value: profile?.email },
-              { label: 'Rol', value: rolLabel[profile?.role] ?? profile?.role },
-              { label: 'Membresía', value: membresiaLabel[profile?.membership_status] ?? profile?.membership_status },
-                        ].map(item => filaLectura(item.label, item.value))}
-            {/* WhatsApp — único campo editable de esta tarjeta, el resto son
-                de solo lectura porque dependen de otro flujo (CCT, rol, etc.) */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: '#888' }}>WhatsApp</span>
-              {!editandoWhatsapp ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{profile?.whatsapp || '—'}</span>
-                                    <button
-                    onClick={() => { setWhatsappValor(profile?.whatsapp || ''); setEditandoWhatsapp(true); setErrorWhatsapp('') }}
-                    style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                  >
-                    Editar
-                  </button>
-                </span>
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    value={whatsappValor}
-                    onChange={e => setWhatsappValor(e.target.value)}
-                    placeholder="10 dígitos"
-                    style={{ width: 130, padding: '5px 8px', fontSize: 13, borderRadius: 6, border: '1px solid #D8D6F0', outline: 'none' }}
-                  />
-                  <button
-                    onClick={guardarWhatsapp}
-                    disabled={guardandoWhatsapp || !whatsappValor.trim()}
-                    style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    {guardandoWhatsapp ? '...' : 'Guardar'}
-                  </button>
-                  <button
-                    onClick={() => { setEditandoWhatsapp(false); setErrorWhatsapp('') }}
-                    disabled={guardandoWhatsapp}
-                    style={{ background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer' }}
-                  >
-                    Cancelar
-                  </button>
-                </span>
-              )}
-            </div>
-            {errorWhatsapp && (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#991b1b', background: '#fee2e2', padding: '6px 10px', borderRadius: 6, textAlign: 'right' as const }}>
-                {errorWhatsapp}
-              </p>
             )}
           </div>
 
         </div>
-
-                <div style={{ height: 24 }} />
-
-        {/* ESTADO DE CUENTA — ancho completo, muestra el ciclo de pago
-            vigente y cuánto se ha usado dentro de él */}
-        {!cargandoEstadoCuenta && estadoCuenta && (
-          <>
-            <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '20px 32px', boxSizing: 'border-box' as const }}>
-              <p style={cardTitleStyle}>ESTADO DE CUENTA</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-                <div style={{ textAlign: 'center' as const }}>
-                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Membresía</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
-                    {membresiaLabel[profile?.membership_status] ?? profile?.membership_status}
-                  </p>
-                </div>
-                <div style={{ textAlign: 'center' as const }}>
-                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Ciclo actual</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
-                    {new Date(estadoCuenta.ciclo_inicio).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                    {' – '}
-                    {new Date(estadoCuenta.ciclo_fin).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-                <div style={{ textAlign: 'center' as const }}>
-                  <p style={{ fontSize: 11, color: '#888', margin: '0 0 4px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Días hábiles generados</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#3D3A8C', margin: 0 }}>
-                    {estadoCuenta.dias_habiles_generados_ciclo}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div style={{ height: 24 }} />
-          </>
-        )}
-
-        {/* MI ESTILO DE NARRACIÓN — ahora ancho completo, delgada */}
-        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 12, padding: '20px 32px', boxSizing: 'border-box' as const, textAlign: 'center' as const }}>
-          <p style={cardTitleStyle}>MI ESTILO DE NARRACIÓN</p>
-          <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.5, textAlign: 'center' }}>
-            Comparte cómo escribes: una carta, unas notas o cualquier texto tuyo. La finalidad es que aprendamos de tu tono y estilo personal. MÍA aprenderá de ti para que tus planeaciones tengan tu estilo pedagógico.
-          </p>
-          {!estiloGuardado ? (
-            <div style={{ maxWidth: 640, margin: '0 auto' }}>
-              <textarea value={estiloTexto} onChange={e => setEstiloTexto(e.target.value)} onInput={ajustarAlturaTextarea} rows={4}
-                placeholder="Ej: Estimadas familias, quiero compartirles que esta semana trabajamos con los niños explorando..."
-                style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', resize: 'none', overflow: 'hidden', fontFamily: 'sans-serif', lineHeight: 1.6, marginBottom: 10 } as React.CSSProperties}
-              />
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
-                <button onClick={handleAnalizarEstilo} disabled={analizandoEstilo || !estiloTexto.trim()}
-                style={{ background: analizandoEstilo || !estiloTexto.trim() ? '#C4C2E8' : '#3D3A8C', color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  {analizandoEstilo ? '🔍 Analizando...' : '✨ Analizar'}
-                </button>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  {analizandoEstilo ? '🔍 Analizando...' : '📎 Subir'}
-                  <input type="file" accept=".pdf,.doc,.docx" onChange={handleArchivoEstilo} style={{ display: 'none' }} disabled={analizandoEstilo} />
-                </label>
-                {resultadoEstilo && (
-                  <button
-                    type="button"
-                    disabled={analizandoEstilo}
-                    onClick={() => { setEstiloGuardado(true); setEstiloTexto(''); setErrorEstilo('') }}
-                    style={{ background: 'white', border: '1.5px solid #D8D6F0', color: '#888', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: analizandoEstilo ? 'default' : 'pointer' }}>
-                    Cancelar
-                  </button>
-                )}
-              </div>
-              {errorEstilo && (
-                <p style={{ marginTop: 10, fontSize: 12, color: '#991b1b', background: '#fee2e2', padding: '6px 10px', borderRadius: 6, display: 'inline-block' }}>{errorEstilo}</p>
-              )}
-              <p style={{ fontSize: 10, color: '#aaa', marginTop: 6 }}>Al subir un documento se analiza automáticamente</p>
-            </div>
-          ) : (
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#065f46', margin: '0 0 4px' }}>✅ Estilo de escritura guardado</p>
-              {resultadoEstilo?.tono && <p style={{ fontSize: 12, color: '#444', margin: '0 0 12px' }}><strong>Tono:</strong> {resultadoEstilo.tono}</p>}
-              <button onClick={() => setEstiloGuardado(false)}
-                style={{ background: 'white', border: '1.5px solid #3D3A8C', color: '#3D3A8C', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                ↑ Actualizar
-              </button>
-            </div>
-          )}
-        </div>
-
         <div style={{ height: 40 }} />
       </div>
     </SidebarWrapper>
