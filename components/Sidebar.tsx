@@ -29,7 +29,7 @@ interface ItemMenu {
   icono: string
   activo: boolean
   // Rutas hijas que también marcan esta opción como activa
-  prefijoActivo?: string
+  prefijoActivo?: string | string[]
 }
 
 const NAV_EDUCADORA: ItemMenu[] = [
@@ -47,7 +47,7 @@ const NAV_EDUCADORA: ItemMenu[] = [
 
 const NAV_DIRECTIVO: ItemMenu[] = [
   { label: 'Dashboard',        path: '/directivo/dashboard', icono: 'house',         activo: true },
-  { label: 'Mis docentes',     path: '/directivo/docentes',  icono: 'users',         activo: true, prefijoActivo: '/directivo/docentes/' },
+  { label: 'Mis docentes',     path: '/directivo/docentes',  icono: 'users',         activo: true, prefijoActivo: ['/directivo/docentes/', '/directivo/planeaciones/'] },
   { label: 'Estadísticas',     path: null,                   icono: 'chart-pie',     activo: false },
   { label: 'Informes',         path: null,                   icono: 'folder-open',   activo: false },
   { label: 'Calendario',       path: null,                   icono: 'calendar-days', activo: false },
@@ -176,7 +176,8 @@ export default function Sidebar({ profile, children }: SidebarProps) {
   function estaActivo(item: ItemMenu): boolean {
     if (item.path === null) return false
     if (pathname === item.path) return true
-    if (!item.prefijoActivo || !pathname?.startsWith(item.prefijoActivo)) return false
+    const prefijos = !item.prefijoActivo ? [] : Array.isArray(item.prefijoActivo) ? item.prefijoActivo : [item.prefijoActivo]
+    if (!prefijos.some(p => pathname?.startsWith(p))) return false
     // "Nueva planeación" tiene su propia opción; no marca "Mis planeaciones".
     return pathname !== '/planeacion/nueva'
   }

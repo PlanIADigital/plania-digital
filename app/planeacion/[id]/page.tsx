@@ -127,6 +127,8 @@ export default function VerPlaneacionPage() {
   const [rubricasDB, setRubricasDB] = useState<any[]>([])
   const [exportando, setExportando] = useState(false)
   const [descartando, setDescartando] = useState(false)
+  // [2 oct 2026] Modo lectura del directivo: nombre de la docente dueña.
+  const [docenteNombre, setDocenteNombre] = useState('')
   void authUid; void guardandoCodigo; void setGuardandoCodigo
 
   useEffect(() => {
@@ -137,6 +139,25 @@ export default function VerPlaneacionPage() {
       const { data: userData } = await supabase.from('users').select('*').eq('auth_uid', session.user.id).single()
       if (!userData) { router.push('/auth/login'); return }
       setProfile(userData)
+      // [2 oct 2026] El directivo no puede leer plannings desde el navegador (RLS):
+      // la pide al servidor, que verifica que la docente sea de su CCT.
+      if (userData.role === 'directivo') {
+        try {
+          const res = await fetch(`/api/directivo/planeaciones/${encodeURIComponent(String(params.id))}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          const d = await res.json()
+          if (!res.ok) { setError(d?.error || 'No se encontró la planeación'); setLoading(false); return }
+          setPlaneacion(d.planeacion)
+          setRubricasDB(d.rubricas || [])
+          setPosicionesPorId(d.posiciones || {})
+          setDocenteNombre(d.docente?.full_name || '')
+        } catch {
+          setError('No se pudo conectar con el servidor. Intenta de nuevo.')
+        }
+        setLoading(false)
+        return
+      }
       const { data, error: err } = await supabase.from('plannings').select('*').eq('id', params.id).single()
       if (err || !data) { setError('No se encontró la planeación'); setLoading(false); return }
       setPlaneacion(data)
@@ -173,7 +194,7 @@ export default function VerPlaneacionPage() {
   if (error) return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: C.menta, padding: 16 }}>
       <p style={{ color: C.indigo, fontSize: 15, margin: 0 }}>{error}</p>
-      <button onClick={() => router.push('/mis-planeaciones')} style={{ background: C.indigo, color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Ir a Mis planeaciones</button>
+      <button onClick={() => router.push(profile?.role === 'directivo' ? '/directivo/docentes' : '/mis-planeaciones')} style={{ background: C.indigo, color: 'white', border: 'none', padding: '10px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{profile?.role === 'directivo' ? 'Ir a Mis docentes' : 'Ir a Mis planeaciones'}</button>
     </div>
   )
 
@@ -187,6 +208,8 @@ export default function VerPlaneacionPage() {
     ? rubricasDB.map(r => ({ ...r.content_json, _rubricaId: r.id }))
     : (Array.isArray(content.instrumentos_evaluacion) ? content.instrumentos_evaluacion : (content.instrumento_evaluacion ? [content.instrumento_evaluacion] : []))
   const rubricaLegacy = instrumentosEvaluacion.length === 0 ? (content.rubrica || null) : null
+  // [2 oct 2026] El directivo SOLO VE: sin descargar, descartar ni editar.
+  const soloLectura = profile?.role === 'directivo'
 
   function codigoPDA(campo: string | null, id: string | null): string | null {
     if (!campo || !id) return null
@@ -449,15 +472,20 @@ export default function VerPlaneacionPage() {
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 8 }}>
                 {chipPrincipal && <span style={{ ...st.chip, background: chipPrincipal.bg, color: chipPrincipal.color }}>{planeacion.pda_campo}</span>}
                 {estadoChip.texto && <span style={{ ...st.chip, background: estadoChip.bg, color: estadoChip.color }}>{estadoChip.texto}</span>}
-                <button
+                {soloLectura && (
+                  <span style={{ marginLeft: 'auto', fontSize: 13, color: C.gris }}>
+                    {docenteNombre ? `Planeación de ${docenteNombre} · solo lectura` : 'Solo lectura'}
+                  </span>
+                )}
+                {!soloLectura && (<button
                   onClick={descargarWord}
                   disabled={exportando}
                   style={{ marginLeft: 'auto', background: C.indigo, color: 'white', border: 'none', padding: '9px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' as const, cursor: exportando ? 'default' : 'pointer', opacity: exportando ? 0.7 : 1 }}
                 >
                   {exportando ? 'Generando…' : '⬇ Descargar Word'}
-                </button>
+                </button>)}
               </div>
-              {estaActiva && (
+              {estaActiva && !soloLectura && (
                 <div style={{ marginTop: 8, textAlign: 'right' as const }}>
                   {!planeacion.word_descargado_en ? (
                     <button onClick={descartarPlaneacion} disabled={descartando} style={{ ...st.linkGris, opacity: descartando ? 0.7 : 1 }}>
@@ -612,7 +640,7 @@ export default function VerPlaneacionPage() {
                       })}
                       {instrumento.es_principal === false && instrumento._rubricaId && (
                         <div style={{ marginTop: 10, textAlign: 'right' as const }}>
-                          <button onClick={() => descartarRubrica(instrumento._rubricaId)} style={st.linkGris}>
+                          <button onClick={() => descartarRubrica(instrumento._rubricaId)} style={soloLectura ? { display: 'none' } : st.linkGris}>
                             Descartar esta rúbrica
                           </button>
                         </div>

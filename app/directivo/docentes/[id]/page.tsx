@@ -274,11 +274,13 @@ export default function DocenteDetallePage() {
           {/* Planeaciones */}
           <section style={st.card}>
             <h2 style={st.h2}>Planeaciones del ciclo ({totalPlanes})</h2>
-            <p style={st.sub}>Las mismas que cuentan en su avance</p>
+            <p style={st.sub}>Toca una para leerla completa</p>
             {totalPlanes === 0 ? <p style={st.vacio}>Sin planeaciones registradas aún.</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {planesVisibles.map(p => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: C.fondoSuave }}>
+                  <button key={p.id} onClick={() => router.push(`/directivo/planeaciones/${p.id}`)}
+                    aria-label={`Leer la planeación ${p.project_name || ''}`}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: C.fondoSuave, border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', minHeight: 44 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 14, fontWeight: 700, color: C.texto, margin: '0 0 2px', overflowWrap: 'anywhere' }}>{p.project_name || 'Sin título'}</p>
                       <p style={{ fontSize: 12.5, color: C.suave, margin: 0, lineHeight: 1.4 }}>
@@ -286,9 +288,10 @@ export default function DocenteDetallePage() {
                       </p>
                     </div>
                     {p.status === 'active' && (
-                      <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 10, background: C.indigo, color: 'white', fontWeight: 700, flexShrink: 0 }}>Activa</span>
+                      <span style={{ fontSize: 11.5, padding: '3px 10px', borderRadius: 12, background: 'transparent', color: C.indigo, border: '1px solid #C9C7EC', fontWeight: 600, flexShrink: 0 }}>Activa</span>
                     )}
-                  </div>
+                    <span aria-hidden="true" style={{ flexShrink: 0, background: C.cianOscuro, color: 'white', fontSize: 14, fontWeight: 700, padding: '9px 16px', borderRadius: 10, lineHeight: 1 }}>Ver</span>
+                  </button>
                 ))}
                 {totalPlanes > MOSTRAR_INICIAL && (
                   <button onClick={() => setVerTodas(v => !v)}
