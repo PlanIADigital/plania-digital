@@ -16,7 +16,7 @@ export interface ValoresFase1 {
   recursos_materiales: string
 }
 
-type Origen = 'PMC' | 'PA' | 'Grupo' | 'Dirección' | 'Jardín'
+type Origen = 'PMC' | 'PA' | 'Grupo' | 'Semáforo' | 'Dirección' | 'Jardín'
 interface Problematica { id: string; texto: string; origen: Origen }
 
 const MAX_SOLICITUDES = 3
@@ -35,6 +35,7 @@ const COLOR_ORIGEN: Record<Origen, { fg: string; bg: string }> = {
   'Grupo': { fg: '#0F6E56', bg: '#E0F5F3' },
   'PMC': { fg: '#3D3A8C', bg: '#EEEDF8' },
   'PA': { fg: '#00796B', bg: '#E8F5F2' },
+  'Semáforo': { fg: '#2D6A4F', bg: '#E6F4EA' },
   'Dirección': { fg: '#5B3F8C', bg: '#F1ECF8' },
   'Jardín': { fg: '#6B5B2E', bg: '#F5F0E1' },
 }

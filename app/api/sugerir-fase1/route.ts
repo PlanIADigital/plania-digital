@@ -13,6 +13,8 @@
 // del navegador. De la evaluación individual solo se usan resumen_general
 // y pdas_prioritarios_grupo — jamás alumnos, alumnos_con_nee ni alertas.
 
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { resumenSemaforoGrupo } from '@/lib/semaforoServidor'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'crypto'
@@ -23,8 +25,8 @@ const client = new Anthropic()
 const MODELO = process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001'
 const MAX_CHARS_FUENTE = 2500
 
-type Origen = 'PMC' | 'PA' | 'Grupo' | 'Dirección' | 'Jardín'
-const ORIGENES: Origen[] = ['PMC', 'PA', 'Grupo', 'Dirección', 'Jardín']
+type Origen = 'PMC' | 'PA' | 'Grupo' | 'Semáforo' | 'Dirección' | 'Jardín'
+const ORIGENES: Origen[] = ['PMC', 'PA', 'Grupo', 'Semáforo', 'Dirección', 'Jardín']
 
 interface ProblematicaDetectada {
   id: string
@@ -151,6 +153,7 @@ async function reunirFuentes(u: any): Promise<Record<Origen, string>> {
       ind?.resumen_general ?? '',
       pdasGrupo.length ? `PDA prioritarios del grupo: ${pdasGrupo.join('; ')}` : '',
     ]),
+    'Semáforo': await resumenSemaforoGrupo(supabase, u.id, CICLO_ESCOLAR_ACTIVO),
     'Dirección': aTexto([dir?.areas_mejora ?? '', dir?.instruccion_para_agente ?? '']),
     'Jardín': pdasJardin.length ? aTexto(`PDA acordados por el colectivo: ${pdasJardin.join('; ')}`) : '',
   }
@@ -177,8 +180,9 @@ async function detectar(usuario: any, forzar: boolean) {
     `${REGLAS_BASE}
 
 TAREA: A partir de la información de Mi Grupo, detecta de 3 a 4 problemáticas reales que podrían dar origen a un proyecto didáctico.
-- Cada problemática debe salir de la información de UNA fuente y llevar su etiqueta exacta de origen: PMC, PA, Grupo, Dirección o Jardín.
-- Prioriza en este orden: necesidades del grupo (Grupo), contexto del jardín y la comunidad (PMC y PA), observaciones de Dirección. Usa Jardín solo como apoyo.
+- Cada problemática debe salir de la información de UNA fuente y llevar su etiqueta exacta de origen: PMC, PA, Grupo, Semáforo, Dirección o Jardín.
+- Prioriza en este orden: necesidades del grupo (Grupo y Semáforo), contexto del jardín y la comunidad (PMC y PA), observaciones de Dirección. Usa Jardín solo como apoyo.
+- Semáforo trae, por área, qué parte del grupo está en suficiente, en desarrollo o requiere apoyo. Úsalo para detectar el área donde más niñas y niños necesitan acompañamiento. Habla del grupo en general, sin citar porcentajes ni referirte a niños en particular.
 - Si dos fuentes dicen lo mismo, júntalas en una sola y usa la etiqueta de la fuente más cercana al grupo.
 - Cada problemática: una o dos frases, máximo 220 caracteres, describiendo lo que se observa en las niñas y los niños o en su entorno. No propongas soluciones ni actividades.
 - Cada problemática debe tener UN SOLO foco (por ejemplo, solo regulación emocional). No juntes varios temas en una misma problemática.
