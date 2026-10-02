@@ -392,8 +392,8 @@ export default function DirectivoDashboardPage() {
                 </section>
               </div>
 
-              {/* Prioritarios, alumnos por grado, modalidades */}
-              <div style={st.rejilla(300)}>
+              {/* Prioritarios y alumnos por grado */}
+              <div style={st.rejilla(340)}>
                 <section style={st.card}>
                   <h2 style={st.h2}>PDA prioritarios</h2>
                   <p style={st.sub}>Atendidos según su origen</p>
@@ -432,6 +432,10 @@ export default function DirectivoDashboardPage() {
                   )}
                 </section>
 
+              </div>
+
+              {/* Modalidades y observaciones */}
+              <div style={st.rejilla(340)}>
                 <section style={st.card}>
                   <h2 style={st.h2}>Modalidades de trabajo</h2>
                   <p style={st.sub}>Planeaciones del ciclo por modalidad</p>
@@ -447,10 +451,6 @@ export default function DirectivoDashboardPage() {
                     </div>
                   )}
                 </section>
-              </div>
-
-              {/* Observaciones y semáforo */}
-              <div style={st.rejilla(340)}>
                 <section style={st.card}>
                   <h2 style={{ ...st.h2, marginBottom: 12 }}>Observaciones relevantes</h2>
                   {d.observaciones.length === 0 ? <p style={st.vacio}>Sin observaciones por ahora.</p> : (
@@ -468,13 +468,15 @@ export default function DirectivoDashboardPage() {
                     Ver mis docentes →
                   </button>
                 </section>
+              </div>
+
+              {/* Semáforo (ancho completo) */}
                 <section style={{ ...st.card, border: `1px dashed ${C.indigoSuave}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                     <h2 style={{ ...st.h2, margin: 0 }}>Semáforo de avance</h2><span style={st.pronto}>PRONTO</span>
                   </div>
                   <p style={st.vacio}>Niños en Logrado, En proceso y Requiere apoyo por grado. Se activará cuando la educadora registre el nivel de sus alumnos.</p>
                 </section>
-              </div>
             </>
           )}
         </div>
