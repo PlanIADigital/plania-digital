@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { useRouter } from 'next/navigation'
@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // [1 oct 2026] Aviso cuando la sesión venció y fetchConSesion mandó aquí.
+  const [aviso, setAviso] = useState('')
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('motivo') === 'sesion') setAviso('Tu sesión terminó. Vuelve a entrar para continuar.')
+  }, [])
 
   async function handleLogin() {
     setLoading(true)
@@ -36,10 +42,14 @@ export default function LoginPage() {
 
     if (userData?.is_super_admin) {
       window.location.href = next || '/admin'
-    } else if (userData?.role === 'directivo') {
-      router.push('/directivo/dashboard')
     } else {
-      router.push('/dashboard')
+      // Solo se aceptan regresos a páginas internas (nunca a otro sitio ni a /auth o /admin).
+      const interno = next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth') && !next.startsWith('/admin') ? next : null
+      if (userData?.role === 'directivo') {
+        router.push(interno && interno.startsWith('/directivo') ? interno : '/directivo/dashboard')
+      } else {
+        router.push(interno && !interno.startsWith('/directivo') ? interno : '/dashboard')
+      }
     }
   }
 
@@ -94,6 +104,9 @@ export default function LoginPage() {
             </a>
           </p>
 
+          {aviso && !error && (
+            <p style={{ background: '#EEEDF8', color: '#3D3A8C', borderRadius: 8, padding: '10px 14px', fontSize: 13, margin: '0 0 16px', lineHeight: 1.5 }}>{aviso}</p>
+          )}
           {error && (
             <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
               <p style={{ color: '#DC2626', fontSize: 13, margin: 0 }}>{error}</p>

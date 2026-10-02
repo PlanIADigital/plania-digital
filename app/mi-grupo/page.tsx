@@ -741,10 +741,7 @@ async function abrirModalAlumnos() {
                 <div>
                   <label style={s.label}>Alumnos</label>
                   {codigosActivos && codigosActivos > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                      <span style={{ ...s.select, width: 64, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
-                      <button type="button" onClick={abrirModalAlumnos} style={{ ...s.accionBtn, fontSize: 12 }}>Altas y bajas →</button>
-                    </div>
+                    <span style={{ ...s.select, width: 64, display: 'inline-block', background: '#F8F8FC', textAlign: 'center' as const }}>{codigosActivos}</span>
                   ) : (
                     <input
                       type="number" min="1" max="50" placeholder="24"
@@ -762,6 +759,9 @@ async function abrirModalAlumnos() {
                   {alumnosGuardado && <span style={s.check}>✓</span>}
                 </div>
               </div>
+              {(codigosActivos ?? 0) > 0 ? (
+                <button type="button" onClick={abrirModalAlumnos} style={{ ...s.accionBtn, marginTop: 12 }}>👥 Altas y bajas de alumnos →</button>
+              ) : null}
             </div>
 
             {discrepanciaAlumnos && (
