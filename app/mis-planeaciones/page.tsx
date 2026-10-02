@@ -1,51 +1,68 @@
 'use client'
+// ============================================================
+//  PlanIA Digital — app/mis-planeaciones/page.tsx
+//
+//  [Rediseño 1 oct 2026] Mismo lenguaje visual que Dashboard, Mi Grupo
+//  y Nueva Planeación: encabezado común, una columna (720 px) y
+//  TARJETAS en lugar de tabla (una tabla de 6 columnas no cabe en
+//  celular). Cada tarjeta: título, etiquetas (campo + eje), período y
+//  estado; "Ver →" como acción principal y "Descartar" como enlace
+//  discreto. Se retiran de la lista: propósito (se ve completo al abrir
+//  la planeación), fecha de creación y ordenar por columna — el orden
+//  es siempre "más recientes primero" (created_at desc).
+//  Se conservan intactos: selector de ciclo, pestañas con contadores,
+//  buscador en vivo y la regla de descarte (solo activas y antes de
+//  descargar el Word).
+// ============================================================
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import EncabezadoPagina from '@/components/EncabezadoPagina'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 
 const supabase = createClient()
 
-function nombreCorto(nombre: string | null): string {
-  if (!nombre) return ''
-  return nombre.replace(/^Jardín de Niños Indígena\s*/i, '').replace(/^Jardín de Niños\s*/i, '').replace(/^Jardin de Niños\s*/i, '').replace(/^Centro de Educación Preescolar\s*/i, '').trim()
+const C = {
+  indigo: '#3D3A8C',
+  cian: '#00A896',
+  indigoClaro: '#EEEDF8',
+  texto: '#1A1A2E',
+  gris: '#6B7280',
+  borde: '#E0DFF5',
 }
 
 const CAMPOS_COLORES: Record<string, { bg: string; color: string }> = {
   'Lenguajes': { bg: '#EEEDF8', color: '#3D3A8C' },
-  'Saberes y Pensamiento Científico': { bg: '#E0F5F3', color: '#00A896' },
-  'Ética, Naturaleza y Sociedades': { bg: '#D1FAE5', color: '#059669' },
-  'De lo Humano y lo Comunitario': { bg: '#EDE9FE', color: '#7C3AED' },
+  'Saberes y Pensamiento Científico': { bg: '#E0F5F3', color: '#00796B' },
+  'Ética, Naturaleza y Sociedades': { bg: '#E8F5F2', color: '#0F6E56' },
+  'De lo Humano y lo Comunitario': { bg: '#F1ECF8', color: '#5B3F8C' },
 }
 
-// [jul 2026] Se agrega 'created_at' como criterio de orden — antes
-// solo se podía ordenar por "Período" (fecha de inicio/fin en el
-// aula), lo cual confundía a la educadora al buscar una planeación
-// que acababa de crear pero con fechas de aplicación distantes o de
-// prueba: no aparecía "arriba" aunque fuera la más reciente. Ahora
-// "Creada" (fecha real de creación del registro) es el orden por
-// defecto, y "Período" sigue disponible como columna/orden alterno.
-type SortKey = 'project_name' | 'pda_campo' | 'eje_principal' | 'starts_on' | 'created_at'
-type SortDir = 'asc' | 'desc'
+const ESTADOS: Record<string, { texto: string; bg: string; color: string }> = {
+  active: { texto: 'Activa', bg: '#E0F5F3', color: '#0F6E56' },
+  discarded: { texto: 'Descartada', bg: '#F3F4F6', color: '#6B7280' },
+  closed: { texto: 'Cerrada', bg: C.indigoClaro, color: C.indigo },
+}
+
+type Filtro = 'todas' | 'active' | 'closed' | 'discarded'
+
+function fechaCorta(iso?: string | null): string {
+  if (!iso) return ''
+  return new Date(iso + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+}
 
 export default function MisPlaneacionesPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [planeaciones, setPlaneaciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-    const [filtro, setFiltro] = useState<'todas' | 'active' | 'closed' | 'discarded'>('todas')
+  const [filtro, setFiltro] = useState<Filtro>('todas')
   // [sep 2026] Selector de ciclo escolar — por defecto muestra solo el
   // ciclo activo; las planeaciones de ciclos anteriores no desaparecen,
-  // solo quedan un clic de distancia (misma filosofía: sus planeaciones
-  // siempre son suyas).
+  // solo quedan un clic de distancia (sus planeaciones siempre son suyas).
   const [cicloSeleccionado, setCicloSeleccionado] = useState(CICLO_ESCOLAR_ACTIVO)
-  // [jul 2026] Orden por defecto: más recientes primero (created_at),
-  // no por período — ver comentario junto al type SortKey arriba.
-  const [sortKey, setSortKey] = useState<SortKey>('created_at')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  // [jul 2026] Buscador por nombre del proyecto, filtra en vivo sin
-  // necesidad de botón — se aplica antes del ordenamiento.
+  // [jul 2026] Buscador por nombre del proyecto, filtra en vivo.
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
@@ -66,13 +83,8 @@ export default function MisPlaneacionesPage() {
     load()
   }, [])
 
-    function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortKey(key); setSortDir('asc') }
-  }
   // [sep 2026] Descartar planeación completa — no borra nada, solo
-  // marca status='discarded' (mismo principio que descartarRubrica en
-  // la vista individual). Existe para que una planeación que no
+  // marca status='discarded'. Existe para que una planeación que no
   // convenció y se va a regenerar no siga contando contra el tope
   // mensual de días hábiles de la educadora.
   async function descartarPlaneacion(id: string) {
@@ -87,40 +99,23 @@ export default function MisPlaneacionesPage() {
   }
 
   // Ciclos con al menos una planeación, más recientes primero. Los
-  // registros muy antiguos que no llegaron a guardar ciclo_escolar
-  // (antes de que ese campo existiera) se agrupan como "Sin ciclo",
-  // en vez de desaparecer silenciosamente del selector.
+  // registros antiguos sin ciclo_escolar se agrupan como "Sin ciclo".
   const ciclosDisponibles = [...new Set(planeaciones.map(p => p.ciclo_escolar || 'Sin ciclo'))]
     .sort((a, b) => b.localeCompare(a))
   if (!ciclosDisponibles.includes(CICLO_ESCOLAR_ACTIVO)) ciclosDisponibles.unshift(CICLO_ESCOLAR_ACTIVO)
 
   const planeacionesDelCiclo = planeaciones.filter(p => (p.ciclo_escolar || 'Sin ciclo') === cicloSeleccionado)
 
-    const filtradas = planeacionesDelCiclo
-    .filter(p => {
-      if (filtro === 'active') return p.status === 'active'
-      if (filtro === 'discarded') return p.status === 'discarded'
-      if (filtro === 'closed') return p.status !== 'active' && p.status !== 'discarded'
-      return true
-    })
-    .filter(p => {
-      if (!busqueda.trim()) return true
-      return (p.project_name || '').toLowerCase().includes(busqueda.trim().toLowerCase())
-    })
-    .sort((a, b) => {
-      const va = a[sortKey] || ''
-      const vb = b[sortKey] || ''
-      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
-    })
+  const coincide = (p: any, f: Filtro) =>
+    f === 'todas' ? true
+      : f === 'active' ? p.status === 'active'
+      : f === 'discarded' ? p.status === 'discarded'
+      : p.status !== 'active' && p.status !== 'discarded'
 
-  function SortIcon({ col }: { col: SortKey }) {
-    if (sortKey !== col) return <span style={{ color: '#CCC', marginLeft: 4 }}>↕</span>
-    return <span style={{ color: '#3D3A8C', marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
-  }
-
-  function formatoFechaCorta(fechaISO: string): string {
-    return new Date(fechaISO).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
-  }
+  // Orden fijo: más recientes primero (ya viene así de la consulta).
+  const filtradas = planeacionesDelCiclo
+    .filter(p => coincide(p, filtro))
+    .filter(p => !busqueda.trim() || (p.project_name || '').toLowerCase().includes(busqueda.trim().toLowerCase()))
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -128,161 +123,137 @@ export default function MisPlaneacionesPage() {
     </div>
   )
 
+  const etiquetasFiltro: Record<Filtro, string> = { todas: 'Todas', active: 'Activas', discarded: 'Descartadas', closed: 'Cerradas' }
+  const vacioFiltro: Record<Filtro, string> = {
+    todas: 'Aún no tienes planeaciones en este ciclo.',
+    active: 'No hay planeaciones activas.',
+    discarded: 'No hay planeaciones descartadas.',
+    closed: 'No hay planeaciones cerradas.',
+  }
+
   return (
     <SidebarWrapper profile={profile}>
-      <div style={{ padding: '0 32px 60px' }}>
+      <div style={{ padding: '0 16px' }}>
 
-      {/* Encabezado */}
-        <div style={{ background: 'linear-gradient(135deg, #3D3A8C 0%, #5B58B0 100%)', borderRadius: 14, padding: '16px 32px', marginBottom: 24, textAlign: 'center' }}>
-          <h1 style={{ color: 'white', margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '0.05em' }}>MIS PLANEACIONES</h1>
-        </div>
+        <EncabezadoPagina
+          titulo="Mis planeaciones"
+          subtitulo={`${planeacionesDelCiclo.length} en el ciclo ${cicloSeleccionado}`}
+        />
 
-        {/* Selector de ciclo escolar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Ciclo escolar</label>
-          <select
-            value={cicloSeleccionado}
-            onChange={e => setCicloSeleccionado(e.target.value)}
-            style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1.5px solid #3D3A8C', background: '#EEEDF8', color: '#3D3A8C', cursor: 'pointer' }}
-          >
-            {ciclosDisponibles.map(c => (
-              <option key={c} value={c}>{c}{c === CICLO_ESCOLAR_ACTIVO ? ' (actual)' : ''}</option>
-            ))}
-          </select>
-        </div>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-        {/* Filtros + buscador + botón nueva */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12, flexWrap: 'wrap' as const }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                        {(['todas', 'active', 'discarded', 'closed'] as const).map(f => {
-              const labels = { todas: 'Todas', active: 'Activas', discarded: 'Descartadas', closed: 'Cerradas' }
-              const count = f === 'todas' ? planeacionesDelCiclo.length
-                : f === 'active' ? planeacionesDelCiclo.filter(p => p.status === 'active').length
-                : f === 'discarded' ? planeacionesDelCiclo.filter(p => p.status === 'discarded').length
-                : planeacionesDelCiclo.filter(p => p.status !== 'active' && p.status !== 'discarded').length
-              return (
-                <button key={f} onClick={() => setFiltro(f)}
-                  style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: filtro === f ? 700 : 400, cursor: 'pointer', border: `1.5px solid ${filtro === f ? '#3D3A8C' : '#E0DFF5'}`, background: filtro === f ? '#EEEDF8' : 'white', color: filtro === f ? '#3D3A8C' : '#888' }}>
-                  {labels[f]} ({count})
-                </button>
-              )
-            })}
+          {/* Filtros */}
+          <div style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                Ciclo
+                <select
+                  value={cicloSeleccionado}
+                  onChange={e => setCicloSeleccionado(e.target.value)}
+                  style={{ padding: '8px 10px', borderRadius: 8, fontSize: 15, fontWeight: 600, border: `1px solid ${C.borde}`, background: 'white', color: C.indigo, cursor: 'pointer', textTransform: 'none' as const, letterSpacing: 0 }}
+                >
+                  {ciclosDisponibles.map(c => (
+                    <option key={c} value={c}>{c}{c === CICLO_ESCOLAR_ACTIVO ? ' (actual)' : ''}</option>
+                  ))}
+                </select>
+              </label>
+              <button onClick={() => router.push('/planeacion/nueva')}
+                style={{ background: C.cian, color: 'white', border: 'none', padding: '9px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' as const }}>
+                ✨ Nueva
+              </button>
+            </div>
+
             <input
-              type="text"
+              type="search"
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="🔍 Buscar por nombre del proyecto..."
-              style={{ padding: '7px 14px', borderRadius: 20, fontSize: 12, border: '1.5px solid #E0DFF5', background: 'white', color: '#1A1A2E', minWidth: 240, outline: 'none' }}
+              placeholder="🔍 Buscar por nombre del proyecto"
+              style={{ display: 'block', width: '100%', boxSizing: 'border-box' as const, padding: '10px 14px', borderRadius: 10, fontSize: 16, border: `1px solid ${C.borde}`, background: 'white', color: C.texto, outline: 'none', marginBottom: 12 }}
             />
-          </div>
-          <button onClick={() => router.push('/planeacion/nueva')}
-            style={{ background: '#00A896', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            ✨ Nueva planeación
-          </button>
-        </div>
 
-        {filtradas.length === 0 ? (
-          <div style={{ background: 'white', borderRadius: 14, padding: '48px 32px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontSize: 36, marginBottom: 16 }}>📋</p>
-            <p style={{ fontSize: 15, color: '#888', marginBottom: 24 }}>
-              {busqueda.trim()
-                ? `No se encontraron planeaciones con "${busqueda.trim()}".`
-                : filtro === 'todas' ? 'Aún no tienes planeaciones.' : `No hay planeaciones ${filtro === 'active' ? 'activas' : 'cerradas'}.`}
-            </p>
-            {!busqueda.trim() && (
-              <button onClick={() => router.push('/planeacion/nueva')}
-                style={{ background: '#00A896', color: 'white', border: 'none', padding: '12px 24px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-                ✨ Crear mi primera planeación
-              </button>
-            )}
+            {/* Pestañas: en celular se deslizan de lado */}
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto' as const, paddingBottom: 2, WebkitOverflowScrolling: 'touch' as any }}>
+              {(['todas', 'active', 'discarded', 'closed'] as const).map(f => {
+                const activo = filtro === f
+                const count = planeacionesDelCiclo.filter(p => coincide(p, f)).length
+                return (
+                  <button key={f} onClick={() => setFiltro(f)}
+                    style={{
+                      flexShrink: 0, padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' as const,
+                      fontWeight: activo ? 700 : 500,
+                      border: `1.5px solid ${activo ? C.indigo : C.borde}`,
+                      background: activo ? C.indigoClaro : 'white',
+                      color: activo ? C.indigo : C.gris,
+                    }}>
+                    {etiquetasFiltro[f]} ({count})
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        ) : (
-          <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#F8F7FF', borderBottom: '2px solid #EEEDF8' }}>
-                  {[
-                    { label: 'Nombre del Proyecto', key: 'project_name' as SortKey, width: '24%' },
-                    // NOTA: el campo interno se llama "finalidad" en BD y en el código (ver línea 54, 190),
-                    // pero se le muestra a la educadora como "Propósito" — término alineado a NEM 2022.
-                    { label: 'Propósito', key: null, width: '22%' },
-                    { label: 'Campo Formativo', key: 'pda_campo' as SortKey, width: '16%' },
-                    { label: 'Eje Articulador', key: 'eje_principal' as SortKey, width: '13%' },
-                    { label: 'Creada', key: 'created_at' as SortKey, width: '9%' },
-                    { label: 'Período', key: 'starts_on' as SortKey, width: '10%' },
-                    { label: '', key: null, width: '6%' },
-                  ].map((col, i) => (
-                    <th key={i} onClick={() => col.key && handleSort(col.key)}
-                      style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#3D3A8C', textTransform: 'uppercase', letterSpacing: '0.06em', width: col.width, cursor: col.key ? 'pointer' : 'default', userSelect: 'none' as const, whiteSpace: 'nowrap' as const }}>
-                      {col.label}{col.key && <SortIcon col={col.key} />}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtradas.map((p, idx) => {
-                  const colores = CAMPOS_COLORES[p.pda_campo] || { bg: '#F0EFF8', color: '#3D3A8C' }
-                  return (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #F0EFF8', background: idx % 2 === 0 ? 'white' : '#FAFAFE' }}>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>{p.project_name}</span>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: p.status === 'active' ? '#3D3A8C' : p.status === 'discarded' ? '#FEE2E2' : '#E0F5F3', color: p.status === 'active' ? 'white' : p.status === 'discarded' ? '#991B1B' : '#0F6E56', fontWeight: 600, flexShrink: 0 }}>
-                            {p.status === 'active' ? 'Activa' : p.status === 'discarded' ? 'Descartada' : 'Cerrada'}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                        <span style={{ fontSize: 12, color: '#555', lineHeight: 1.4 }}>
-                          {p.finalidad ? `${p.finalidad.substring(0, 80)}${p.finalidad.length > 80 ? '...' : ''}` : '—'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                        {p.pda_campo ? (
-                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: colores.bg, color: colores.color, whiteSpace: 'nowrap' as const }}>
-                            {p.pda_campo}
-                          </span>
-                        ) : <span style={{ color: '#CCC' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                        {p.eje_principal ? (
-                          <span style={{ fontSize: 11, color: '#059669', fontWeight: 500 }}>{p.eje_principal}</span>
-                        ) : <span style={{ color: '#CCC' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' as const }}>
-                        {p.created_at ? (
-                          <span style={{ fontSize: 11, color: '#888' }}>{formatoFechaCorta(p.created_at)}</span>
-                        ) : <span style={{ color: '#CCC' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' as const }}>
-                        {p.starts_on ? (
-                          <span style={{ fontSize: 11, color: '#888' }}>
-                            {new Date(p.starts_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                            {p.ends_on && <><br />{new Date(p.ends_on + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</>}
-                          </span>
-                        ) : <span style={{ color: '#CCC' }}>—</span>}
-                      </td>
-                                            <td style={{ padding: '12px 16px', verticalAlign: 'middle', textAlign: 'right' as const }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                            {p.status === 'active' && !p.word_descargado_en && (
-                            <button onClick={() => descartarPlaneacion(p.id)}
-                              style={{ background: 'white', border: '1.5px solid #FCA5A5', color: '#991B1B', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
-                              ✕ Descartar
-                            </button>
-                          )}
-                          <button onClick={() => router.push(`/planeacion/${p.id}`)}
-                            style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
-                            Ver →
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+
+          {/* Lista */}
+          {filtradas.length === 0 ? (
+            <div style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '36px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: 32, margin: '0 0 10px' }}>📋</p>
+              <p style={{ fontSize: 15, color: C.gris, margin: '0 0 18px', lineHeight: 1.6 }}>
+                {busqueda.trim() ? `No se encontraron planeaciones con "${busqueda.trim()}".` : vacioFiltro[filtro]}
+              </p>
+              {!busqueda.trim() && filtro === 'todas' && (
+                <button onClick={() => router.push('/planeacion/nueva')}
+                  style={{ background: C.cian, color: 'white', border: 'none', padding: '12px 22px', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+                  ✨ Crear mi primera planeación
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filtradas.map(p => {
+                const campo = CAMPOS_COLORES[p.pda_campo] || { bg: C.indigoClaro, color: C.indigo }
+                const estado = ESTADOS[p.status] || ESTADOS.closed
+                const puedeDescartar = p.status === 'active' && !p.word_descargado_en
+                return (
+                  <div key={p.id} style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        margin: '0 0 8px', fontWeight: 700, color: C.texto, fontSize: 15, lineHeight: 1.35,
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                      }}>
+                        {p.project_name}
+                      </p>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 6 }}>
+                        {p.pda_campo && (
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: campo.bg, color: campo.color }}>{p.pda_campo}</span>
+                        )}
+                        {p.eje_principal && (
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: '#E8F5F2', color: '#0F6E56' }}>{p.eje_principal}</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const }}>
+                        {p.starts_on && (
+                          <span style={{ fontSize: 12, color: C.gris }}>{fechaCorta(p.starts_on)}{p.ends_on && ` → ${fechaCorta(p.ends_on)}`}</span>
+                        )}
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: estado.bg, color: estado.color }}>{estado.texto}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => router.push(`/planeacion/${p.id}`)}
+                        style={{ background: C.indigo, color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
+                        Ver →
+                      </button>
+                      {puedeDescartar && (
+                        <button onClick={() => descartarPlaneacion(p.id)}
+                          style={{ background: 'none', border: 'none', color: C.gris, padding: '2px 0', cursor: 'pointer', fontSize: 12, fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' as const }}>
+                          Descartar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
         <div style={{ height: 40 }} />
       </div>
     </SidebarWrapper>
