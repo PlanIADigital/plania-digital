@@ -173,7 +173,8 @@ export default function MisPlaneacionesPage() {
 
             {/* Pestañas: en celular se deslizan de lado */}
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto' as const, paddingBottom: 2, WebkitOverflowScrolling: 'touch' as any }}>
-              {(['todas', 'active', 'discarded', 'closed'] as const).map(f => {
+              {/* [1 oct 2026] Sin pestaña "Cerradas": ningún flujo cierra planeaciones (siempre 0). */}
+              {(['todas', 'active', 'discarded'] as const).map(f => {
                 const activo = filtro === f
                 const count = planeacionesDelCiclo.filter(p => coincide(p, f)).length
                 return (
