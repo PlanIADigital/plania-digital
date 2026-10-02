@@ -275,7 +275,13 @@ export default function MiDiarioPage() {
               </section>
 
               <section style={card}>
-                <h2 style={h2}>Hoy</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <h2 style={h2}>Hoy</h2>
+                  <button onClick={() => router.push('/mi-diario/revisar')}
+                    style={{ background: 'none', border: 'none', padding: 0, color: C.indigo, fontWeight: 700, fontSize: 13.5, cursor: 'pointer', minHeight: 40, fontFamily: 'inherit' }}>
+                    Ver todo mi diario →
+                  </button>
+                </div>
                 {notasHoy.length === 0 ? (
                   <p style={{ margin: 0, fontSize: 13.5, color: C.suave }}>Aún no registras notas hoy.</p>
                 ) : notasHoy.map(n => (

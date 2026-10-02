@@ -15,13 +15,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarUsuario } from '@/lib/verificarUsuario'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
-import Anthropic from '@anthropic-ai/sdk'
+import { quitarNombres } from '@/lib/diarioPrivacidad'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const MODELO = 'gpt-4o-mini-transcribe'
-const MODELO_FILTRO = 'claude-haiku-4-5-20251001'
 const USD_POR_MINUTO = 0.003
 const TOPE_MINUTOS = 300
 const MAX_SEGUNDOS: Record<string, number> = { observacion: 60, incidente: 180 }
@@ -127,39 +126,13 @@ export async function POST(request: NextRequest) {
       return codigos.has(codigo) ? codigo : original
     })
 
-    // [2 oct 2026] Filtro de privacidad (prompt autorizado por el fundador):
-    // MÍA quita nombres dictados por error ANTES de mostrar el texto. El texto
-    // en bruto nunca se guarda, así que el nombre no llega a la base.
+    // [2 oct 2026] Filtro de privacidad (prompt autorizado): ver lib/diarioPrivacidad.ts
     const reemplazo = destinatario !== 'grupo' && codigos.has(destinatario) ? destinatario : '[nombre omitido]'
-    let nombresQuitados = 0
-    let revisionNombres: 'ok' | 'fallo' = 'ok'
-    let costoFiltro = 0
-    if (texto) {
-      try {
-        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-        const r = await anthropic.messages.create({
-          model: MODELO_FILTRO,
-          max_tokens: 2000,
-          temperature: 0,
-          system: `Eres un filtro de privacidad para notas de una educadora de preescolar en México. Recibes una transcripción de voz. Reemplaza CADA nombre propio de persona (niñas, niños, familiares, docentes) por ${reemplazo}. No cambies ninguna otra palabra, ni la puntuación, ni el orden. No reemplaces códigos como AL-03, ni nombres de lugares, materiales o actividades. Si no hay nombres, devuelve el texto idéntico. Responde solo JSON: {"texto":"...","nombres_quitados":N}`,
-          messages: [{ role: 'user', content: texto }],
-        })
-        costoFiltro = (r.usage.input_tokens * 1 + r.usage.output_tokens * 5) / 1_000_000
-        const bloque: any = r.content.find((b: any) => b.type === 'text')
-        const crudo = String(bloque?.text || '')
-        const j = JSON.parse(crudo.slice(crudo.indexOf('{'), crudo.lastIndexOf('}') + 1))
-        const limpio = String(j?.texto || '').trim()
-        const n = Number(j?.nombres_quitados) || 0
-        if (limpio && limpio.length > texto.length * 0.5 && limpio.length < texto.length * 1.5) {
-          if (n > 0) { texto = limpio; nombresQuitados = n }
-        } else {
-          revisionNombres = 'fallo'
-        }
-      } catch (e: any) {
-        console.error('Mi diario: el filtro de nombres falló:', e?.message)
-        revisionNombres = 'fallo'
-      }
-    }
+    const filtro = await quitarNombres(texto, reemplazo)
+    texto = filtro.texto
+    const nombresQuitados = filtro.nombresQuitados
+    const revisionNombres = filtro.revision
+    const costoFiltro = filtro.costoUsd
 
     await supabaseAdmin.from('diario_transcripciones').insert({
       user_id: usuario.id,
