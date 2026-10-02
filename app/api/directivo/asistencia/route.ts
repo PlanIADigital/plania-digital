@@ -11,6 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarDirectivo } from '@/lib/verificarDirectivo'
 import { zonaHorariaPorCCT } from '@/lib/fechaMexico'
+import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
+import { cargarDiasDeClase } from '@/lib/diasDeClase'
 
 const FORMATO_CCT = /^[0-9A-Z]{10}$/
 
@@ -42,6 +44,9 @@ export async function GET(request: NextRequest) {
     const hoy = hoyEn(zonaHorariaPorCCT(directivo.cct_primary) || 'America/Mexico_City')
     const lunes = lunesDe(hoy)
     const dias = [0, 1, 2, 3, 4].map(i => sumarDias(lunes, i))
+    // [2 oct 2026] Días sin clases según el calendario del estado (misma regla que planeación)
+    const info = await cargarDiasDeClase(supabaseAdmin, directivo.cct_primary, CICLO_ESCOLAR_ACTIVO)
+    const infoHoy = info(hoy)
 
     const ccts = [directivo.cct_primary, directivo.cct_secondary]
       .filter((c): c is string => !!c && FORMATO_CCT.test(c))
@@ -84,10 +89,11 @@ export async function GET(request: NextRequest) {
         presentes: delDia.reduce((s, x) => s + x.presentes, 0),
         total: delDia.reduce((s, x) => s + x.total, 0),
         grupos: delDia.length,
+        sinClases: info(fecha).habil ? null : info(fecha).corto,
       }
     })
 
-    return NextResponse.json({ hoy, grupos, semana })
+    return NextResponse.json({ hoy, grupos, semana, motivoHoy: infoHoy.habil ? null : infoHoy.motivo })
   } catch (e: any) {
     console.error('Error en /api/directivo/asistencia:', e?.message)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

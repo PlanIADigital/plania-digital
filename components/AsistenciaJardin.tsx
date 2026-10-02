@@ -16,8 +16,8 @@ const C = {
 }
 
 type Grupo = { grupo: string; docente: string; presentes: number | null; total: number | null }
-type Dia = { fecha: string; presentes: number; total: number; grupos: number }
-type Datos = { hoy: string; grupos: Grupo[]; semana: Dia[] }
+type Dia = { fecha: string; presentes: number; total: number; grupos: number; sinClases?: string | null }
+type Datos = { hoy: string; grupos: Grupo[]; semana: Dia[]; motivoHoy?: string | null }
 
 const card: React.CSSProperties = { background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '16px 18px', minWidth: 0 }
 const h2: React.CSSProperties = { margin: '0 0 4px', fontSize: 13, fontWeight: 800, color: C.texto, textTransform: 'uppercase', letterSpacing: '0.07em' }
@@ -79,7 +79,9 @@ export default function AsistenciaJardin({ jardin }: { jardin: string }) {
       <section style={card}>
         <h2 style={h2}>Asistencia de hoy</h2>
         <p style={sub}>{fechaLarga(datos.hoy).charAt(0).toUpperCase() + fechaLarga(datos.hoy).slice(1)}</p>
-        {datos.grupos.length === 0 ? (
+        {datos.motivoHoy && reportaron.length === 0 ? (
+          <p style={{ ...sub, margin: 0 }}>Hoy no hay clases ({datos.motivoHoy}).</p>
+        ) : datos.grupos.length === 0 ? (
           <p style={{ ...sub, margin: 0 }}>Aparecerá cuando las docentes configuren su grupo.</p>
         ) : (
           <>
@@ -130,16 +132,18 @@ export default function AsistenciaJardin({ jardin }: { jardin: string }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 10, alignItems: 'end', height: 170, borderBottom: `1px solid ${C.linea}`, padding: '0 4px' }}>
           {datos.semana.map(d => {
             const futuro = d.fecha > datos.hoy
-            const sin = !futuro && d.grupos === 0
+            const libre = !futuro && !!d.sinClases && d.grupos === 0
+            const sin = !futuro && !libre && d.grupos === 0
             const p = pct(d.presentes, d.total)
             return (
               <div key={d.fecha} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}>
                 {!futuro && !sin && <span style={{ fontSize: 12, fontWeight: 700, color: C.texto }}>{p}%</span>}
                 {sin && <span style={{ fontSize: 11, color: '#9CA3AF' }}>—</span>}
+                {libre && <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF' }}>{d.sinClases}</span>}
                 <div title={futuro ? '' : sin ? 'Sin reporte' : `${diaCorto(d.fecha)}: ${d.presentes} de ${d.total} (${p}%)`}
                   style={{
                     width: '70%', borderRadius: '4px 4px 0 0',
-                    height: futuro ? 0 : sin ? '24%' : `${Math.max(p, 2) * 0.82}%`,
+                    height: futuro || libre ? 0 : sin ? '24%' : `${Math.max(p, 2) * 0.82}%`,
                     background: sin ? 'transparent' : C.verde,
                     border: sin ? '1px dashed #D1D5DB' : 'none', borderBottom: 'none', boxSizing: 'border-box',
                   }} />

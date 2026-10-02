@@ -20,7 +20,7 @@ const C = {
 
 type Registro = { fecha: string; presentes: number; total: number; actualizado_en: string }
 type Estado = {
-  hoy: string; anterior: string; hoyEsHabil: boolean
+  hoy: string; anterior: string; hoyEsHabil: boolean; motivoHoy?: string | null
   grado: string | null; grupo_letra: string | null; total: number
   registroHoy: Registro | null; registroAnterior: Registro | null
 }
@@ -117,7 +117,7 @@ export default function TarjetaAsistencia() {
           <button onClick={() => router.push('/mi-grupo')} style={{ background: 'none', border: 'none', padding: 0, color: C.indigo, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>Mi grupo</button>.
         </p>
       ) : !estado.hoyEsHabil && fecha === estado.hoy ? (
-        <p style={{ margin: '6px 0 0', fontSize: 14, color: C.suave }}>Hoy no hay clases.</p>
+        <p style={{ margin: '6px 0 0', fontSize: 14, color: C.suave }}>Hoy no hay clases{estado.motivoHoy && estado.motivoHoy !== 'Fin de semana' ? ` (${estado.motivoHoy})` : ''}.</p>
       ) : !editando && registro ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
           <p style={{ margin: 0, fontSize: 15, color: C.texto }}>
