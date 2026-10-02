@@ -353,10 +353,10 @@ export default function MiAvancePage() {
   const progresoCiclo = mesActual >= 0 ? Math.round(((mesActual + 1) / MESES_LARGOS.length) * 100) : 100
   const etiquetaProgreso = mesActual >= 0 ? `${MESES_LARGOS[mesActual]} · mes ${mesActual + 1} de ${MESES_LARGOS.length}` : 'Receso entre ciclos'
   const pestañas: Array<{ clave: 'cobertura' | 'mapa' | 'ejes' | 'nee'; texto: string }> = [
-    { clave: 'cobertura', texto: '📊 Campos' },
-    { clave: 'mapa', texto: '🗺️ PDA' },
-    { clave: 'ejes', texto: '🔗 Ejes' },
-    { clave: 'nee', texto: '♿ Diversidad' },
+    { clave: 'cobertura', texto: 'Campos' },
+    { clave: 'mapa', texto: 'PDA' },
+    { clave: 'ejes', texto: 'Ejes' },
+    { clave: 'nee', texto: 'Diversidad' },
   ]
 
   return (
@@ -373,7 +373,7 @@ export default function MiAvancePage() {
 
           {/* Indicadores 2×2 */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 12 }}>
-            <KpiCard icon="📋" label="Planeaciones" value={totalPlanes} delta={totalPlanesAct > 0 ? `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}` : 'sin activas'} />
+            <KpiCard icon="📋" label="Planeaciones" value={totalPlanes} delta={totalPlanesAct === 0 ? 'sin activas' : totalPlanesAct === totalPlanes ? (totalPlanes > 1 ? 'todas activas' : 'activa') : `${totalPlanesAct} activa${totalPlanesAct > 1 ? 's' : ''}`} />
             <KpiCard icon="📌" label="PDA trabajados" value={totalPDAs} delta={`de ${CAMPOS_CONFIG.reduce((s, c) => s + c.total, 0)} del programa`} />
             <KpiCard
               icon="⭐"
@@ -405,17 +405,17 @@ export default function MiAvancePage() {
 
           {/* Pestañas */}
           <div style={st.card}>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto' as const, paddingBottom: 2, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6, marginBottom: 16 }}>
               {pestañas.map(t => {
                 const activo = tabActivo === t.clave
                 return (
                   <button key={t.clave} onClick={() => setTabActivo(t.clave)}
                     style={{
-                      flexShrink: 0, padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' as const,
-                      fontWeight: activo ? 700 : 500,
-                      border: `1.5px solid ${activo ? C.indigo : C.borde}`,
-                      background: activo ? C.indigoClaro : 'white',
-                      color: activo ? C.indigo : C.gris,
+                      minWidth: 0, padding: '8px 2px', borderRadius: 20, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis',
+                      fontWeight: activo ? 700 : 600,
+                      border: `1.5px solid ${activo ? '#00A896' : C.borde}`,
+                      background: activo ? '#00A896' : 'white',
+                      color: activo ? 'white' : C.indigo,
                     }}>
                     {t.texto}
                   </button>

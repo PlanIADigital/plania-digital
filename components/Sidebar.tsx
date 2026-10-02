@@ -142,6 +142,13 @@ export default function Sidebar({ profile, children }: SidebarProps) {
   // Al cambiar de página, el menú del celular se cierra solo.
   useEffect(() => { setAbierto(false) }, [pathname])
 
+  // Cada página abre hasta arriba (evita que Safari restaure un scroll intermedio al recargar)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
+    window.scrollTo(0, 0)
+  }, [pathname])
+
   // Con el menú abierto en el celular, la página de atrás no se desplaza.
   useEffect(() => {
     document.body.style.overflow = abierto ? 'hidden' : ''
