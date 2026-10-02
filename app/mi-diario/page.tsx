@@ -82,6 +82,7 @@ export default function MiDiarioPage() {
   const [sucedido, setSucedido] = useState('')
   const [errorHoja, setErrorHoja] = useState('')
   const [agregando, setAgregando] = useState(false)
+  const [avisoNombres, setAvisoNombres] = useState('')
 
   const grabador = useRef<MediaRecorder | null>(null)
   const pedazos = useRef<Blob[]>([])
@@ -126,7 +127,7 @@ export default function MiDiarioPage() {
 
   function abrirHoja(d: string) {
     setDestino(d); setTipo('observacion'); setFase('listo'); setSegundos(0)
-    setTexto(''); setErrorHoja(''); setAgregando(false); setAviso('')
+    setTexto(''); setErrorHoja(''); setAgregando(false); setAviso(''); setAvisoNombres('')
   }
   function cerrarHoja() {
     if (fase === 'grabando') grabador.current?.stop()
@@ -178,11 +179,15 @@ export default function MiDiarioPage() {
     form.append('audio', audio, 'nota')
     form.append('tipo', tipo)
     form.append('segundos', String(dur))
+    form.append('destinatario', destino || 'grupo')
     try {
       const res = await fetch('/api/diario/transcribir', { method: 'POST', headers: { Authorization: `Bearer ${t}` }, body: form })
       const d = await res.json()
       if (d?.usadosMin != null) setUso({ usadosMin: d.usadosMin, topeMin: d.topeMin })
       if (!res.ok) { setErrorHoja(d?.error || 'No se pudo transcribir.'); setFase(esAgregado ? 'validar' : 'listo'); return }
+      if (!esAgregado) setAvisoNombres('')
+      if (d.revisionNombres === 'fallo') setAvisoNombres('MÍA no pudo revisar nombres esta vez. Revisa que el texto no tenga ninguno antes de guardar.')
+      else if (d.nombresQuitados > 0) setAvisoNombres(`✦ MÍA quitó ${d.nombresQuitados} ${d.nombresQuitados === 1 ? 'nombre que se dictó' : 'nombres que se dictaron'} por error.`)
       setTexto(prev => esAgregado && prev.trim() ? `${prev.trim()}\n\n(${hora(new Date().toISOString())}) ${d.texto}` : d.texto)
       setFase('validar')
     } catch {
@@ -339,6 +344,9 @@ export default function MiDiarioPage() {
 
             {(fase === 'validar' || fase === 'guardando') && (
               <div style={{ marginTop: 12 }}>
+                {avisoNombres && (
+                  <p style={{ margin: '0 0 10px', padding: '10px 12px', borderRadius: 10, background: C.indigoClaro, color: C.indigo, fontSize: 13.5, fontWeight: 700 }}>{avisoNombres}</p>
+                )}
                 <label style={{ fontSize: 12.5, fontWeight: 700, color: C.suave }}>Revisa y corrige el texto</label>
                 <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={6} disabled={fase === 'guardando'}
                   style={{ width: '100%', boxSizing: 'border-box', marginTop: 6, padding: 12, borderRadius: 10, border: `1.5px solid ${C.borde}`, fontSize: 15, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical' }} />
