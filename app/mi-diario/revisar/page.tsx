@@ -244,13 +244,13 @@ export default function RevisarDiarioPage() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {n.editada_en && (
-                        <>
-                          <span style={{ fontSize: 12, color: C.suave }}>Editada · {fechaHora(n.editada_en)}</span>
-                          <button onClick={() => verVersiones(n.id)} style={linkBtn}>{vs && vs !== 'cargando' ? 'Ocultar versiones' : 'Ver versiones'}</button>
-                        </>
-                      )}
+                    {n.editada_en && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }}>
+                        <span style={{ fontSize: 12, color: C.suave }}>Editada · {fechaHora(n.editada_en)}</span>
+                        <button onClick={() => verVersiones(n.id)} style={linkBtn}>{vs && vs !== 'cargando' ? 'Ocultar versiones' : 'Ver versiones'}</button>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
                       {!anulada && editando?.id !== n.id && anulando?.id !== n.id && (
                         <>
                           <button onClick={() => { setAnulando(null); setMensaje(null); setEditando({ id: n.id, texto: n.texto }) }} style={linkBtn}>Editar</button>
