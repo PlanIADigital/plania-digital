@@ -49,6 +49,33 @@ function Fila({ etiqueta, valor, children, ultima }: { etiqueta: string; valor?:
   )
 }
 
+// [oct 2026] Texto en una sola línea que reduce su letra (de 15 px hasta 10 px)
+// hasta caber en el espacio disponible. Se recalcula si cambia el ancho.
+function TextoAjustable({ texto }: { texto: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ajustar = () => {
+      let tam = 15
+      el.style.fontSize = tam + 'px'
+      while (el.scrollWidth > el.clientWidth && tam > 10) {
+        tam -= 0.5
+        el.style.fontSize = tam + 'px'
+      }
+    }
+    ajustar()
+    const ro = new ResizeObserver(ajustar)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [texto])
+  return (
+    <span ref={ref} style={{ flex: '1 1 0', minWidth: 0, textAlign: 'right' as const, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15, fontWeight: 600, color: C.texto }}>
+      {texto}
+    </span>
+  )
+}
+
 export default function ConfiguracionPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -329,12 +356,10 @@ export default function ConfiguracionPage() {
           {/* DATOS DE CUENTA */}
           <div style={st.card}>
             <div style={st.filaTitulo}><p style={st.titulo}>Datos de cuenta</p></div>
-            {/* Correo en una sola línea: la letra se reduce sola si el correo es largo */}
-            <div style={{ padding: '10px 0', borderBottom: '1px solid #F0EFF8' }}>
-              <span style={{ fontSize: 14, color: C.gris, display: 'block', marginBottom: 4 }}>Correo</span>
-              <span style={{ display: 'block', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600, color: C.texto, fontSize: `min(15px, calc((100vw - 76px) / ${Math.max(1, (profile?.email || '').length * 0.6).toFixed(1)}))` }}>
-                {profile?.email || '—'}
-              </span>
+            {/* Correo: etiqueta y correo en la misma línea; la letra se ajusta si es largo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #F0EFF8' }}>
+              <span style={{ fontSize: 14, color: C.gris, flexShrink: 0 }}>Correo</span>
+              <TextoAjustable texto={profile?.email || '—'} />
             </div>
             <Fila etiqueta="Membresía" valor={membresiaLabel[profile?.membership_status] ?? profile?.membership_status} />
             {!editandoWhatsapp ? (
