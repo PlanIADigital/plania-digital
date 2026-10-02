@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useParams } from 'next/navigation'
-import SidebarDirectivo from '@/components/SidebarDirectivo'
+import SidebarWrapper from '@/components/SidebarWrapper'
 import {
   ORIGENES_PRIORITARIO,
   type OrigenPrioritario,
@@ -123,7 +123,7 @@ export default function DocenteDetallePage() {
   )
 
   if (errorCarga || !detalle) return (
-    <SidebarDirectivo profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ padding: '32px 40px 60px' }}>
         <button onClick={() => router.push('/directivo/dashboard')}
           style={{ background: 'none', border: 'none', color: '#3D3A8C', fontSize: 13, cursor: 'pointer', padding: '0 0 16px', fontWeight: 600 }}>
@@ -134,7 +134,7 @@ export default function DocenteDetallePage() {
           <p style={{ fontSize: 14, color: '#444', margin: 0, lineHeight: 1.6 }}>{errorCarga || 'No se pudo cargar la información.'}</p>
         </div>
       </div>
-    </SidebarDirectivo>
+    </SidebarWrapper>
   )
 
   const { docente, avance, prioritarios, planeaciones, alumnosConApoyos, ciclo } = detalle
@@ -158,7 +158,7 @@ export default function DocenteDetallePage() {
     : '— grado'
 
   return (
-    <SidebarDirectivo profile={profile}>
+    <SidebarWrapper profile={profile}>
       <div style={{ padding: '32px 40px 60px' }}>
 
         {/* Volver */}
@@ -292,6 +292,6 @@ export default function DocenteDetallePage() {
         </div>
         <div style={{ height: 40 }} />
       </div>
-    </SidebarDirectivo>
+    </SidebarWrapper>
   )
 }

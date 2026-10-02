@@ -1,6 +1,11 @@
 'use client'
+// ============================================================
+//  PlanIA Digital — components/SidebarWrapper.tsx
+//  [2 oct 2026] Un solo menú para todos los roles: Sidebar elige
+//  las opciones según profile.role (educadora o directivo).
+//  SidebarDirectivo queda retirado.
+// ============================================================
 import Sidebar from '@/components/Sidebar'
-import SidebarDirectivo from '@/components/SidebarDirectivo'
 
 interface SidebarWrapperProps {
   profile: any
@@ -9,11 +14,5 @@ interface SidebarWrapperProps {
 
 export default function SidebarWrapper({ profile, children }: SidebarWrapperProps) {
   if (!profile) return <>{children}</>
-  
-  if (profile.role === 'directivo') {
-    return <SidebarDirectivo profile={profile}>{children}</SidebarDirectivo>
-  }
-
-  // educadora, educador, maestra_musica, maestro_musica — sidebar estándar
   return <Sidebar profile={profile}>{children}</Sidebar>
 }

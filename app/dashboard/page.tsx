@@ -23,6 +23,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import SidebarWrapper from '@/components/SidebarWrapper'
+import { nombrePila } from '@/lib/nombrePila'
 import EncabezadoPagina from '@/components/EncabezadoPagina'
 import { chipCampo } from '@/lib/coloresCampos'
 import {
@@ -128,7 +129,7 @@ export default function DashboardPage() {
   )
 
   const ultimasPlaneaciones = planeaciones.slice(0, 4)
-  const primerNombre = (profile?.full_name || '').trim().split(/\s+/)[0] || ''
+  const primerNombre = nombrePila(profile?.full_name)
   const grado = profile?.grado ? (GRADO_MAP[profile.grado] || profile.grado) : ''
   const grupo = [grado, profile?.grupo_letra].filter(Boolean).join(' ')
   // [1 oct 2026] Fecha y saludo según la hora del estado de la educadora

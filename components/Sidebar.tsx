@@ -12,6 +12,9 @@
 //  Ficha del jardín en verde PlanIA, solo con el nombre.
 //  [oct 2026] Modo oscuro apagado para el lanzamiento (ver ThemeProvider):
 //  se quitó el interruptor; el pie queda con foto, nombre y Salir.
+//  [2 oct 2026] UN SOLO MENÚ PARA TODOS LOS ROLES: las opciones se eligen
+//  según profile.role (educadora o directivo). Reemplaza a SidebarDirectivo,
+//  para que cada mejora del menú llegue a todos los roles a la vez.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -20,17 +23,35 @@ import Icono from '@/components/Icono'
 
 const supabase = createClient()
 
-const NAV_ITEMS = [
+interface ItemMenu {
+  label: string
+  path: string | null
+  icono: string
+  activo: boolean
+  // Rutas hijas que también marcan esta opción como activa
+  prefijoActivo?: string
+}
+
+const NAV_EDUCADORA: ItemMenu[] = [
   { label: 'Dashboard',        path: '/dashboard',        icono: 'house',         activo: true },
   { label: 'Mi grupo',         path: '/mi-grupo',         icono: 'users',         activo: true },
   { label: 'Mi diario',        path: null,                icono: 'mi-diario',     activo: false },
   { label: 'Nueva planeación', path: '/planeacion/nueva', icono: 'sparkles',      activo: true },
-  { label: 'Mis planeaciones', path: '/mis-planeaciones', icono: 'folder-open',   activo: true },
+  { label: 'Mis planeaciones', path: '/mis-planeaciones', icono: 'folder-open',   activo: true, prefijoActivo: '/planeacion/' },
   { label: 'Mi avance',        path: '/mi-avance',        icono: 'chart-column',  activo: true },
   { label: 'Misiones',         path: '/misiones',         icono: 'flag',          activo: false },
   { label: 'Calendario',       path: null,                icono: 'calendar-days', activo: false },
   { label: 'Estadísticas',     path: null,                icono: 'chart-pie',     activo: false },
   { label: 'Configuración',    path: '/configuracion',    icono: 'settings',      activo: true },
+]
+
+const NAV_DIRECTIVO: ItemMenu[] = [
+  { label: 'Dashboard',        path: '/directivo/dashboard', icono: 'house',         activo: true },
+  { label: 'Mis docentes',     path: '/directivo/docentes',  icono: 'users',         activo: true, prefijoActivo: '/directivo/docentes/' },
+  { label: 'Estadísticas',     path: null,                   icono: 'chart-pie',     activo: false },
+  { label: 'Informes',         path: null,                   icono: 'folder-open',   activo: false },
+  { label: 'Calendario',       path: null,                   icono: 'calendar-days', activo: false },
+  { label: 'Configuración',    path: '/configuracion',       icono: 'settings',      activo: true },
 ]
 
 interface SidebarProps {
@@ -114,6 +135,9 @@ export default function Sidebar({ profile, children }: SidebarProps) {
   const pathname = usePathname()
   const [abierto, setAbierto] = useState(false)
 
+  const esDirectivo = profile?.role === 'directivo'
+  const NAV_ITEMS = esDirectivo ? NAV_DIRECTIVO : NAV_EDUCADORA
+
   // Al cambiar de página, el menú del celular se cierra solo.
   useEffect(() => { setAbierto(false) }, [pathname])
 
@@ -147,6 +171,14 @@ export default function Sidebar({ profile, children }: SidebarProps) {
     setAbierto(false)
     await supabase.auth.signOut()
     router.push('/auth/login')
+  }
+
+  function estaActivo(item: ItemMenu): boolean {
+    if (item.path === null) return false
+    if (pathname === item.path) return true
+    if (!item.prefijoActivo || !pathname?.startsWith(item.prefijoActivo)) return false
+    // "Nueva planeación" tiene su propia opción; no marca "Mis planeaciones".
+    return pathname !== '/planeacion/nueva'
   }
 
   const iniciales = profile?.full_name
@@ -183,8 +215,8 @@ export default function Sidebar({ profile, children }: SidebarProps) {
           </p>
         </div>
 
-        {/* Ficha del jardín — en verde para que la educadora vea de entrada
-            en qué jardín está. Los datos (CCT, zona, etc.) viven en Configuración. */}
+        {/* Ficha del jardín — en verde para ver de entrada en qué jardín se está.
+            Los datos (CCT, zona, etc.) viven en Configuración. */}
         <button
           className="plania-ficha"
           onClick={() => irA('/configuracion')}
@@ -203,12 +235,7 @@ export default function Sidebar({ profile, children }: SidebarProps) {
         {/* Navegación */}
         <nav style={{ padding: '8px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = item.path !== null && (
-              pathname === item.path ||
-              (item.label === 'Mis planeaciones' && (
-                pathname?.startsWith('/planeacion/') && pathname !== '/planeacion/nueva'
-              ))
-            )
+            const isActive = estaActivo(item)
             return (
               <button
                 key={item.label}
@@ -267,7 +294,9 @@ export default function Sidebar({ profile, children }: SidebarProps) {
             <p style={{ color: 'white', fontSize: 13.5, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {profile?.full_name}
             </p>
-            {profile?.es_fundadora && (
+            {esDirectivo ? (
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, margin: '2px 0 0', letterSpacing: '0.04em' }}>Directivo</p>
+            ) : profile?.es_fundadora && (
               <p style={{ color: '#FCD34D', fontSize: 11, fontWeight: 700, margin: '2px 0 0' }}>⭐ Fundadora</p>
             )}
           </div>
