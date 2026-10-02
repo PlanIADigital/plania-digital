@@ -226,6 +226,18 @@ export default function ConfiguracionPage() {
 
   // [2 oct 2026] Directivo: días transcurridos de su ciclo de membresía
   // (el directivo no genera planeaciones, así que "días hábiles" no aplica).
+  // [2 oct 2026] Minutos de Mi diario del periodo (tope 300). Solo se muestra
+  // a quien ya lo usó (el menú sigue en PRONTO) y nunca al directivo.
+  const [minutosDiario, setMinutosDiario] = useState<{ usadosMin: number; topeMin: number } | null>(null)
+  useEffect(() => {
+    if (!profile || profile.role === 'directivo') return
+    fetchConSesion('/api/diario/transcribir')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d && d.topeMin) setMinutosDiario({ usadosMin: Number(d.usadosMin) || 0, topeMin: Number(d.topeMin) }) })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.role])
+
   function diasMembresia(inicio: string, fin: string) {
     const dia = 86400000
     const a = new Date(String(inicio).slice(0, 10) + 'T12:00:00Z').getTime()
@@ -578,6 +590,20 @@ export default function ConfiguracionPage() {
                   )}
                 </div>
               </div>
+              {profile?.role !== 'directivo' && minutosDiario && minutosDiario.usadosMin > 0 && (
+                <div style={{ background: C.indigoClaro, borderRadius: 10, padding: '12px 14px', marginTop: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: 0 }}>Minutos de Mi diario</p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: C.indigo, margin: 0 }}>
+                      {minutosDiario.usadosMin}<span style={{ fontSize: 13, fontWeight: 700 }}> de {minutosDiario.topeMin}</span>
+                    </p>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 8, background: 'white', marginTop: 8, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min(100, (minutosDiario.usadosMin / minutosDiario.topeMin) * 100)}%`, background: '#00A896', borderRadius: 8 }} />
+                  </div>
+                  <p style={{ fontSize: 12, color: C.gris, margin: '6px 0 0' }}>Se renuevan el {fechaCorta(estadoCuenta.ciclo_fin)}</p>
+                </div>
+              )}
             </div>
           )}
 
