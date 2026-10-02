@@ -67,19 +67,20 @@ function tipoDeAudio(): string {
   return ''
 }
 
-// [2 oct 2026] El permiso del micrófono lo controla el navegador: se explica
-// UNA vez cómo dejarlo permitido (pasos según el teléfono y navegador).
+// [2 oct 2026] El permiso del micrófono lo controla el navegador. Solo a petición
+// (enlace discreto, sin tarjeta automática para no agregar fricción) se explica
+// cómo dejarlo permitido, con pasos según el teléfono y navegador.
 function claveTip(uid: string) { return `plania-diario-tip-microfono-${uid}` }
 function pasosMicrofono(): { titulo: string; pasos: string } {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   const ios = /iPhone|iPad|iPod/.test(ua)
   if (ios && /CriOS/.test(ua)) return {
     titulo: 'En Chrome para iPhone el permiso puede volver a pedirse.',
-    pasos: 'Para que no te pregunte cada vez, abre Mi diario desde Safari y déjalo permitido ahí: toca «aA» → Configuración del sitio web → Micrófono → Permitir.',
+    pasos: 'Para que no te pregunte cada vez, abre Mi diario desde Safari y déjalo permitido ahí: toca el ícono a la izquierda de «plania.digital» (una hojita con rayitas) → Configuración del sitio web → Micrófono → Permitir.',
   }
   if (ios) return {
     titulo: '¿No quieres que te pregunte por el micrófono cada vez?',
-    pasos: 'En la barra de direcciones toca «aA» → Configuración del sitio web → Micrófono → Permitir. Solo se hace una vez.',
+    pasos: 'Toca el ícono a la izquierda de «plania.digital» en la barra de direcciones (una hojita con rayitas) → Configuración del sitio web → Micrófono → Permitir. Solo se hace una vez.',
   }
   if (/Android/.test(ua)) return {
     titulo: '¿No quieres que te pregunte por el micrófono cada vez?',
@@ -259,7 +260,6 @@ export default function MiDiarioPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       flujo.current = stream
-      mostrarTipSiPrimeraVez()
       const rec = new MediaRecorder(stream, { mimeType: mime })
       pedazos.current = []
       rec.ondataavailable = e => { if (e.data.size > 0) pedazos.current.push(e.data) }
@@ -288,9 +288,6 @@ export default function MiDiarioPage() {
     if (grabador.current?.state === 'recording') grabador.current.stop()
   }
 
-  function mostrarTipSiPrimeraVez() {
-    try { if (!localStorage.getItem(claveTip(uid.current))) setTipMicro(true) } catch {}
-  }
   function cerrarTip() {
     setTipMicro(false)
     try { localStorage.setItem(claveTip(uid.current), '1') } catch {}
