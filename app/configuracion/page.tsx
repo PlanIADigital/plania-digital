@@ -224,6 +224,19 @@ export default function ConfiguracionPage() {
     setConfirmandoInstitucional(false)
   }
 
+  // [2 oct 2026] Directivo: días transcurridos de su ciclo de membresía
+  // (el directivo no genera planeaciones, así que "días hábiles" no aplica).
+  function diasMembresia(inicio: string, fin: string) {
+    const dia = 86400000
+    const a = new Date(String(inicio).slice(0, 10) + 'T12:00:00Z').getTime()
+    const b = new Date(String(fin).slice(0, 10) + 'T12:00:00Z').getTime()
+    const hoyMx = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date())
+    const hoy = new Date(hoyMx + 'T12:00:00Z').getTime()
+    const total = Math.max(1, Math.round((b - a) / dia))
+    const transcurridos = Math.min(total, Math.max(0, Math.round((hoy - a) / dia) + 1))
+    return { total, transcurridos }
+  }
+
   async function guardarNombre() {
     if (!profile) return
     const limpio = nombreValor.replace(/\s+/g, ' ').trim()
@@ -352,7 +365,7 @@ export default function ConfiguracionPage() {
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 16px' }}>
 
-        <EncabezadoPagina antetitulo="Ajustar" titulo="Configuración" subtitulo="Tu perfil, tus datos y tu forma de escribir." />
+        <EncabezadoPagina antetitulo="Ajustar" titulo="Configuración" subtitulo={profile?.role === 'directivo' ? 'Tu perfil y tus datos.' : 'Tu perfil, tus datos y tu forma de escribir.'} />
 
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
@@ -547,15 +560,29 @@ export default function ConfiguracionPage() {
                   </p>
                 </div>
                 <div style={{ background: C.indigoClaro, borderRadius: 10, padding: '12px 10px', textAlign: 'center' as const }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Días hábiles</p>
-                  <p style={{ fontSize: 22, fontWeight: 800, color: C.indigo, margin: 0, lineHeight: 1.1 }}>{estadoCuenta.dias_habiles_generados_ciclo}</p>
-                  <p style={{ fontSize: 12, color: C.gris, margin: '2px 0 0' }}>generados</p>
+                  {profile?.role === 'directivo' ? (
+                    <>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Días de membresía</p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: C.indigo, margin: 0, lineHeight: 1.1 }}>
+                        {diasMembresia(estadoCuenta.ciclo_inicio, estadoCuenta.ciclo_fin).transcurridos}
+                        <span style={{ fontSize: 14, fontWeight: 700 }}> de {diasMembresia(estadoCuenta.ciclo_inicio, estadoCuenta.ciclo_fin).total}</span>
+                      </p>
+                      <p style={{ fontSize: 12, color: C.gris, margin: '2px 0 0' }}>transcurridos</p>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: C.indigo, textTransform: 'uppercase' as const, letterSpacing: '0.06em', margin: '0 0 4px' }}>Días hábiles</p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: C.indigo, margin: 0, lineHeight: 1.1 }}>{estadoCuenta.dias_habiles_generados_ciclo}</p>
+                      <p style={{ fontSize: 12, color: C.gris, margin: '2px 0 0' }}>generados</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* MI ESTILO DE NARRACIÓN */}
+          {/* MI ESTILO DE NARRACIÓN — no aplica al directivo (no genera planeaciones) */}
+          {profile?.role !== 'directivo' && (
           <div style={st.card}>
             <div style={st.filaTitulo}>
               <p style={st.titulo}>Mi estilo de narración</p>
@@ -602,6 +629,7 @@ export default function ConfiguracionPage() {
               </div>
             )}
           </div>
+          )}
 
         </div>
         <div style={{ height: 40 }} />
