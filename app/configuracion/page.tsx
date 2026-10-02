@@ -11,7 +11,7 @@ const supabase = createClient()
 // [2 oct 2026] WhatsApp de PlanIA Digital para renovar membresías (cobro manual).
 // Formato: 52 + 10 dígitos, sin espacios ni signos. Ej: '528112345678'.
 // Si está vacío, el aviso de renovación se muestra sin botón.
-const WHATSAPP_PAGOS = ''
+const WHATSAPP_PAGOS = '528140066448'
 
 // Paleta PlanIA
 const C = {
@@ -271,7 +271,9 @@ export default function ConfiguracionPage() {
     const hoyMx = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date())
     const hoy = new Date(hoyMx + 'T12:00:00Z').getTime()
     const total = Math.max(1, Math.round((b - a) / dia))
-    const transcurridos = Math.min(total, Math.max(0, Math.round((hoy - a) / dia) + 1))
+    // [2 oct 2026] Días COMPLETOS transcurridos (sin contar hoy), para que
+    // transcurridos + "faltan X días" sume exactamente el total del ciclo.
+    const transcurridos = Math.min(total, Math.max(0, Math.round((hoy - a) / dia)))
     return { total, transcurridos }
   }
 
