@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import { verificarUsuario } from '@/lib/verificarUsuario'
 import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
+import { revisarTopeDiasHabiles } from '@/lib/topeDiasHabiles'
+import { MODALIDADES } from '@/lib/modalidades'
 // [Saneado 27 sep 2026 — Fase 2] Prompts, límites, contexto y llamadas a MÍA
 // viven en lib/planeacion/ (movidos sin cambios). Aquí queda solo el flujo.
 import type { AcumuladorCosto } from '@/lib/planeacion/costos'
@@ -24,15 +26,6 @@ import {
 } from '@/lib/planeacion/generadores'
 
 const MAX_DIAS_POR_LOTE = 2
-
-const MOMENTOS_MODALIDAD: Record<string, { momentos: string[]; desarrollo: number }> = {
-  'Proyectos': { momentos: ['Punto de partida', 'Planeación', '¡A trabajar!', 'Comunicamos nuestros logros', 'Reflexionar sobre el aprendizaje'], desarrollo: 2 },
-  'ABJ': { momentos: ['Planteamiento del juego', 'Desarrollo de las actividades', 'Compartimos la experiencia', 'Comunidad de juego'], desarrollo: 1 },
-  'Taller crítico': { momentos: ['Situación inicial', 'Puesta en marcha', 'Valoramos lo aprendido', 'Reflexión'], desarrollo: 1 },
-  'Rincones': { momentos: ['Asamblea inicial y planeación', 'Exploración de los rincones', 'Compartimos lo aprendido', 'Reflexión sobre el aprendizaje'], desarrollo: 1 },
-  'Centros de interés': { momentos: ['Contacto con la realidad', 'Identificación e integración', 'Expresión'], desarrollo: 1 },
-  'Unidad didáctica': { momentos: ['Lectura de la realidad', 'Identificación de la trama y complejidad', 'Planificación y organización', 'Exploración y descubrimiento', 'Participación activa y horizontal', 'Valoración de la experiencia'], desarrollo: 2 },
-}
 
 async function actualizarProgreso(
   supabaseAdmin: any,
@@ -112,10 +105,12 @@ export async function POST(request: NextRequest) {
     // consulta falla, se bloquea (500); si ciclo_inicio viene vacío, la fecha
     // mínima es hoy — misma regla de respaldo que la pantalla. Las fechas se
     // comparan como YYYY-MM-DD en la zona horaria del CCT (lib/fechaMexico.ts).
+    // [2 oct 2026] La misma consulta trae ciclo_fin y los días hábiles ya
+    // generados en el ciclo, para revisar el tope (lib/topeDiasHabiles.ts).
     const zonaHoraria = zonaHorariaPorCCT(profile.cct_primary)
     const { data: estadoCuenta, error: errorEstadoCuenta } = await supabaseAdmin
       .from('v_estado_cuenta')
-      .select('ciclo_inicio')
+      .select('ciclo_inicio, ciclo_fin, dias_habiles_generados_ciclo')
       .eq('auth_uid', profile.auth_uid)
       .single()
     if (errorEstadoCuenta || !estadoCuenta) {
@@ -162,8 +157,9 @@ export async function POST(request: NextRequest) {
     const diasCTE = todosDias.filter(d => d.esCTE)
     const diasInhabiles = todosDias.filter(d => d.motivo && !d.esCTE)
 
-    const config = MOMENTOS_MODALIDAD[form.metodologia] || MOMENTOS_MODALIDAD['Proyectos']
-    const momentos = config.momentos
+    // [2 oct 2026] Fases desde el catálogo compartido (lib/modalidades.ts).
+    const config = MODALIDADES[form.metodologia] || MODALIDADES['Proyectos']
+    const momentos = config.fases
     const idxDesarrollo = config.desarrollo
 
     if (diasHabiles.length < momentos.length) {
@@ -180,6 +176,30 @@ export async function POST(request: NextRequest) {
         })
       }
       return NextResponse.json({ error: msg }, { status: 400 })
+    }
+
+    // [2 oct 2026] Tope mensual de días hábiles (lib/topeDiasHabiles.ts).
+    // Se revisa aquí, cuando ya se conocen los días de ESTA planeación y
+    // ANTES de la primera llamada a MÍA: si no cabe, no se gasta nada.
+    // Las fundadoras no tienen conteo.
+    const revisionTope = revisarTopeDiasHabiles({
+      membershipStatus: profile.membership_status,
+      diasUsados: estadoCuenta.dias_habiles_generados_ciclo,
+      diasNuevos: diasHabiles.length,
+      cicloFin: estadoCuenta.ciclo_fin,
+    })
+    if (!revisionTope.permitido) {
+      if (jobId) {
+        await actualizarProgreso(supabaseAdmin, jobId, {
+          estado: 'error',
+          error_mensaje: revisionTope.mensaje,
+          fase_actual: 'Llegaste al límite de días hábiles de este ciclo.',
+        })
+      }
+      return NextResponse.json(
+        { error: revisionTope.mensaje, codigo: 'TOPE_DIAS_HABILES', restantes: revisionTope.restantes },
+        { status: 403 }
+      )
     }
 
     const diasFijos = momentos.length - 1

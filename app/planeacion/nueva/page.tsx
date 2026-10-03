@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchConSesion } from '@/lib/fetchConSesion'
 import { CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
+import { MODALIDADES, ORDEN_MODALIDADES, DIAS_MINIMOS_PARA_PLANEAR, diasMinimosModalidad, modalidadesQueCaben } from '@/lib/modalidades'
 
 const CAMPOS = [
   'Lenguajes',
@@ -23,19 +24,19 @@ const CAMPOS = [
 const TIEMPO_MINIMO_PASO1 = 3500
 const TIEMPO_CONFIRMACION_FINAL = 1800
 
-const NOMBRES_FASES_MODALIDAD: Record<string, string[]> = {
-  'Proyectos': ['Punto de partida', 'Planeación', '¡A trabajar!', 'Comunicamos nuestros logros', 'Reflexionar sobre el aprendizaje'],
-  'ABJ': ['Planteamiento del juego', 'Desarrollo de las actividades', 'Compartimos la experiencia', 'Comunidad de juego'],
-  'Taller crítico': ['Situación inicial', 'Puesta en marcha', 'Valoramos lo aprendido', 'Reflexión'],
-  'Rincones': ['Asamblea inicial y planeación', 'Exploración de los rincones', 'Compartimos lo aprendido', 'Reflexión sobre el aprendizaje'],
-  'Centros de interés': ['Contacto con la realidad', 'Identificación e integración', 'Expresión'],
-  'Unidad didáctica': ['Lectura de la realidad', 'Identificación de la trama y complejidad', 'Planificación y organización', 'Exploración y descubrimiento', 'Participación activa y horizontal', 'Valoración de la experiencia'],
-}
+// [2 oct 2026] Las fases de cada modalidad vienen del catálogo compartido
+// (lib/modalidades.ts), el mismo que usa la ruta de generación.
+const NOMBRES_FASES_MODALIDAD: Record<string, string[]> = Object.fromEntries(
+  Object.entries(MODALIDADES).map(([nombre, m]) => [nombre, m.fases])
+)
 
-const ORDEN_MODALIDADES = ['Proyectos', 'ABJ', 'Taller crítico', 'Rincones', 'Centros de interés', 'Unidad didáctica']
-
-function modalidadesQueCaben(diasDisponibles: number): string[] {
-  return ORDEN_MODALIDADES.filter(m => (NOMBRES_FASES_MODALIDAD[m]?.length || 99) <= diasDisponibles)
+const ETIQUETAS_MODALIDAD: Record<string, string> = {
+  'Proyectos': '⭐ Proyectos — sugerida NEM 2022',
+  'ABJ': 'Aprendizaje Basado en Juegos (ABJ)',
+  'Taller crítico': 'Taller crítico',
+  'Rincones': 'Rincones de aprendizaje',
+  'Centros de interés': 'Centros de interés',
+  'Unidad didáctica': 'Unidad didáctica',
 }
 
 function contarDiasHabiles(inicio: string, fin: string): number {
@@ -181,6 +182,8 @@ function NuevaPlaneacionInner() {
   const zonaHoraria = zonaHorariaPorCCT(profile?.cct_primary)
   const hoyISO = fechaLocalISO(new Date(), zonaHoraria) || ''
   const [cicloInicio, setCicloInicio] = useState<string | null>(null)
+  // [2 oct 2026] Tope mensual de días hábiles (viene de /api/estado-cuenta).
+  const [topeDias, setTopeDias] = useState<{ tieneTope: boolean; tope: number | null; restantes: number | null; cicloFin: string | null } | null>(null)
   const fechaMinima = cicloInicio || hoyISO
 
   const [form, setForm] = useState({
@@ -240,12 +243,23 @@ function NuevaPlaneacionInner() {
 
   const modalidadBloqueada = !!cambioModalidadInfo && !cambioModalidadConfirmado
 
+  // [2 oct 2026] Tope mensual: días que le quedan en el ciclo (Infinity si
+  // su cuenta no tiene tope, p. ej. fundadoras). Si no alcanzan ni para la
+  // modalidad más corta, no se muestra el formulario.
+  const diasRestantesTope = topeDias?.tieneTope && topeDias.restantes !== null ? topeDias.restantes : Infinity
+  const sinDiasParaPlanear = diasRestantesTope < DIAS_MINIMOS_PARA_PLANEAR
+  const excedeTope = diasHabilesReales !== null && diasHabilesReales > diasRestantesTope
+  const fechaRenovacion = topeDias?.cicloFin
+    ? new Date(String(topeDias.cicloFin).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+    : ''
+  const hayModalidadesFueraDeTope = diasRestantesTope !== Infinity && ORDEN_MODALIDADES.some(m => diasMinimosModalidad(m) > diasRestantesTope)
+
   const diasHabilesNaive = contarDiasHabiles(form.fecha_inicio, form.fecha_fin)
 
   const fechaCompletaYValida = !!form.fecha_inicio && !!form.fecha_fin && diasHabilesNaive > 0
     && form.fecha_inicio >= fechaMinima
 
-  const modalidadLista = fechaCompletaYValida && diasHabilesReales !== null && modalidadActualCabe && !modalidadBloqueada
+  const modalidadLista = fechaCompletaYValida && diasHabilesReales !== null && modalidadActualCabe && !modalidadBloqueada && !excedeTope
   const todosCamposCompletos =
     !!form.nombre_proyecto &&
     !!form.situacion_problema &&
@@ -270,6 +284,12 @@ function NuevaPlaneacionInner() {
         if (resEstado.ok) {
           const estado = await resEstado.json()
           setCicloInicio(fechaLocalISO(estado.ciclo_inicio, zonaHorariaPorCCT(data.cct_primary)))
+          setTopeDias({
+            tieneTope: !!estado.tiene_tope,
+            tope: typeof estado.tope_dias_habiles === 'number' ? estado.tope_dias_habiles : null,
+            restantes: typeof estado.dias_habiles_restantes === 'number' ? estado.dias_habiles_restantes : null,
+            cicloFin: estado.ciclo_fin || null,
+          })
         }
       } catch (e) {
         console.error('No se pudo obtener el inicio del ciclo:', e)
@@ -277,6 +297,18 @@ function NuevaPlaneacionInner() {
     }
     load()
   }, [])
+
+  // [2 oct 2026] Si la modalidad elegida necesita más días de los que le
+  // quedan en el ciclo, se cambia a la más amplia que sí cabe.
+  useEffect(() => {
+    if (diasRestantesTope === Infinity || sinDiasParaPlanear) return
+    if (diasMinimosModalidad(form.metodologia) <= diasRestantesTope) return
+    const candidatos = modalidadesQueCaben(diasRestantesTope)
+    if (candidatos.length === 0) return
+    const elegida = candidatos.reduce((mejor, m) => (diasMinimosModalidad(m) > diasMinimosModalidad(mejor) ? m : mejor), candidatos[0])
+    setForm(prev => ({ ...prev, metodologia: elegida }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diasRestantesTope])
 
   useEffect(() => {
     const campoSugerido = searchParams.get('campo_sugerido')
@@ -671,6 +703,11 @@ function NuevaPlaneacionInner() {
       marcarInvalido('modalidad', refModalidadSection)
       return
     }
+    if (excedeTope) {
+      setMensajeErrorFecha(`En este ciclo te quedan ${diasRestantesTope} día(s) hábil(es) de planeación. Ajusta las fechas a ${diasRestantesTope} día(s) hábil(es) o menos.`)
+      marcarInvalido('fecha', refFechaSection)
+      return
+    }
 
     const jobId = crypto.randomUUID()
     generandoRef.current = true
@@ -879,6 +916,31 @@ function NuevaPlaneacionInner() {
           </p>
           <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Ir a Mi Grupo →
+          </button>
+        </div>
+      </div>
+    </SidebarWrapper>
+  )
+
+  // [2 oct 2026] Sin días suficientes en el ciclo para ninguna modalidad:
+  // se avisa de entrada, sin mostrar el formulario.
+  if (sinDiasParaPlanear && !generating) return (
+    <SidebarWrapper profile={profile}>
+      <div style={{ padding: '0 16px', maxWidth: 560, margin: '60px auto', textAlign: 'center' }}>
+        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 14, padding: 32 }}>
+          <p style={{ fontSize: 32, margin: '0 0 8px' }}>📅</p>
+          <h3 style={{ color: '#3D3A8C', margin: '0 0 10px', fontSize: 18 }}>Por ahora no te quedan días para planear</h3>
+          <p style={{ color: '#374151', fontSize: 14, lineHeight: 1.65, margin: '0 0 10px' }}>
+            {diasRestantesTope === 0
+              ? <>Ya usaste tus <strong>{topeDias?.tope} días hábiles</strong> de planeación de este ciclo.</>
+              : <>Te quedan <strong>{diasRestantesTope} día(s) hábil(es)</strong> en este ciclo, y la modalidad más corta necesita {DIAS_MINIMOS_PARA_PLANEAR}.</>}
+            {fechaRenovacion && <> Tus días se renuevan el <strong>{fechaRenovacion}</strong>.</>}
+          </p>
+          <p style={{ color: '#6B7280', fontSize: 13, lineHeight: 1.6, margin: '0 0 20px' }}>
+            Mientras tanto, puedes consultar y descargar todas tus planeaciones. Si alguna no te sirvió y aún no la descargas, puedes descartarla para liberar sus días.
+          </p>
+          <button onClick={() => router.push('/mis-planeaciones')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            Ir a Mis planeaciones →
           </button>
         </div>
       </div>
@@ -1122,12 +1184,14 @@ function NuevaPlaneacionInner() {
                   </label>
                   <select value={form.metodologia} onChange={e => handleMetodologiaChange(e.target.value)}
                     style={{ display: 'block', width: '100%', padding: '10px 12px', fontSize: 15, borderRadius: 8, border: '1px solid #D8D6F0', boxSizing: 'border-box', marginBottom: 8, background: 'white', cursor: 'pointer' } as React.CSSProperties}>
-                    <option value="Proyectos">⭐ Proyectos — sugerida NEM 2022</option>
-                    <option value="ABJ">Aprendizaje Basado en Juegos (ABJ)</option>
-                    <option value="Taller crítico">Taller crítico</option>
-                    <option value="Rincones">Rincones de aprendizaje</option>
-                    <option value="Centros de interés">Centros de interés</option>
-                    <option value="Unidad didáctica">Unidad didáctica</option>
+                    {ORDEN_MODALIDADES.map(m => {
+                      const noCabe = diasMinimosModalidad(m) > diasRestantesTope
+                      return (
+                        <option key={m} value={m} disabled={noCabe}>
+                          {ETIQUETAS_MODALIDAD[m] || m}{noCabe ? ` — necesita ${diasMinimosModalidad(m)} días` : ''}
+                        </option>
+                      )
+                    })}
                   </select>
                   <p style={{ fontSize: 12, color: '#888', margin: 0, lineHeight: 1.5 }}>
                     {form.metodologia === 'Proyectos' && 'Parte de una situación problema real del entorno. Modalidad preferente según NEM 2022.'}
@@ -1137,6 +1201,11 @@ function NuevaPlaneacionInner() {
                     {form.metodologia === 'Centros de interés' && 'Parte del contacto directo con la realidad e intereses del grupo.'}
                     {form.metodologia === 'Unidad didáctica' && 'Trama de complejidad creciente con múltiples momentos estructurados.'}
                   </p>
+                  {hayModalidadesFueraDeTope && (
+                    <p style={{ fontSize: 13, color: '#8A6D1D', background: '#FFF3CD', borderRadius: 8, padding: '8px 12px', margin: '10px 0 0', lineHeight: 1.5 }}>
+                      En este ciclo te quedan <strong>{diasRestantesTope} días hábiles</strong>, así que las modalidades que necesitan más días no están disponibles.{fechaRenovacion ? ` Tus días se renuevan el ${fechaRenovacion}.` : ''}
+                    </p>
+                  )}
 
                   {cambioModalidadInfo && !cambioModalidadConfirmado && (
                     <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: 10, padding: '14px 16px', marginTop: 12 }}>
@@ -1469,15 +1538,27 @@ function NuevaPlaneacionInner() {
                   </div>
 
                   {form.fecha_inicio && form.fecha_fin && diasHabilesNaive > 0 && diasHabilesReales !== null && (
-                    <div style={{ background: '#E8F5F2', border: '1px solid #00A896', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>📅</span>
-                      <p style={{ fontSize: 13, color: '#065F46', margin: 0, fontWeight: 500 }}>
-                        Tu proyecto tiene <strong>{diasHabilesReales} día(s) hábil(es) reales</strong> dentro del ciclo escolar.
-                          {diasHabilesReales < diasHabilesNaive && diasExcluidosDetalle.length > 0 && (
-                          <> ({diasExcluidosDetalle.map(d => `${d.label} — ${d.motivo}`).join('; ')}.)</>
-                        )}
-                      </p>
-                    </div>
+                    excedeTope ? (
+                      <div style={{ background: '#FFF3CD', border: '1px solid #8A6D1D', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 16 }}>📅</span>
+                        <p style={{ fontSize: 13, color: '#8A6D1D', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                          Tu proyecto tiene <strong>{diasHabilesReales} día(s) hábil(es)</strong>, pero en este ciclo te quedan <strong>{diasRestantesTope}</strong>. Ajusta las fechas a {diasRestantesTope} día(s) hábil(es) o menos.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ background: '#E8F5F2', border: '1px solid #00A896', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 16 }}>📅</span>
+                        <p style={{ fontSize: 13, color: '#065F46', margin: 0, fontWeight: 500 }}>
+                          Tu proyecto tiene <strong>{diasHabilesReales} día(s) hábil(es) reales</strong> dentro del ciclo escolar.
+                            {diasHabilesReales < diasHabilesNaive && diasExcluidosDetalle.length > 0 && (
+                            <> ({diasExcluidosDetalle.map(d => `${d.label} — ${d.motivo}`).join('; ')}.)</>
+                          )}
+                          {diasRestantesTope !== Infinity && topeDias?.tope && (
+                            <> Te quedan <strong>{diasRestantesTope} de {topeDias.tope}</strong> días hábiles en este ciclo.</>
+                          )}
+                        </p>
+                      </div>
+                    )
                   )}
                   {form.fecha_inicio && form.fecha_fin && diasHabilesNaive > 0 && diasHabilesReales === null && (
                     <div style={{ background: '#F8F8FE', border: '1px solid #E0DFF5', borderRadius: 8, padding: '10px 14px' }}>
@@ -1514,14 +1595,19 @@ function NuevaPlaneacionInner() {
 
         {result && (
           <div style={{ background: 'white', borderRadius: 14, padding: 32, boxShadow: '0 2px 12px rgba(61,58,140,0.08)' }}>
-            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>Planeación generada</h3>
+            <h3 style={{ color: '#3D3A8C', marginTop: 0, marginBottom: 8 }}>{result.error ? 'No pudimos generar tu planeación' : 'Planeación generada'}</h3>
             {saveStatus && (
               <p style={{ fontSize: 13, color: '#92400e', background: '#fef3c7', padding: '8px 12px', borderRadius: 6, marginBottom: 20 }}>
                 {saveStatus}
               </p>
             )}
             {result.error ? (
-              <p style={{ color: 'red' }}>{result.error}</p>
+              <>
+                <p style={{ color: '#8A6D1D', background: '#FFF3CD', borderRadius: 8, padding: '12px 14px', fontSize: 14, lineHeight: 1.6, margin: '0 0 16px' }}>{result.error}</p>
+                <button onClick={() => setResult(null)} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  ← Volver a mi planeación
+                </button>
+              </>
             ) : (
               momentos.map(m => result[m.key] ? (
                 <div key={m.key} style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid #F0EFF8' }}>
