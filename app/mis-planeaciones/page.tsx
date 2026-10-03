@@ -13,6 +13,12 @@
 //  Se conservan intactos: selector de ciclo, pestañas con contadores,
 //  buscador en vivo y la regla de descarte (solo activas y antes de
 //  descargar el Word).
+//  [2 oct 2026] Menos scroll, sobre todo en celular:
+//  - Se muestran las 10 más recientes y un botón "Mostrar 10 más". El
+//    buscador y los filtros siguen buscando en TODAS.
+//  - Tarjeta compacta: etiquetas, fechas y estado en una sola línea que
+//    se acomoda sola; toda la tarjeta abre la planeación. En celular se
+//    oculta el botón "Ver →" (la tarjeta completa ya es el botón).
 // ============================================================
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
@@ -48,6 +54,21 @@ const ESTADOS: Record<string, { texto: string; bg: string; color: string }> = {
 
 type Filtro = 'todas' | 'active' | 'closed' | 'discarded'
 
+const POR_PAGINA = 10
+
+// Ajustes de la tarjeta según el ancho. Prefijo "mp-" para no chocar con otras clases.
+const ESTILOS_LISTA = `
+  .mp-tarjeta { cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+  .mp-tarjeta:hover { border-color: #C9C7EC; box-shadow: 0 2px 10px rgba(61,58,140,0.08); }
+  .mp-tarjeta:focus-visible { outline: 2px solid #00A896; outline-offset: 2px; }
+  .mp-flecha { display: none; }
+  @media (max-width: 600px) {
+    .mp-tarjeta { padding: 12px 14px !important; }
+    .mp-ver { display: none !important; }
+    .mp-flecha { display: inline-flex; }
+  }
+`
+
 function fechaCorta(iso?: string | null): string {
   if (!iso) return ''
   return new Date(iso + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
@@ -65,6 +86,9 @@ export default function MisPlaneacionesPage() {
   const [cicloSeleccionado, setCicloSeleccionado] = useState(CICLO_ESCOLAR_ACTIVO)
   // [jul 2026] Buscador por nombre del proyecto, filtra en vivo.
   const [busqueda, setBusqueda] = useState('')
+  // [2 oct 2026] Cuántas tarjetas se muestran; vuelve a 10 al cambiar filtro, ciclo o búsqueda.
+  const [visibles, setVisibles] = useState(POR_PAGINA)
+  useEffect(() => { setVisibles(POR_PAGINA) }, [filtro, cicloSeleccionado, busqueda])
 
   useEffect(() => {
     async function load() {
@@ -118,6 +142,9 @@ export default function MisPlaneacionesPage() {
     .filter(p => coincide(p, filtro))
     .filter(p => !busqueda.trim() || (p.project_name || '').toLowerCase().includes(busqueda.trim().toLowerCase()))
 
+  const mostradas = filtradas.slice(0, visibles)
+  const restantes = filtradas.length - mostradas.length
+
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
       <p style={{ color: '#3D3A8C' }}>Cargando...</p>
@@ -135,6 +162,7 @@ export default function MisPlaneacionesPage() {
   return (
     <SidebarWrapper profile={profile}>
       <div style={{ padding: '0 16px' }}>
+        <style>{ESTILOS_LISTA}</style>
 
         <EncabezadoPagina
           antetitulo="Consultar"
@@ -210,43 +238,59 @@ export default function MisPlaneacionesPage() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filtradas.map(p => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {mostradas.map(p => {
                 const campo = chipCampo(p.pda_campo)
                 const estado = ESTADOS[p.status] || ESTADOS.closed
                 const puedeDescartar = p.status === 'active' && !p.word_descargado_en
+                const abrir = () => router.push(`/planeacion/${p.id}`)
                 return (
-                  <div key={p.id} style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    key={p.id}
+                    className="mp-tarjeta"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Abrir ${p.project_name || 'planeación'}`}
+                    onClick={abrir}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir() } }}
+                    style={{ background: 'white', border: `1px solid ${C.borde}`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{
-                        margin: '0 0 8px', fontWeight: 700, color: C.texto, fontSize: 15, lineHeight: 1.35,
+                        margin: '0 0 6px', fontWeight: 700, color: C.texto, fontSize: 15, lineHeight: 1.35,
                         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
                       }}>
                         {p.project_name}
                       </p>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 6 }}>
+                      {/* Etiquetas, fechas y estado en una sola línea que se acomoda sola */}
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' as const }}>
                         {p.pda_campo && (
                           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: campo.bg, color: campo.color }}>{p.pda_campo}</span>
                         )}
                         {p.eje_principal && (
                           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: '#E8F5F2', color: '#0F6E56' }}>{p.eje_principal}</span>
                         )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const }}>
                         {p.starts_on && (
-                          <span style={{ fontSize: 12, color: C.gris }}>{fechaCorta(p.starts_on)}{p.ends_on && ` → ${fechaCorta(p.ends_on)}`}</span>
+                          <span style={{ fontSize: 12, color: C.gris, whiteSpace: 'nowrap' as const }}>{fechaCorta(p.starts_on)}{p.ends_on && ` → ${fechaCorta(p.ends_on)}`}</span>
                         )}
                         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: estado.bg, color: estado.color }}>{estado.texto}</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => router.push(`/planeacion/${p.id}`)}
+                    {/* [2 oct 2026] Descartar a la izquierda de "Ver →" (en fila) para que no alargue la tarjeta */}
+                    <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                      {/* En celular, una flecha indica que la tarjeta se puede tocar */}
+                      <span className="mp-flecha" aria-hidden="true" style={{ width: 30, height: 30, borderRadius: 30, background: C.cian, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 12 12" style={{ marginLeft: 2 }}><path d="M3 1.5 L10 6 L3 10.5 Z" fill="white" /></svg>
+                      </span>
+                      <button
+                        className="mp-ver"
+                        onClick={e => { e.stopPropagation(); abrir() }}
                         style={{ background: C.indigo, color: 'white', border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' as const }}>
                         Ver →
                       </button>
                       {puedeDescartar && (
-                        <button onClick={() => descartarPlaneacion(p.id)}
-                          style={{ background: 'none', border: 'none', color: C.gris, padding: '2px 0', cursor: 'pointer', fontSize: 12, fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' as const }}>
+                        <button onClick={e => { e.stopPropagation(); descartarPlaneacion(p.id) }}
+                          style={{ background: 'none', border: 'none', color: C.gris, padding: '4px 0', cursor: 'pointer', fontSize: 12, fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' as const }}>
                           Descartar
                         </button>
                       )}
@@ -254,6 +298,18 @@ export default function MisPlaneacionesPage() {
                   </div>
                 )
               })}
+
+              {restantes > 0 && (
+                <div style={{ textAlign: 'center', marginTop: 6 }}>
+                  <p style={{ fontSize: 13, color: C.gris, margin: '0 0 8px' }}>
+                    Mostrando {mostradas.length} de {filtradas.length}
+                  </p>
+                  <button onClick={() => setVisibles(v => v + POR_PAGINA)}
+                    style={{ background: 'white', color: C.indigo, border: `1.5px solid ${C.borde}`, padding: '10px 18px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+                    Mostrar {Math.min(POR_PAGINA, restantes)} más
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
