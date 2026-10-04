@@ -404,6 +404,8 @@ export default function ConfiguracionPage() {
   // [2 oct 2026] Situación de la membresía para la tarjeta "Estado de cuenta".
   const estatus: string = profile?.membership_status || ''
   const esFundadora = estatus === 'founder'
+  // [3 oct 2026] La prueba gratuita no es membresía: textos de "activar", no de "renovar".
+  const esPrueba = estatus === 'trial'
   const restantes = estadoCuenta ? diasParaVencer(estadoCuenta.ciclo_fin) : null
   const yaVencio = !esFundadora && restantes !== null && restantes < 0
   const enModoLectura = ['expired', 'suspended', 'cancelled'].includes(estatus) || yaVencio
@@ -414,14 +416,19 @@ export default function ConfiguracionPage() {
     if (!estadoCuenta || restantes === null) return ''
     if (esFundadora) return 'Sin vencimiento'
     const fecha = fechaCorta(estadoCuenta.ciclo_fin)
-    if (enModoLectura) return `Venció el ${fecha}`
+    if (enModoLectura) return esPrueba ? `Terminó el ${fecha}` : `Venció el ${fecha}`
+    if (esPrueba) {
+      if (restantes === 0) return 'Termina hoy'
+      if (restantes === 1) return `Termina mañana, ${fecha}`
+      return `Termina el ${fecha} · faltan ${restantes} días`
+    }
     if (restantes === 0) return 'Vence hoy'
     if (restantes === 1) return `Vence mañana, ${fecha}`
     return `Vence el ${fecha} · faltan ${restantes} días`
   }
 
   const enlaceRenovar = WHATSAPP_PAGOS
-    ? `https://wa.me/${WHATSAPP_PAGOS}?text=${encodeURIComponent(`Hola, quiero renovar mi membresía de PlanIA Digital. Mi correo es ${profile?.email || ''}`)}`
+    ? `https://wa.me/${WHATSAPP_PAGOS}?text=${encodeURIComponent(`Hola, quiero ${esPrueba ? 'activar' : 'renovar'} mi membresía de PlanIA Digital. Mi correo es ${profile?.email || ''}`)}`
     : ''
 
   return (
@@ -679,9 +686,13 @@ export default function ConfiguracionPage() {
               {(porVencer || enModoLectura) && (
                 <div style={{ background: '#FFF3CD', borderLeft: '3px solid #8A6D1D', borderRadius: 8, padding: '12px 14px', marginTop: 10 }}>
                   <p style={{ fontSize: 14, color: C.texto, margin: 0, lineHeight: 1.55 }}>
-                    {enModoLectura
-                      ? 'Tu membresía no está activa. Puedes seguir consultando y descargando lo que ya tienes. Para reactivarla, escríbenos.'
-                      : 'Tu membresía vence pronto. Renueva para seguir usando PlanIA Digital sin interrupciones.'}
+                    {esPrueba
+                      ? (enModoLectura
+                        ? 'Tu prueba gratuita terminó. Todo lo que creaste sigue disponible para consultar y descargar. Para seguir generando planeaciones, activa tu membresía.'
+                        : 'Tu prueba gratuita termina pronto. Activa tu membresía para seguir generando planeaciones sin interrupciones.')
+                      : (enModoLectura
+                        ? 'Tu membresía no está activa. Puedes seguir consultando y descargando lo que ya tienes. Para reactivarla, escríbenos.'
+                        : 'Tu membresía vence pronto. Renueva para seguir usando PlanIA Digital sin interrupciones.')}
                   </p>
                   {enlaceRenovar && (
                     <a
@@ -690,7 +701,7 @@ export default function ConfiguracionPage() {
                       rel="noopener noreferrer"
                       style={{ display: 'inline-block', marginTop: 10, background: C.cian, color: 'white', padding: '9px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
                     >
-                      {enModoLectura ? 'Reactivar por WhatsApp' : 'Renovar por WhatsApp'}
+                      {esPrueba ? 'Activar por WhatsApp' : enModoLectura ? 'Reactivar por WhatsApp' : 'Renovar por WhatsApp'}
                     </a>
                   )}
                 </div>

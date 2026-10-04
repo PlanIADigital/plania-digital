@@ -22,6 +22,18 @@ export const TOPE_DIAS_HABILES = 25
 // Estados de membresía que NO tienen tope de días hábiles.
 export const ESTATUS_SIN_TOPE = ['founder']
 
+// [3 oct 2026] La prueba gratuita dura 7 días (ciclo_fin de v_estado_cuenta
+// para cuentas 'trial'). Al terminar, se detiene la generación, igual que una
+// membresía vencida: todo lo ya creado sigue disponible para consultar.
+export function pruebaVencida(membershipStatus: string | null | undefined, cicloFin: string | null | undefined): boolean {
+  if (membershipStatus !== 'trial' || !cicloFin) return false
+  const fin = new Date(cicloFin).getTime()
+  return !isNaN(fin) && Date.now() >= fin
+}
+
+export const MENSAJE_PRUEBA_VENCIDA =
+  'Tu prueba gratuita de 7 días terminó. Puedes seguir consultando y descargando todo lo que creaste; para generar nuevas planeaciones, activa tu membresía.'
+
 export function tieneTope(membershipStatus: string | null | undefined): boolean {
   return !ESTATUS_SIN_TOPE.includes(membershipStatus || '')
 }

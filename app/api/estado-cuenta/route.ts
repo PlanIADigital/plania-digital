@@ -15,7 +15,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarUsuario } from '@/lib/verificarUsuario'
-import { TOPE_DIAS_HABILES, tieneTope } from '@/lib/topeDiasHabiles'
+import { TOPE_DIAS_HABILES, tieneTope, pruebaVencida } from '@/lib/topeDiasHabiles'
 
 export async function GET(request: NextRequest) {
   const auth = await verificarUsuario(request)
@@ -50,5 +50,7 @@ export async function GET(request: NextRequest) {
     tiene_tope: aplicaTope,
     tope_dias_habiles: aplicaTope ? TOPE_DIAS_HABILES : null,
     dias_habiles_restantes: aplicaTope ? Math.max(0, TOPE_DIAS_HABILES - usados) : null,
+    // [3 oct 2026] Prueba gratuita de 7 días ya terminada.
+    prueba_vencida: pruebaVencida(perfil?.membership_status, data.ciclo_fin),
   })
 }

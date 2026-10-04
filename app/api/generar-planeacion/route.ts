@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { obtenerCalendarioEstatal, calcularDiasHabiles, type DiaHabil, CICLO_ESCOLAR_ACTIVO } from '@/lib/calendarioEscolar'
 import { verificarUsuario } from '@/lib/verificarUsuario'
 import { fechaLocalISO, zonaHorariaPorCCT } from '@/lib/fechaMexico'
-import { revisarTopeDiasHabiles } from '@/lib/topeDiasHabiles'
+import { revisarTopeDiasHabiles, pruebaVencida, MENSAJE_PRUEBA_VENCIDA } from '@/lib/topeDiasHabiles'
 import { MODALIDADES } from '@/lib/modalidades'
 // [Saneado 27 sep 2026 — Fase 2] Prompts, límites, contexto y llamadas a MÍA
 // viven en lib/planeacion/ (movidos sin cambios). Aquí queda solo el flujo.
@@ -121,6 +121,16 @@ export async function POST(request: NextRequest) {
         fase_actual: 'No se pudo verificar tu ciclo de membresía.',
       })
       return NextResponse.json({ error: msg }, { status: 500 })
+    }
+    // [3 oct 2026] La prueba gratuita dura 7 días: antes una cuenta 'trial'
+    // podía generar para siempre porque nadie revisaba la fecha.
+    if (pruebaVencida(profile.membership_status, estadoCuenta.ciclo_fin)) {
+      await actualizarProgreso(supabaseAdmin, jobId, {
+        estado: 'error',
+        error_mensaje: MENSAJE_PRUEBA_VENCIDA,
+        fase_actual: 'Tu prueba gratuita terminó.',
+      })
+      return NextResponse.json({ error: MENSAJE_PRUEBA_VENCIDA, codigo: 'PRUEBA_VENCIDA' }, { status: 403 })
     }
     const fechaMinimaPlaneacion =
       fechaLocalISO(estadoCuenta.ciclo_inicio, zonaHoraria) || fechaLocalISO(new Date(), zonaHoraria)

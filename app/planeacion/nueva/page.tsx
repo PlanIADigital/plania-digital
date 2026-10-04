@@ -183,7 +183,7 @@ function NuevaPlaneacionInner() {
   const hoyISO = fechaLocalISO(new Date(), zonaHoraria) || ''
   const [cicloInicio, setCicloInicio] = useState<string | null>(null)
   // [2 oct 2026] Tope mensual de días hábiles (viene de /api/estado-cuenta).
-  const [topeDias, setTopeDias] = useState<{ tieneTope: boolean; tope: number | null; restantes: number | null; cicloFin: string | null } | null>(null)
+  const [topeDias, setTopeDias] = useState<{ tieneTope: boolean; tope: number | null; restantes: number | null; cicloFin: string | null; pruebaVencida: boolean } | null>(null)
   const fechaMinima = cicloInicio || hoyISO
 
   const [form, setForm] = useState({
@@ -289,6 +289,7 @@ function NuevaPlaneacionInner() {
             tope: typeof estado.tope_dias_habiles === 'number' ? estado.tope_dias_habiles : null,
             restantes: typeof estado.dias_habiles_restantes === 'number' ? estado.dias_habiles_restantes : null,
             cicloFin: estado.ciclo_fin || null,
+            pruebaVencida: !!estado.prueba_vencida,
           })
         }
       } catch (e) {
@@ -917,6 +918,34 @@ function NuevaPlaneacionInner() {
           <button onClick={() => router.push('/mi-grupo')} style={{ background: '#3D3A8C', color: 'white', border: 'none', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Ir a Mi Grupo →
           </button>
+        </div>
+      </div>
+    </SidebarWrapper>
+  )
+
+  // [3 oct 2026] Prueba gratuita de 7 días terminada: se avisa de entrada.
+  if (topeDias?.pruebaVencida && !generating) return (
+    <SidebarWrapper profile={profile}>
+      <div style={{ padding: '0 16px', maxWidth: 560, margin: '60px auto', textAlign: 'center' }}>
+        <div style={{ background: 'white', border: '1px solid #E0DFF5', borderRadius: 14, padding: 32 }}>
+          <p style={{ fontSize: 32, margin: '0 0 8px' }}>✨</p>
+          <h3 style={{ color: '#3D3A8C', margin: '0 0 10px', fontSize: 18 }}>Tu prueba gratuita terminó</h3>
+          <p style={{ color: '#374151', fontSize: 14, lineHeight: 1.65, margin: '0 0 10px' }}>
+            Gracias por probar PlanIA Digital. Todo lo que creaste sigue disponible para consultar y descargar.
+          </p>
+          <p style={{ color: '#6B7280', fontSize: 13, lineHeight: 1.6, margin: '0 0 20px' }}>
+            Para seguir generando planeaciones, activa tu membresía. Escríbenos y te ayudamos.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' as const }}>
+            <a href={`https://wa.me/528140066448?text=${encodeURIComponent(`Hola, quiero activar mi membresía de PlanIA Digital. Mi correo es ${profile?.email || ''}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ background: '#00A896', color: 'white', padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              Activar por WhatsApp
+            </a>
+            <button onClick={() => router.push('/mis-planeaciones')} style={{ background: 'white', color: '#3D3A8C', border: '1.5px solid #E0DFF5', padding: '10px 18px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              Ver mis planeaciones
+            </button>
+          </div>
         </div>
       </div>
     </SidebarWrapper>
